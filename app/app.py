@@ -404,10 +404,10 @@ def generate_breadcrumbs():
 def layout():
     return render_template('layout.html')
 
+# Start the background thread for periodic refresh
+refresh_thread = threading.Thread(target=refresh_topics, daemon=True)
+refresh_thread.start()
 
 if __name__ == '__main__':
-    # Start the background thread for periodic refresh
-    refresh_thread = threading.Thread(target=refresh_topics, daemon=True)
-    refresh_thread.start()
     # Run the Flask app
     app.run(host='0.0.0.0', port=8080, debug=True)
