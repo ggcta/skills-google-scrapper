@@ -25,6 +25,68 @@ labs_collection.load_json()
 topics = set()
 topics_to_courses = {}
 
+# --- New: Add a lock for thread safety ---
+topics_lock = threading.Lock()
+
+# TODO: save topics to a file, load them from a file next run, and save them to a file after every refresh.
+def extract_topics(courses_collection):
+    """
+    Gather all unique topics from the downloaded courses in the 'data/courses/' folder.
+
+    :param courses_collection: The collection of courses.
+    :return: A sorted list of unique topics.
+    """
+
+    topics_set = set()  # Use a set to avoid duplicate topics
+    topics_to_courses = {}  # Dictionary to map topics to courses
+    courses_folder = PathLib("data/courses")  # Path to the courses folder
+
+    if not isinstance(courses_collection.collection, dict):
+        raise TypeError("courses_collection.collection must be a dictionary")
+
+    for course_id, course_name in courses_collection.collection.items():  # Updated to use items()
+        course_file = courses_folder / f"{course_id}.json"  # Construct the file path
+
+        if course_file.exists():  # Check if the course JSON file exists
+            course = Course(id=course_id)  # Create a new Course instance
+            course.load_json()  # Load the JSON file
+            topics = course.topics  # Extract the 'topics' key
+            topics_set.update(topics)  # Add topics to the set
+            for topic in topics:
+                # Ensure the topic is a string
+                if not isinstance(topic, str):
+                    raise ValueError(f"Topic '{topic}' is not a string")
+                # Map topic to course name
+                if topic not in topics_to_courses:
+                    topics_to_courses[topic] = {}
+                topics_to_courses[topic][course_id] = course_name  # Map topic to course name directly
+        else:
+            # Skip if the file does not exist
+            continue
+    # Sort the topics set to get a consistent order
+    return sorted(topics_set), topics_to_courses  # Return a sorted list of unique topics
+
+
+def refresh_topics(interval=300):
+    """
+    Periodically refresh the topics every 5 minutes (300 seconds).
+    """
+    # This function runs in a separate thread to refresh topics
+    # every hour without blocking the main thread
+    global topics, topics_to_courses
+
+    # Set the interval for refreshing topics
+    while True:
+        print("Refreshing topics...")
+        time.sleep(interval)  # Wait for the specified interval
+        topics, topics_to_courses = extract_topics(courses_collection)  # Refresh topics
+
+
+# Load the initial topics and courses
+all_topics, all_topics_to_courses = extract_topics(courses_collection)
+
+
+# Define the context processor AFTER topics is updated
 @app.context_processor
 def inject_global_data():
     """
@@ -324,63 +386,6 @@ def about():
     # Generate breadcrumbs for navigation
     breadcrumbs = generate_breadcrumbs()
     return render_template('about.html', breadcrumbs=breadcrumbs)
-
-
-# TODO: save topics to a file, load them from a file next run, and save them to a file after every refresh.
-def extract_topics(courses_collection):
-    """
-    Gather all unique topics from the downloaded courses in the 'data/courses/' folder.
-
-    :param courses_collection: The collection of courses.
-    :return: A sorted list of unique topics.
-    """
-
-    topics_set = set()  # Use a set to avoid duplicate topics
-    topics_to_courses = {}  # Dictionary to map topics to courses
-    courses_folder = PathLib("data/courses")  # Path to the courses folder
-
-    if not isinstance(courses_collection.collection, dict):
-        raise TypeError("courses_collection.collection must be a dictionary")
-
-    for course_id, course_name in courses_collection.collection.items():  # Updated to use items()
-        course_file = courses_folder / f"{course_id}.json"  # Construct the file path
-
-        if course_file.exists():  # Check if the course JSON file exists
-            course = Course(id=course_id)  # Create a new Course instance
-            course.load_json()  # Load the JSON file
-            topics = course.topics  # Extract the 'topics' key
-            topics_set.update(topics)  # Add topics to the set
-            for topic in topics:
-                # Ensure the topic is a string
-                if not isinstance(topic, str):
-                    raise ValueError(f"Topic '{topic}' is not a string")
-                # Map topic to course name
-                if topic not in topics_to_courses:
-                    topics_to_courses[topic] = {}
-                topics_to_courses[topic][course_id] = course_name  # Map topic to course name directly
-        else:
-            # Skip if the file does not exist
-            continue
-    # Sort the topics set to get a consistent order
-    return sorted(topics_set), topics_to_courses  # Return a sorted list of unique topics
-
-
-def refresh_topics(interval=300):
-    """
-    Periodically refresh the topics every 5 minutes (300 seconds).
-    """
-    # This function runs in a separate thread to refresh topics
-    # every hour without blocking the main thread
-    global topics, topics_to_courses
-
-    # Load the initial topics and courses
-    topics, topics_to_courses = extract_topics(courses_collection)
-
-    # Set the interval for refreshing topics
-    while True:
-        print("Refreshing topics...")
-        time.sleep(interval)  # Wait for the specified interval
-        topics, topics_to_courses = extract_topics(courses_collection)  # Refresh topics
 
 
 def generate_breadcrumbs():
