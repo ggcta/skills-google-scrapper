@@ -9,7 +9,6 @@ from models.path import Path
 from models.collection import Collection
 from pathlib import Path as PathLib
 
-app = Flask(__name__)
 
 # Initialize collections
 paths_collection = Collection(type='paths', name='Paths Collection')
@@ -82,9 +81,20 @@ def refresh_topics(interval=300):
         topics, topics_to_courses = extract_topics(courses_collection)  # Refresh topics
 
 
-# Load the initial topics and courses
-all_topics, all_topics_to_courses = extract_topics(courses_collection)
 
+def initialize_app():
+    """
+    Initialize the Flask app, including loading data and extracting initial topics.
+    """
+    global all_topics, all_topics_to_courses
+    print("Initializing app...")
+    all_topics, all_topics_to_courses = extract_topics(courses_collection)
+    print("App initialized.")
+
+# Initialize the app before creating the Flask instance
+initialize_app()
+
+app = Flask(__name__)
 
 # Define the context processor AFTER topics is updated
 @app.context_processor
