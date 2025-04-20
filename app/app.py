@@ -410,15 +410,3 @@ if __name__ == '__main__':
     refresh_thread.start()
     # Run the Flask app
     app.run(host='0.0.0.0', port=8080, debug=True)
-
-# Note:
-# The above code assumes the existence of models for Course, Path, and Collection.
-# The models should handle the logic for loading data from JSON files and processing courses.
-# The templates (index.html, course.html, path.html) should be created to render the respective pages.
-# The application should be run in an environment where Flask is installed.
-# To run the application, save this code in a file named app.py and run:
-# python app.py
-# Ensure you have Flask installed in your Python environment.
-# You can install Flask using pip:
-# pip install Flask
-# The application will be accessible at http://localhost:8080
