@@ -4,3 +4,4 @@ selenium
 html2text
 flask~=3.1.0
 debugpy
+gunicorn
