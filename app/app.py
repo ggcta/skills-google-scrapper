@@ -22,8 +22,8 @@ courses_collection.load_json()
 labs_collection.load_json()
 
 # Initialize topics and topics_to_courses as empty data structures
-topics = set()
-topics_to_courses = {}
+all_topics = set()
+all_topics_to_courses = {}
 
 # --- New: Add a lock for thread safety ---
 topics_lock = threading.Lock()
@@ -92,12 +92,18 @@ def inject_global_data():
     """
     Inject global data into all templates.
     """
+    # --- New: Acquire the lock before accessing shared data ---
+    with topics_lock:
+        current_topics = all_topics.copy() # Updated the variable names
+        current_labs = labs_collection.collection.copy()
+        current_courses = courses_collection.collection.copy()
+        current_paths = paths_collection.collection.copy()
 
     return {
-        'labs': labs_collection.collection,
-        'courses': courses_collection.collection,
-        'paths': paths_collection.collection,
-        'topics': topics,
+        'labs': current_labs,
+        'courses': current_courses,
+        'paths': current_paths,
+        'topics': current_topics,
         'BASE_URL_LAB': BASE_URL_LAB,
         'BASE_URL_COURSES': BASE_URL_COURSES,
         'BASE_URL_PATHS': BASE_URL_PATHS,
@@ -289,7 +295,7 @@ def topics():
 
     return render_template(
         'topics.html',
-        topics=topics,
+        topics=all_topics,
         breadcrumbs=breadcrumbs
     )
 
@@ -301,7 +307,7 @@ def topic(topic):
     This route filters and displays courses associated with the given topic.
     """
     # Filter courses, paths, and labs by the selected topic
-    filtered_courses = topics_to_courses.get(topic, {})
+    filtered_courses = all_topics_to_courses.get(topic, {})
 
     # Generate breadcrumbs for navigation
     breadcrumbs = generate_breadcrumbs()
@@ -360,7 +366,7 @@ def search_for():
                 "url": url_for('path', path_id=path_id),
                 "type": "Path"
             })
-    for topic in topics:
+    for topic in all_topics:
         if query_lower in topic.lower():
             results.append({
                 "id": None,
