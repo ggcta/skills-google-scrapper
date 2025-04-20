@@ -19,4 +19,4 @@ COPY data/ data/
 COPY csbmdvault/ csbmdvault/
 
 # Run app.py when the container launches
-ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "--chdir", "app", "app:app"]
+ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "--chdir", "app", "app:app"]
