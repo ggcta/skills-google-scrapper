@@ -87,8 +87,18 @@ class Collection(Serialize):
         This will overwrite the existing contents of the file.
         """
 
-        # Sort the collection by name
-        self.collection = dict(sorted(self.collection.items(), key=lambda item: item[1]))
+        # TODO: Trigger self.collection sorting everytime it gets updated.
+        # Sort the collection based on the type of values
+        if self.collection and all(isinstance(value, str) for value in self.collection.values()):
+            # If all values are strings, sort by values
+            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[1]))
+        elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
+            # If all values are dictionaries, sort by keys
+            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[0]))
+        else:
+            # Handle mixed types or empty collection (optional)
+            print(f"(Collection.save_json) Warning: Mixed value types in collection or empty collection. Skipping sorting for {self.name}.")
+
         data = self.to_dict()
 
         json_paths_folder = self._json_path.parent
@@ -107,8 +117,14 @@ class Collection(Serialize):
         """
 
         # Sort the collection by name and convert to a list
-        a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
-
+        if self.collection and all(isinstance(value, str) for value in self.collection.values()):
+            # If all values are strings, sort by values
+            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
+        elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
+            # If all values are dictionaries, sort by keys
+            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
+        else:
+            a_sorted_list = list(self.collection.items())
         print(f"\n"
               f"\033[45m[{self.name.upper():^85}]\033[0m"
               "\n")
@@ -168,7 +184,14 @@ class Collection(Serialize):
         """
 
         # Sort the collection by name
-        self.collection = dict(sorted(self.collection.items(), key=lambda item: item[1]))
+        if self.collection and all(isinstance(value, str) for value in self.collection.values()):
+            # If all values are strings, sort by values
+            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[1]))
+        elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
+            # If all values are dictionaries, sort by keys
+            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[0]))
+        else:
+            print(f"(Collection.write_md) Warning: Mixed value types in collection or empty collection. Skipping sorting for {self.name}.")
 
         # Create the Markdown file
         markdown_list = self.md_helper()
