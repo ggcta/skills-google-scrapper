@@ -14,9 +14,9 @@ COPY requirements.txt .
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
 # Copy only the necessary application files and directories
-COPY app/ ./app/
-COPY data/ ../data/
-COPY csbmdvault/ ../csbmdvault/
+COPY app/ app/
+COPY data/ data/
+COPY csbmdvault/ csbmdvault/
 
 # Run app.py when the container launches
-ENTRYPOINT ["python", "$MAIN_FILE_PATH"]
+ENTRYPOINT ["gunicorn", "-w", "4", "-b", "0.0.0.0:80", "--chdir", "app", "app:app"]
