@@ -14,6 +14,7 @@ from pathlib import Path as PathLib
 paths_collection = Collection(type='paths', name='Paths Collection')
 courses_collection = Collection(type='courses', name='Courses Collection')
 labs_collection = Collection(type='labs', name='Labs Collection')
+topics_collection = Collection(type='topics', name='Topics Collection')
 
 # Load data into collections
 paths_collection.load_json()
@@ -21,8 +22,7 @@ courses_collection.load_json()
 labs_collection.load_json()
 
 # Initialize topics and topics_to_courses as empty data structures
-all_topics = set()
-all_topics_to_courses = {}
+topics_collection.collection = {}
 
 # --- New: Add a lock for thread safety ---
 topics_lock = threading.Lock()
@@ -36,9 +36,6 @@ def extract_topics(courses_collection):
     :return: A sorted list of unique topics.
     """
 
-    topics_set = set()  # Use a set to avoid duplicate topics
-    topics_to_courses = {}  # Dictionary to map topics to courses
-
     if not isinstance(courses_collection.collection, dict):
         raise TypeError("courses_collection.collection must be a dictionary")
 
@@ -49,23 +46,23 @@ def extract_topics(courses_collection):
         # Check if the course JSON file exists
         if course._json_path.exists():
             course.load_json()  # Load the JSON file
-            course_topics = course.topics  # Extract the 'topics' key
-            topics_set.update(course_topics)  # Add topics to the set
-            for topic in course_topics:
-                # Ensure the topic is a string
-                if not isinstance(topic, str):
-                    raise ValueError(f"Topic '{topic}' is not a string")
-                # Map topic to course name
-                if topic not in topics_to_courses:
-                    topics_to_courses[topic] = {}
-                topics_to_courses[topic][course_id] = course_name  # Map topic to course name directly
+
+            # If course.topics is not None/empty
+            if course.topics:
+                for topic in course.topics:
+                    # Ensure the topic is a string
+                    if not isinstance(topic, str):
+                        raise ValueError(f"Topic '{topic}' is not a string")
+                    if topic not in topics_collection.collection:
+                        topics_collection.collection[topic] = {}
+                    topics_collection.collection[topic][course_id] = course_name  # Map topic to course name directly
 
         # Skip if the file does not exist
         else:
             continue
 
-    # Sort the topics set to get a consistent order
-    return sorted(topics_set), topics_to_courses  # Return a sorted list of unique topics
+        # Save the topics collection to file.
+        topics_collection.save_json()
 
 
 def refresh_topics(interval=300):
@@ -74,23 +71,21 @@ def refresh_topics(interval=300):
     """
     # This function runs in a separate thread to refresh topics
     # every hour without blocking the main thread
-    global topics, topics_to_courses
 
     # Set the interval for refreshing topics
     while True:
         print("Refreshing topics...")
         time.sleep(interval)  # Wait for the specified interval
-        topics, topics_to_courses = extract_topics(courses_collection)  # Refresh topics
-
+        extract_topics(courses_collection)  # Refresh topics
 
 
 def initialize_app():
     """
     Initialize the Flask app, including loading data and extracting initial topics.
     """
-    global all_topics, all_topics_to_courses
+
     print("Initializing app...")
-    all_topics, all_topics_to_courses = extract_topics(courses_collection)
+    extract_topics(courses_collection)
     print("App initialized.")
 
 # Initialize the app before creating the Flask instance
@@ -106,7 +101,7 @@ def inject_global_data():
     """
     # --- New: Acquire the lock before accessing shared data ---
     with topics_lock:
-        current_topics = all_topics.copy() # Updated the variable names
+        current_topics = topics_collection.collection.keys()
         current_labs = labs_collection.collection.copy()
         current_courses = courses_collection.collection.copy()
         current_paths = paths_collection.collection.copy()
@@ -307,7 +302,7 @@ def topics():
 
     return render_template(
         'topics.html',
-        topics=all_topics,
+        # topics=,
         breadcrumbs=breadcrumbs
     )
 
@@ -319,7 +314,7 @@ def topic(topic):
     This route filters and displays courses associated with the given topic.
     """
     # Filter courses, paths, and labs by the selected topic
-    filtered_courses = all_topics_to_courses.get(topic, {})
+    topic_to_courses = topics_collection.collection.get(topic, {})
 
     # Generate breadcrumbs for navigation
     breadcrumbs = generate_breadcrumbs()
@@ -327,7 +322,7 @@ def topic(topic):
     return render_template(
         'topic.html',
         topic=topic,
-        filtered_courses=filtered_courses,
+        filtered_courses=topic_to_courses,
         breadcrumbs=breadcrumbs
     )
 
@@ -378,7 +373,7 @@ def search_for():
                 "url": url_for('path', path_id=path_id),
                 "type": "Path"
             })
-    for topic in all_topics:
+    for topic in topics_collection.collection.keys():
         if query_lower in topic.lower():
             results.append({
                 "id": None,
