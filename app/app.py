@@ -21,6 +21,7 @@ paths_collection.load_json()
 courses_collection.load_json()
 labs_collection.load_json()
 
+# Initialize topics and topics_to_courses as empty data structures
 topics = set()
 topics_to_courses = {}
 
