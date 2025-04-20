@@ -38,20 +38,20 @@ def extract_topics(courses_collection):
 
     topics_set = set()  # Use a set to avoid duplicate topics
     topics_to_courses = {}  # Dictionary to map topics to courses
-    courses_folder = PathLib("data/courses")  # Path to the courses folder
 
     if not isinstance(courses_collection.collection, dict):
         raise TypeError("courses_collection.collection must be a dictionary")
 
     for course_id, course_name in courses_collection.collection.items():  # Updated to use items()
-        course_file = courses_folder / f"{course_id}.json"  # Construct the file path
+        # course_file = courses_folder / f"{course_id}.json"  # Construct the file path
+        course = Course(id=course_id)  # Create a new Course instance
 
-        if course_file.exists():  # Check if the course JSON file exists
-            course = Course(id=course_id)  # Create a new Course instance
+        # Check if the course JSON file exists
+        if course._json_path.exists():
             course.load_json()  # Load the JSON file
-            topics = course.topics  # Extract the 'topics' key
-            topics_set.update(topics)  # Add topics to the set
-            for topic in topics:
+            course_topics = course.topics  # Extract the 'topics' key
+            topics_set.update(course_topics)  # Add topics to the set
+            for topic in course_topics:
                 # Ensure the topic is a string
                 if not isinstance(topic, str):
                     raise ValueError(f"Topic '{topic}' is not a string")
@@ -59,9 +59,11 @@ def extract_topics(courses_collection):
                 if topic not in topics_to_courses:
                     topics_to_courses[topic] = {}
                 topics_to_courses[topic][course_id] = course_name  # Map topic to course name directly
+
+        # Skip if the file does not exist
         else:
-            # Skip if the file does not exist
             continue
+
     # Sort the topics set to get a consistent order
     return sorted(topics_set), topics_to_courses  # Return a sorted list of unique topics
 
