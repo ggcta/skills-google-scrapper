@@ -4,6 +4,14 @@
 
 A helper or a scraper.
 
+## How to run this with Docker
+
+1. Clone the repo.
+2. `cd` to the repo's folder.
+3. `docker build -t csbhelper .`
+4. `docker run -dp '8080:8080' csbhelper`
+5. Start to browse the web UI at `localhost:8080`.
+
 ## TL;DR
 
 This is a small tools for scraping contents from Google Cloud Skills Boost website to Markdown files, which helps to build your Personal Knowledge Base, Obsidian, for example.
