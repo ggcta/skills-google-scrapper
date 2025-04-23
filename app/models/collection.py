@@ -15,16 +15,21 @@ class Collection(Serialize):
     """
 
     def __init__(self,
-                 type: str = None,
                  name: str = None,
                  url: str = BASE_URL,
                  date: str = None,
                  collection: dict = None):
-        self.type = type
         self.name = name
         self.url = url
         self.date = date or str(datetime.today().date())
         self.collection = collection or {}
+
+    @property
+    def type(self):
+        """
+        Override the type property to return the class name.
+        """
+        return self.__class__.__name__
 
     # Properties to get the JSON and Markdown file names and paths
     @property
