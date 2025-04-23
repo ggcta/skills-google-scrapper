@@ -253,16 +253,6 @@ def lab(lab_id):
     )
 
 
-@app.route('/course/<course_id>/complete_videos', methods=['POST'])
-def complete_videos(course_id):
-    """
-    Mark videos in a course as completed.
-    """
-    course = Course(id=course_id)
-    course.complete_videos()
-    return jsonify({"message": f"Videos for course {course_id} marked as completed."})
-
-
 @app.route('/course/<course_id>/extract_transcript', methods=['POST'])
 def extract_transcript(course_id):
     """
@@ -272,27 +262,6 @@ def extract_transcript(course_id):
     course.extract_transcript()
     return jsonify({"message": f"Transcript for course {course_id} extracted."})
 
-
-@app.route('/path/<path_id>/process', methods=['POST'])
-def process_path(path_id):
-    """
-    Process all courses in a path (mark videos as completed and/or extract transcripts).
-    """
-    action = request.form.get('action')  # 'complete_videos', 'extract_transcripts', or 'both'
-    path_data = Path(id=path_id)
-    path_data.load_json()
-
-    for course in path_data.courses.values():
-        course_instance = Course(id=course['id'], name=course['name'])
-        if action == 'complete_videos':
-            course_instance.complete_videos()
-        elif action == 'extract_transcripts':
-            course_instance.extract_transcript()
-        elif action == 'both':
-            course_instance.complete_videos()
-            course_instance.extract_transcript()
-
-    return jsonify({"message": f"Processed all courses in path {path_id} with action: {action}."})
 
 @app.route('/topics')
 def topics():
