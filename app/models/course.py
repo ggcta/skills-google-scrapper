@@ -5,7 +5,6 @@ import time
 from pathlib import Path as PathlibPath
 from models.base_entity import BaseEntity
 from models.labs import Labs
-from models.courses import Courses
 from models.lab import Lab
 from selenium.webdriver.common.by import By
 from selenium.common import NoSuchElementException
@@ -85,10 +84,6 @@ class Course(BaseEntity):
         self.save_json()
         self.save_markdown()
 
-        courses_collection = Courses(name="Courses Collection")
-        courses_collection.load_json()
-        courses_collection.collection[self.id] = self.name
-        courses_collection.save_json()
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 
