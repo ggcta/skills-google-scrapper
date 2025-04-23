@@ -25,6 +25,7 @@ class Topics(Collection):
             self.collection = dict(sorted(self.collection.items()))
 
         return {
+            "type": self.type,
             "name": self.name,
             "url": self.url,
             "date": self.date,
