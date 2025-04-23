@@ -3,26 +3,31 @@ import threading
 import time
 from flask import Flask, request, jsonify, render_template, redirect, url_for
 from config.settings import BASE_URL, BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS
+from flask.config import T
+from models.labs import Labs
+from models.courses import Courses
+from models.paths import Paths
+from models.topics import Topics
 from models.course import Course
 from models.lab import Lab
 from models.path import Path
-from models.collection import Collection
-from pathlib import Path as PathLib
 
 
 # Initialize collections
-paths_collection = Collection(type='paths', name='Paths Collection')
-courses_collection = Collection(type='courses', name='Courses Collection')
-labs_collection = Collection(type='labs', name='Labs Collection')
-topics_collection = Collection(type='topics', name='Topics Collection')
+paths_collection = Paths(name='Paths')
+courses_collection = Courses(name='Courses')
+labs_collection = Labs(name='Labs')
+topics_collection = Topics(name='Topics')
+
 
 # Load data into collections
 paths_collection.load_json()
 courses_collection.load_json()
 labs_collection.load_json()
+topics_collection.load_json()
 
 # Initialize topics and topics_to_courses as empty data structures
-topics_collection.collection = {}
+# topics_collection.collection = {}
 
 # --- New: Add a lock for thread safety ---
 topics_lock = threading.Lock()
