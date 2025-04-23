@@ -1,9 +1,7 @@
-import os
 import threading
 import time
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, url_for
 from config.settings import BASE_URL, BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS
-from flask.config import T
 from models.labs import Labs
 from models.courses import Courses
 from models.paths import Paths
