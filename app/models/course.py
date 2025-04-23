@@ -1,14 +1,12 @@
-from math import e
 from random import random
 import re
 import sys
 import time
-import html2text
 from pathlib import Path as PathlibPath
-from models.collection import Collection
+from models.base_entity import BaseEntity
+from models.labs import Labs
+from models.courses import Courses
 from models.lab import Lab
-from services.md_helper import MDHelper
-from .base_entity import BaseEntity
 from selenium.webdriver.common.by import By
 from selenium.common import NoSuchElementException
 from selenium.webdriver.edge.webdriver import WebDriver
@@ -16,7 +14,7 @@ import json
 import html
 import requests
 from bs4 import BeautifulSoup
-from config.settings import BASE_URL_COURSES, BASE_URL, BASE_URL_LAB, QL_IFRAME, WEBDRIVER_PROFILE_FOLDER_NAME
+from config.settings import BASE_URL, QL_IFRAME, WEBDRIVER_PROFILE_FOLDER_NAME
 from utils.utils import util_replace_quote_marks, util_strip_html_tags
 from services.launch_browser import launch_browser
 
@@ -83,7 +81,7 @@ class Course(BaseEntity):
         self.save_json()
         self.save_markdown()
 
-        courses_collection = Collection(type = "Courses")
+        courses_collection = Courses(name="Courses Collection")
         courses_collection.load_json()
         courses_collection.collection[self.id] = self.name
         courses_collection.save_json()
@@ -257,7 +255,7 @@ class Course(BaseEntity):
             lab.save_markdown()
 
             # Add the lab to the Labs Collection
-            labs_collection = Collection(type='labs', name='Labs Collection')
+            labs_collection = Labs(name='Labs Collection')
             labs_collection.load_json()
             labs_collection.collection[lab_id] = lab.name
             labs_collection.save_json()

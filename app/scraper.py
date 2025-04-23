@@ -1,9 +1,11 @@
 import sys
 from pathlib import Path as PathlibPath
 from config.settings import *
-from models.collection import Collection
 from models.path import Path
+from models.paths import Paths
+from models.labs import Labs
 from models.course import Course
+from models.courses import Courses
 from services.launch_browser import launch_browser
 
 
@@ -14,13 +16,13 @@ class CloudSkillsBoost:
 
     @staticmethod
     def load_data():
-        col_paths = Collection(type='paths', name='Paths Collection')
+        col_paths = Paths(name='Paths Collection')
         col_paths.load_json()
 
-        col_courses = Collection(type='courses', name='Courses Collection')
+        col_courses = Courses(name='Courses Collection')
         col_courses.load_json()
 
-        col_labs = Collection(type='labs', name='Labs Collection')
+        col_labs = Labs(name='Labs Collection')
         col_labs.load_json()
 
         return col_paths, col_courses, col_labs
