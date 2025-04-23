@@ -34,8 +34,12 @@ QUIZ_ITEMS = "quizItems"
 LINK_URL_A_TAG = "ql-card.document-link a"
 
 
-# Course entity based on BaseEntity
 class Course(BaseEntity):
+    """
+    Class representing a course entity.\n
+    Inherits from BaseEntity.\n
+    This class is responsible for extracting course data from the Cloud Skills Boost platform.
+    """
     def __init__(self,
                  id: str,
                  name: str = None,
