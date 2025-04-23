@@ -417,18 +417,20 @@ class Course(BaseEntity):
             # Some video page doesn't have a Mark as Completed button, just move on
             pass
 
-    # Generate the prompts for videos from their transcripts
     def generate_prompt(self):
-
+        """
+        Generate the prompts for videos from their transcripts.\n
+        The prompt data will be saved to a JSON file.
+        """
         # Proceed only if the course's json file does exist.
-        if not self._json_path.exists:
+        if not self._json_path.exists():
             print("Sorry, the course json not found. Please fetch the course first.")
             return
 
         # Load the course data from the JSON file
         self.load_json()
 
-        # The data structure will be simplied from the original course's json.
+        # The data structure will be simplified from the original course's json.
         course = {
             "id": self.id,
             "title": f'{self.name}'
