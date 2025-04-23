@@ -36,38 +36,28 @@ class CloudSkillsBoost:
         :param a_course_id: Course ID.
         """
 
-        mark_complete_video_task = False
         extract_transcript_task = False
-        both_tasks = False
 
         task_selection = True
         while task_selection:
             # Ask for what to do with the selected path id or course id.
             task_to_do = input("WHAT TASK YOU WANT TO GO WITH? (THIS IS A MUST): \n"
-                               "\t\t1 - m. Mark Videos Completed (Logged in is required)\n"
-                               "\t\t2 - e. Extract Transcripts\n"
-                               "\t\t3 - a. Both The Tasks (NOT IMPLEMENTED YET)\n"
-                               "\t\t4 - b. Back\n"
-                               "\t\t5 - q. Quit\n"
+                               "\t\te. Extract Transcripts\n"
+                               "\t\tb. Back\n"
+                               "\t\tq. Quit\n"
                                "•PLEASE SELECT: ")
 
             # Set variables accordingly for each selection.
-            if task_to_do.lower() == "1" or task_to_do.lower() == "m":
-                mark_complete_video_task = True
-                task_selection = False
-            elif task_to_do.lower() == "2" or task_to_do.lower() == "e":
+            if task_to_do.lower() == "e":
                 extract_transcript_task = True
                 task_selection = False
-            elif task_to_do.lower() == "3" or task_to_do.lower() == "a":
-                both_tasks = True
-                task_selection = False
-            elif task_to_do.lower() == "4" or task_to_do.lower() == "b":
+            elif task_to_do.lower() == "b":
                 return
-            elif task_to_do.lower() == "5" or task_to_do.lower() == "q":
+            elif task_to_do.lower() == "q":
                 print("Got it. Bye.")
                 sys.exit(0)
             else:
-                print("Please select a valid choice: 1, 2, 3, or q to quit the program.")
+                print("Please select a valid choice: e or q to quit the program.")
                 continue
 
         #  =======================================================================
@@ -79,16 +69,6 @@ class CloudSkillsBoost:
             else:
                 course_name = '(Unknown Course Yet)'
 
-            # If the user wants to mark the videos as completed
-            if mark_complete_video_task:
-                heading = f"{a_course_id} - {course_name.upper()}"
-                print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                course = Course(id=a_course_id, name=course_name)
-                course.complete_videos()
-
-                print("(tasks_coordinator) The course videos has been marked as completed.")
-
             # If the user wants to extract the transcript
             if extract_transcript_task:
                 heading = f"{a_course_id} - {course_name.upper()}"
@@ -98,25 +78,6 @@ class CloudSkillsBoost:
                 # Save the course name to the collection
                 self.courses_collection.collection[course.id] = course.name
                 self.courses_collection.save_json()
-
-            # If the user wants to do both tasks
-            if both_tasks:
-                heading = f"{a_course_id} - {course_name.upper()}"
-                print(f"\n\033[45m[{heading:^85}]\033[0m")
-                # TODO: Async
-                # Use Edge for a logged in user; Chrome for a non-logged user.
-                edge_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                headless=False,
-                                                browser='edge')
-                course = Course(id=a_course_id, name=course_name)
-                course.complete_videos()
-                course.extract_transcript()
-                # Save the course name to the collection
-                self.courses_collection.collection[course.id] = course.name
-                self.courses_collection.save_json()
-                edge_webdriver.quit()
-                print(
-                    "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
 
         #  =======================================================================
         # A path is submitted, list all the courses in the path and let user select
@@ -151,20 +112,6 @@ class CloudSkillsBoost:
             a_course_id = input("\nPLEASE SELECT A COURSE [id or A(ll) (e to exit back, q to quit)]: ")
 
             if a_course_id.lower() == "a" or a_course_id.lower() == "all":
-                if mark_complete_video_task:
-                    a_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                 headless=False,
-                                                 browser='edge')
-                    for course in path_data.courses.values():
-                        current_course_id: str = course['id']
-                        current_course_name: str = course['name']
-                        heading = f"{current_course_id} - {current_course_name.upper()}"
-                        print(f"\n\033[45m[{heading:^85}]\033[0m")
-                        course_instance = Course(id=current_course_id, name=current_course_name)
-                        course_instance.complete_videos()
-                        print("(tasks_coordinator) The course videos has been marked as completed.")
-                    a_webdriver.quit()
-
                 if extract_transcript_task:
                     for course in path_data.courses.values():
                         current_course_id: str = course['id']
@@ -182,43 +129,7 @@ class CloudSkillsBoost:
 
                         print("(tasks_coordinator) The transcript has been extracted.\n")
 
-                if both_tasks:
-                    for course in path_data.courses.values():
-                        current_course_id: str = course['id']
-                        current_course_name: str = course['name']
-
-                        heading = f"{current_course_id} - {current_course_name.upper()}"
-                        print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                        # TODO: Async
-                        # Use Edge for a logged in user; Chrome for a non-logged user.
-                        edge_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                        headless=False,
-                                                        browser='edge')
-                        course_instance = Course(id=course['id'], name=course['name'])
-                        course_instance.complete_videos()
-                        course_instance.extract_transcript()
-                        # Save the course name to the collection
-                        self.courses_collection.collection[course_instance.id] = course_instance.name
-                        self.courses_collection.save_json()
-                        edge_webdriver.quit()
-                        print(
-                            "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
-
             elif a_course_id.isdigit():
-                if mark_complete_video_task:
-
-                    heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
-                    print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                    a_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                 headless=False,
-                                                 browser='edge')
-                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
-                    course_instance.complete_videos()
-                    a_webdriver.quit()
-                    print("(tasks_coordinator) The course videos has been marked as completed.")
-
                 if extract_transcript_task:
                     heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
                     print(f"\n\033[45m[{heading:^85}]\033[0m")
@@ -228,25 +139,6 @@ class CloudSkillsBoost:
                     # Save the course name to the collection
                     self.courses_collection.collection[course_instance.id] = course_instance.name
                     self.courses_collection.save_json()
-
-                if both_tasks:
-                    heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
-                    print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                    # TODO: Async
-                    # Use Edge for a logged in user; Chrome for a non-logged user.
-                    edge_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                    headless=False,
-                                                    browser='edge')
-                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
-                    course_instance.complete_videos()
-                    course_instance.extract_transcript()
-                    # Save the course name to the collection
-                    self.courses_collection.collection[course_instance.id] = course_instance.name
-                    self.courses_collection.save_json()
-                    edge_webdriver.quit()
-                    print(
-                        "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
 
             elif a_course_id.lower() == "e":
                 print("\t[<< Going Back]\n")
@@ -281,6 +173,7 @@ class CloudSkillsBoost:
                                    "\t\t2. p: A Path To Select Course(s)\n"
                                    "\t\t3. l: Show me a list\n"
                                    "\t\t4. q: Quit\n"
+                                   "\t\t99. DEBUG: RELOADING DATA\n"
                                    "•PLEASE SELECT: ")
 
             #  ===================================================================
