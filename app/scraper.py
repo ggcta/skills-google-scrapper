@@ -95,6 +95,7 @@ class CloudSkillsBoost:
                 print(f"\n\033[45m[{heading:^85}]\033[0m")
                 course = Course(id=a_course_id, name=course_name)
                 course.extract_transcript()
+                # Save the course name to the collection
                 self.courses_collection.collection[course.id] = course.name
                 self.courses_collection.save_json()
 
@@ -110,6 +111,9 @@ class CloudSkillsBoost:
                 course = Course(id=a_course_id, name=course_name)
                 course.complete_videos()
                 course.extract_transcript()
+                # Save the course name to the collection
+                self.courses_collection.collection[course.id] = course.name
+                self.courses_collection.save_json()
                 edge_webdriver.quit()
                 print(
                     "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
@@ -171,6 +175,11 @@ class CloudSkillsBoost:
 
                         course_instance = Course(id=current_course_id, name=current_course_name)
                         course_instance.extract_transcript()
+
+                        # Save the course name to the collection
+                        self.courses_collection.collection[course_instance.id] = course_instance.name
+                        self.courses_collection.save_json()
+
                         print("(tasks_coordinator) The transcript has been extracted.\n")
 
                 if both_tasks:
@@ -189,6 +198,9 @@ class CloudSkillsBoost:
                         course_instance = Course(id=course['id'], name=course['name'])
                         course_instance.complete_videos()
                         course_instance.extract_transcript()
+                        # Save the course name to the collection
+                        self.courses_collection.collection[course_instance.id] = course_instance.name
+                        self.courses_collection.save_json()
                         edge_webdriver.quit()
                         print(
                             "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
@@ -213,6 +225,9 @@ class CloudSkillsBoost:
 
                     course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
                     course_instance.extract_transcript()
+                    # Save the course name to the collection
+                    self.courses_collection.collection[course_instance.id] = course_instance.name
+                    self.courses_collection.save_json()
 
                 if both_tasks:
                     heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
@@ -226,6 +241,9 @@ class CloudSkillsBoost:
                     course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
                     course_instance.complete_videos()
                     course_instance.extract_transcript()
+                    # Save the course name to the collection
+                    self.courses_collection.collection[course_instance.id] = course_instance.name
+                    self.courses_collection.save_json()
                     edge_webdriver.quit()
                     print(
                         "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
