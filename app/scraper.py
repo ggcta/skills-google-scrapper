@@ -290,6 +290,11 @@ class CloudSkillsBoost:
                     course.generate_prompt()
                     print("Generating prompt completed. Going back...\n")
 
+            elif course_or_path.lower() == '6' or course_or_path.lower() == 'h':
+                # Fetch all courses' data
+                self.courses_collection.fetch_data()
+                self.courses_collection.save_json()
+
             elif course_or_path.lower() == '9' or course_or_path.lower() == 'd':
                 print(f"\n"
                       "\033[35mDEBUG: RELOADING THE COURSES LIST... in several minutes\033[0m\n")
