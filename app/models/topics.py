@@ -10,9 +10,8 @@ class Topics(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL,
-                 date: str = None,
                  collection: dict = None):
-        super().__init__(name, url, date, collection)
+        super().__init__(name, url, collection)
 
     def to_dict(self):
         """

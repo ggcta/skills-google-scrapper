@@ -10,6 +10,7 @@ class Courses(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL_COURSES,
-                 date: str = None,
                  collection: dict = None):
-        super().__init__(name, url, date, collection)
+        super().__init__(name, url, collection)
+
+    # TODO: fetch_data() method to refresh all the courses' data.

@@ -10,6 +10,5 @@ class Labs(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL_LAB,
-                 date: str = None,
                  collection: dict = None):
-        super().__init__(name, url, date, collection)
+        super().__init__(name, url, collection)

@@ -17,11 +17,10 @@ class Collection(Serialize):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL,
-                 date: str = None,
                  collection: dict = None):
         self.name = name
         self.url = url
-        self.date = date or str(datetime.today().date())
+        self.date = str(datetime.today().date())
         self.collection = collection or {}
 
     @property

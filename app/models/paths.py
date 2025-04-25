@@ -1,6 +1,7 @@
 from models.collection import Collection
 from config.settings import BASE_URL_PATHS
-
+import requests
+from bs4 import BeautifulSoup
 
 class Paths(Collection):
     """
@@ -10,9 +11,8 @@ class Paths(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL_PATHS,
-                 date: str = None,
                  collection: dict = None):
-        super().__init__(name, url, date, collection)
+        super().__init__(name, url, collection)
 
     def fetch_paths(self, base_url: str = BASE_URL_PATHS) -> bool:
         """
