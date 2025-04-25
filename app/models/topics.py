@@ -30,3 +30,5 @@ class Topics(Collection):
             "date": self.date,
             "collection": self.collection
         }
+
+    # TODO: extract_topics() to gather all topics from all the courses/labs/paths.
