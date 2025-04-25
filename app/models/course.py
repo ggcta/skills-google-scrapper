@@ -238,7 +238,7 @@ class Course(BaseEntity):
                     lab_steps[step] = text
 
             # Set the lab's attributes.
-            lab.name = activity['title']
+            lab.name = activity['title'].strip()
             lab.description = activity.get('description', '')
             lab.steps = lab_steps
 
