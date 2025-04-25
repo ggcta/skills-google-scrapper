@@ -15,6 +15,8 @@ class Lab(BaseEntity):
                          )
         self.steps = steps or {}
 
+    # TODO: fetch_data() for fetching a lab's data
+
     # Save the Lab data to a Markdown file
     def save_markdown(self):
         """
