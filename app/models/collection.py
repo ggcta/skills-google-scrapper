@@ -174,7 +174,7 @@ class Collection(Serialize):
         markdown.append(f"# [{self.name}]({self.url})")
 
         item_list = []
-        if self.type == 'paths':
+        if self.type == 'Paths' or self.type == 'paths':
             for item_id, item_name in self.collection.items():
                 item_url = f"{BASE_URL_PATHS}/{item_id}"
                 item_list.append(f"- [ ] `{item_id:>5}`: [(Web Link)]({item_url}) | {item_name}")
