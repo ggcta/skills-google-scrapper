@@ -172,11 +172,16 @@ class MDHelper:
                                     quiz_list.append(f"> [!important]")
                                     quiz_list.append(f"> **{util_replace_quote_marks(quiz_stem)}**")
                                     quiz_list.append(">")
-                                    for option in question.get("options"):
-                                        quiz_list.append(f"> - [ ] {util_replace_quote_marks(option.get('title'))}")
+
+                                    if question.get("options"):
+                                        for option in question.get("options"):
+                                            quiz_list.append(f"> - [ ] {util_replace_quote_marks(option.get('title'))}")
+                                    else:
+                                        continue
+
                                     markdown.append("\n".join(quiz_list))
                                     quiz_number += 1
-                        
+
                         # If it's a link, let put a link here
                         elif activity_type == 'link':
                             markdown.append(f"- [{activity_title}]({activity['link']})")
