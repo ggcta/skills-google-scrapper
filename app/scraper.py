@@ -175,11 +175,15 @@ class CloudSkillsBoost:
                                    "\t\t2. p: A Path To Select Course(s)\n"
                                    "\t\t3. l: Show me a list\n"
                                    "\t\t9. d: DEBUG: RELOADING DATA\n"
-                                   "\t\t4. q: Quit\n"
+                                   "\t\t0. q: Quit\n"
                                    "•PLEASE SELECT: ")
 
             #  ===================================================================
-            if course_or_path.lower() == "1" or course_or_path.lower() == "c":
+            if course_or_path.lower() == '0' or course_or_path.lower() == "q":
+                print("Ya. Good day.")
+                running = False
+
+            elif course_or_path.lower() == "1" or course_or_path.lower() == "c":
                 course_id = input(f"•{'COURSE ID: ':>15}")
                 if not course_id.strip().isdigit():
                     print("ERROR: INVALID OR MISSING COURSE ID. "
@@ -269,19 +273,6 @@ class CloudSkillsBoost:
                     print("Bye.")
                     sys.exit(0)
 
-            elif course_or_path.lower() == '4' or course_or_path.lower() == "q":
-                print("Ya. Good day.")
-                running = False
-            
-            # This launches a browser to login to the website
-            elif course_or_path.lower() == '0' or course_or_path.lower() == "b":
-                print("Launching a browser instance for you to login.\n")
-                a_webdriver = launch_browser(
-                    profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                    headless=False,
-                    browser='chrome')
-                a_webdriver.get(BASE_URL)
-
             elif course_or_path.lower() == '5' or course_or_path.lower() == 'g':
                 course_id = input(f"•{'COURSE ID: ':>15}")
                 if not course_id.strip().isdigit():
@@ -331,7 +322,7 @@ class CloudSkillsBoost:
             else:
                 print("\033[31m"
                       f"[INVALID CHOICE] {course_or_path}\n"
-                      "PLEASE SELECT 1, 2, 3, or q TO QUIT THE PROGRAM."
+                      "PLEASE SELECT 1, 2, 3, 9 or q TO QUIT THE PROGRAM."
                       "\033[0m\n")
                 continue
 
