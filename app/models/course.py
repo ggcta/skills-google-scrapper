@@ -55,7 +55,7 @@ class Course(BaseEntity):
         """
         print("\nTranscript Extracting is starting...\n")
 
-        # Load the course data from JSON even it's empty
+        # Load the course data from JSON
         self.load_json()
     
         # Fetch and parse the course page
@@ -77,7 +77,6 @@ class Course(BaseEntity):
         # Save the course data
         self.save_json()
         self.save_markdown()
-
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 

@@ -67,6 +67,7 @@ class CloudSkillsBoost:
             if a_course_id in self.courses_collection.collection:
                 course_name = self.courses_collection.collection[a_course_id]
             else:
+                # TODO: Use None for not existing course
                 course_name = '(Unknown Course Yet)'
 
             # If the user wants to extract the transcript
@@ -76,6 +77,7 @@ class CloudSkillsBoost:
                 course = Course(id=a_course_id)
                 course.extract_transcript()
                 # Save the course name to the collection
+                # TODO: Save only those missing courses.
                 self.courses_collection.collection[course.id] = course.name
                 self.courses_collection.save_json()
 

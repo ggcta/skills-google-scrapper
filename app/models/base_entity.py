@@ -92,6 +92,8 @@ class BaseEntity(Serialize):
     def load_json(self):
         """
         Load the entity data from a JSON file.
+        If the file doesn't exist yet, load an empty {}.
+        If the file does exist, load it with json.load and update the entity's data.
         """
 
         # Don't load the JSON file if it doesn't exist
@@ -100,7 +102,7 @@ class BaseEntity(Serialize):
             self.__dict__.update({})
             return
 
-        # Load the JSON file even if it's empty, and update the entity's data
+        # And update the entity's data
         try:
             with open(self._json_path,
                       'r',
