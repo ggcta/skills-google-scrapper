@@ -174,8 +174,8 @@ class CloudSkillsBoost:
                                    "\t\t1. c: A Certain Course Only\n"
                                    "\t\t2. p: A Path To Select Course(s)\n"
                                    "\t\t3. l: Show me a list\n"
+                                   "\t\t9. d: DEBUG: RELOADING DATA\n"
                                    "\t\t4. q: Quit\n"
-                                   "\t\t99. DEBUG: RELOADING DATA\n"
                                    "•PLEASE SELECT: ")
 
             #  ===================================================================
@@ -299,7 +299,7 @@ class CloudSkillsBoost:
                     course.generate_prompt()
                     print("Generating prompt completed. Going back...\n")
 
-            elif course_or_path.lower() == '99':
+            elif course_or_path.lower() == '9' or course_or_path.lower() == 'd':
                 print(f"\n"
                       "\033[35mDEBUG: RELOADING THE COURSES LIST... in several minutes\033[0m\n")
                 # Refresh Paths list
