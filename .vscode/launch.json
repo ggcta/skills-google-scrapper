@@ -13,9 +13,9 @@
                     "path": "Dockerfile"
                 }
             },
-            "image": "cloudskillsboost-helper",
+            "image": "csbhelper",
             "service": {
-                "name": "cloudskillsboost-helper",
+                "name": "csbhelper",
                 "containerPort": 8080,
                 "resources": {
                     "limits": {
@@ -27,7 +27,12 @@
                 "minikube": {}
             },
             "watch": true,
-            "externalPortForward": 3000
+            "externalPortForward": 8080,
+            "debug": {
+                "sourceFileMap": {
+                    "${workspaceFolder}": "/app"
+                }
+            }
         },
         {
             "name": "Python Debugger: main",

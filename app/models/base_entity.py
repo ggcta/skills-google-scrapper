@@ -1,15 +1,16 @@
-from datetime import datetime
 import json
 from config.settings import BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
 from pathlib import Path as PathlibPath
 
 from services.md_helper import MDHelper
 from utils.utils import util_replace_special_chars
-from .serialize import Serialize
+from models.serialize import Serialize
 
 
-# Base class for all entities including Path, Course, and Lab
 class BaseEntity(Serialize):
+    """
+    Base class for all entities including Path, Course, and Lab.
+    """
     def __init__(self,
                  id: str,
                  name: str,
@@ -44,39 +45,44 @@ class BaseEntity(Serialize):
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _json_name(self):
+        """
+        Generate the JSON file name based on the entity ID.
+        """
         return f'{self.id}.json'
     
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _md_name(self):
+        """
+        Generate the Markdown file name based on the entity name.
+        """
+        # Replace special characters in the name for the Markdown file name
+        # and ensure it ends with .md
         return f'{util_replace_special_chars(self.name)}.md'
 
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _json_path(self):
-        if self.type == 'Path':
-            return PathlibPath(DATA_FOLDER_NAME) / 'paths' / self._json_name
-        if self.type == 'Course':
-            return PathlibPath(DATA_FOLDER_NAME) / 'courses' / self._json_name
-        if self.type == 'Lab':
-            return PathlibPath(DATA_FOLDER_NAME) / 'labs' / self._json_name
+        """
+        Get the JSON file path based on the entity type.
+        """
+        return PathlibPath(DATA_FOLDER_NAME) / f'{self.type.lower()}s' / self._json_name
 
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _md_path(self):
-        if self.type == 'Path':
-            return PathlibPath(OUTPUT_FOLDER_NAME) / 'paths' / self._md_name
-        if self.type == 'Course':
-            return PathlibPath(OUTPUT_FOLDER_NAME) / 'courses' / self._md_name
-        if self.type == 'Lab':
-            return PathlibPath(OUTPUT_FOLDER_NAME) / 'labs' / self._md_name
+        """
+        Get the Markdown file path based on the entity type.
+        """
+        return PathlibPath(OUTPUT_FOLDER_NAME) / f'{self.type.lower()}s' / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
     def to_dict(self):
         """
         Convert the entity's data to a dictionary.
         """
-
+        # Convert the entity data to a dictionary, excluding private attributes
+        # and adding the type and URL
         the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
         the_dict['type'] = self.type
         the_dict['url'] = self.url
@@ -86,22 +92,21 @@ class BaseEntity(Serialize):
     def load_json(self):
         """
         Load the entity data from a JSON file.
+        If the file doesn't exist yet, load an empty {}.
+        If the file does exist, load it with json.load and update the entity's data.
         """
 
-        json_paths_folder = self._json_path.parent
+        # Don't load the JSON file if it doesn't exist
+        # Don't create the folder if it doesn't exist
+        if not self._json_path.parent.exists() or not self._json_path.exists():
+            self.__dict__.update({})
+            return
 
-        # Create the folder if it doesn't exist
-        if not json_paths_folder.exists():
-            json_paths_folder.mkdir(parents=True, exist_ok=True)
-
-        # If the JSON file doesn't exist, create an empty one with a JSON format
-        if not self._json_path.exists():
-            with open(self._json_path, 'w', encoding='utf-8', newline='\n') as json_file:
-                json_file.write('{}')
-
-        # Load the JSON file even if it's empty, and update the entity's data
+        # And update the entity's data
         try:
-            with open(self._json_path, 'r', encoding='utf-8') as jsonfile:
+            with open(self._json_path,
+                      'r',
+                      encoding='utf-8') as jsonfile:
                 data = json.load(jsonfile)
                 self.__dict__.update(data)
         except FileNotFoundError:
@@ -109,24 +114,35 @@ class BaseEntity(Serialize):
         except json.JSONDecodeError:
             print(f"(BaseEntity.load_json) Error decoding JSON from file: {self._json_path}")
 
-    # Save the entity data to a JSON file
     def save_json(self):
         """
         Save the entity data to a JSON file.
         """
 
         # Convert the entity data to a dictionary, consider to sort the values
-        data = self.to_dict()
-
-        json_paths_folder = self._json_path.parent
+        entity_data = self.to_dict()
 
         # Create the folder if it doesn't exist
-        if not json_paths_folder.exists():
-            json_paths_folder.mkdir(parents=True, exist_ok=True)
+        if not self._json_path.parent.exists():
+            self._json_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Create the JSON file if it doesn't exist
         # Save the data to a JSON file with UTF-8 encoding and Unix line endings
-        with open(self._json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
-            json.dump(data, jsonfile, ensure_ascii=False, indent=2)
+        try:
+            with open(self._json_path, 'w',
+                    encoding='utf-8',
+                    newline='\n') as jsonfile:
+                json.dump(entity_data,
+                        jsonfile,
+                        ensure_ascii=False,
+                        indent=2)
+        except IOError as e:
+            print(f"(BaseEntity.save_json) Error writing JSON to file: {self._json_path}")
+            print(e)
+        except json.JSONDecodeError:
+            print(f"(BaseEntity.save_json) Error decoding JSON from file: {self._json_path}")
+        except Exception as e:
+            print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
 
     # Save the entity data to a Markdown file
     def save_markdown(self):
@@ -137,17 +153,24 @@ class BaseEntity(Serialize):
         md_helper = MDHelper()
     
         # Generate the Markdown content
-        if self.type == 'Path':
-            entity_md = md_helper.md_helper_path(self.to_dict())
-        elif self.type == 'Course':
-            entity_md = md_helper.md_helper_course(self.to_dict())
-        elif self.type == 'Lab':
-            entity_md = md_helper.md_helper_lab(self.to_dict())
+        # TODO: Use case statement to handle different entity types
+        match self.type:
+            case 'Path':
+                entity_md = md_helper.md_helper_path(self.to_dict())
+            case 'Course':
+                entity_md = md_helper.md_helper_course(self.to_dict())
+            case 'Lab':
+                entity_md = md_helper.md_helper_lab(self.to_dict())
+            case _:
+                raise ValueError(f"Unsupported entity type: {self.type}")
         
         # Create the folder if it doesn't exist
         if not self._md_path.parent.exists():
             self._md_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Write the entity data to a Markdown file with UTF-8 encoding and Unix line endings
-        with open(self._md_path, "w", encoding="utf-8", newline='\n') as md_file:
+        with open(self._md_path,
+                  "w",
+                  encoding="utf-8",
+                  newline='\n') as md_file:
             md_file.write(entity_md)

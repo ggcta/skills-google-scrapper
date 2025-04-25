@@ -15,16 +15,20 @@ class Collection(Serialize):
     """
 
     def __init__(self,
-                 type: str = None,
                  name: str = None,
                  url: str = BASE_URL,
-                 date: str = None,
                  collection: dict = None):
-        self.type = type
         self.name = name
         self.url = url
-        self.date = date or str(datetime.today().date())
+        self.date = str(datetime.today().date())
         self.collection = collection or {}
+
+    @property
+    def type(self):
+        """
+        Override the type property to return the class name.
+        """
+        return self.__class__.__name__
 
     # Properties to get the JSON and Markdown file names and paths
     @property
@@ -52,7 +56,9 @@ class Collection(Serialize):
         Convert the entity's data to a dictionary.
         """
 
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        collection_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        collection_dict['type'] = self.type
+        return collection_dict
     
     # Load the collection from a JSON file
     def load_json(self):
@@ -60,16 +66,13 @@ class Collection(Serialize):
         Load the collection from a JSON file.
         """
 
-        # Create the folder if it doesn't exist
-        if not self._json_path.parent.exists():
-            self._json_path.parent.mkdir(parents=True, exist_ok=True)
+        # Don't load the JSON file if it doesn't exist
+        # Don't create the folder if it doesn't exist
+        if not self._json_path.parent.exists() or not self._json_path.exists():
+            self.__dict__.update({})
+            return
 
-        # Create the JSON file if it doesn't exist
-        if not self._json_path.exists():
-            with open(self._json_path, 'w', encoding='utf-8', newline='\n') as json_file:
-                json_file.write('{}')
-
-        # Load the JSON file even if it's empty and update the entity's data
+        # Load the JSON file and update the entity's data
         try:
 
             with open(self._json_path, 'r', encoding='utf-8', newline='\n') as jsonfile:
@@ -135,49 +138,6 @@ class Collection(Serialize):
             item_name = an_item[1]
             print(f"+|-• \033[35m[{item_id:>5} - {item_name:<72}]\033[0m")
 
-    def fetch_paths(self, base_url: str = BASE_URL_PATHS) -> bool:
-        """
-        Gather all paths from the CloudSkillsBoost Paths page.\n
-        Returns a Boolean to check status.
-
-        :param base_url: CloudSkillsBoost Paths page URL.
-        """
-
-        try:
-            # Fetch the page content
-            response = requests.get(base_url, timeout=10)
-            response.raise_for_status()
-
-            # Parse the content with BeautifulSoup
-            path_html = BeautifulSoup(response.text, "html.parser")
-
-            # Find all ql-activity-card elements
-            path_elements = path_html.find_all("ql-activity-card", attrs={"path": True, "name": True})
-
-            # Extract path data using a dictionary comprehension
-            collection = {
-                # "id": "name"
-                path_element["path"].split('/')[-1]: path_element["name"].strip()
-                for path_element in path_elements
-                if path_element.get("path") and path_element.get("name")
-            }
-
-            # Check if the collection is not empty
-            if collection:
-                self.collection = collection
-                self.save_json()
-                return True
-            else:
-                print("(Collection.fetch_paths) Uh, something is wrong here.")
-                return False
-
-        except requests.RequestException as req_err:
-            print(f"(Collection.get_paths) Network error: {req_err}")
-            return False
-        except Exception as error:
-            print(f"(Collection.get_paths) Error occurred: {error}")
-            return False
-
     def write_md(self):
         """
         Write out the paths collect into a Markdown file.
@@ -214,7 +174,7 @@ class Collection(Serialize):
         markdown.append(f"# [{self.name}]({self.url})")
 
         item_list = []
-        if self.type == 'paths':
+        if self.type == 'Paths' or self.type == 'paths':
             for item_id, item_name in self.collection.items():
                 item_url = f"{BASE_URL_PATHS}/{item_id}"
                 item_list.append(f"- [ ] `{item_id:>5}`: [(Web Link)]({item_url}) | {item_name}")

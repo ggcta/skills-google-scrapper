@@ -1,9 +1,11 @@
 import sys
 from pathlib import Path as PathlibPath
 from config.settings import *
-from models.collection import Collection
 from models.path import Path
+from models.paths import Paths
+from models.labs import Labs
 from models.course import Course
+from models.courses import Courses
 from services.launch_browser import launch_browser
 
 
@@ -14,13 +16,13 @@ class CloudSkillsBoost:
 
     @staticmethod
     def load_data():
-        col_paths = Collection(type='paths', name='Paths Collection')
+        col_paths = Paths(name='Paths Collection')
         col_paths.load_json()
 
-        col_courses = Collection(type='courses', name='Courses Collection')
+        col_courses = Courses(name='Courses Collection')
         col_courses.load_json()
 
-        col_labs = Collection(type='labs', name='Labs Collection')
+        col_labs = Labs(name='Labs Collection')
         col_labs.load_json()
 
         return col_paths, col_courses, col_labs
@@ -34,38 +36,28 @@ class CloudSkillsBoost:
         :param a_course_id: Course ID.
         """
 
-        mark_complete_video_task = False
         extract_transcript_task = False
-        both_tasks = False
 
         task_selection = True
         while task_selection:
             # Ask for what to do with the selected path id or course id.
             task_to_do = input("WHAT TASK YOU WANT TO GO WITH? (THIS IS A MUST): \n"
-                               "\t\t1 - m. Mark Videos Completed (Logged in is required)\n"
-                               "\t\t2 - e. Extract Transcripts\n"
-                               "\t\t3 - a. Both The Tasks (NOT IMPLEMENTED YET)\n"
-                               "\t\t4 - b. Back\n"
-                               "\t\t5 - q. Quit\n"
+                               "\t\te. Extract Transcripts\n"
+                               "\t\tb. Back\n"
+                               "\t\tq. Quit\n"
                                "•PLEASE SELECT: ")
 
             # Set variables accordingly for each selection.
-            if task_to_do.lower() == "1" or task_to_do.lower() == "m":
-                mark_complete_video_task = True
-                task_selection = False
-            elif task_to_do.lower() == "2" or task_to_do.lower() == "e":
+            if task_to_do.lower() == "e":
                 extract_transcript_task = True
                 task_selection = False
-            elif task_to_do.lower() == "3" or task_to_do.lower() == "a":
-                both_tasks = True
-                task_selection = False
-            elif task_to_do.lower() == "4" or task_to_do.lower() == "b":
+            elif task_to_do.lower() == "b":
                 return
-            elif task_to_do.lower() == "5" or task_to_do.lower() == "q":
+            elif task_to_do.lower() == "q":
                 print("Got it. Bye.")
                 sys.exit(0)
             else:
-                print("Please select a valid choice: 1, 2, 3, or q to quit the program.")
+                print("Please select a valid choice: e or q to quit the program.")
                 continue
 
         #  =======================================================================
@@ -75,42 +67,19 @@ class CloudSkillsBoost:
             if a_course_id in self.courses_collection.collection:
                 course_name = self.courses_collection.collection[a_course_id]
             else:
+                # TODO: Use None for not existing course
                 course_name = '(Unknown Course Yet)'
-
-            # If the user wants to mark the videos as completed
-            if mark_complete_video_task:
-                heading = f"{a_course_id} - {course_name.upper()}"
-                print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                course = Course(id=a_course_id, name=course_name)
-                course.complete_videos()
-
-                print("(tasks_coordinator) The course videos has been marked as completed.")
 
             # If the user wants to extract the transcript
             if extract_transcript_task:
                 heading = f"{a_course_id} - {course_name.upper()}"
                 print(f"\n\033[45m[{heading:^85}]\033[0m")
-                course = Course(id=a_course_id, name=course_name)
+                course = Course(id=a_course_id)
                 course.extract_transcript()
+                # Save the course name to the collection
+                # TODO: Save only those missing courses.
                 self.courses_collection.collection[course.id] = course.name
                 self.courses_collection.save_json()
-
-            # If the user wants to do both tasks
-            if both_tasks:
-                heading = f"{a_course_id} - {course_name.upper()}"
-                print(f"\n\033[45m[{heading:^85}]\033[0m")
-                # TODO: Async
-                # Use Edge for a logged in user; Chrome for a non-logged user.
-                edge_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                headless=False,
-                                                browser='edge')
-                course = Course(id=a_course_id, name=course_name)
-                course.complete_videos()
-                course.extract_transcript()
-                edge_webdriver.quit()
-                print(
-                    "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
 
         #  =======================================================================
         # A path is submitted, list all the courses in the path and let user select
@@ -145,20 +114,6 @@ class CloudSkillsBoost:
             a_course_id = input("\nPLEASE SELECT A COURSE [id or A(ll) (e to exit back, q to quit)]: ")
 
             if a_course_id.lower() == "a" or a_course_id.lower() == "all":
-                if mark_complete_video_task:
-                    a_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                 headless=False,
-                                                 browser='edge')
-                    for course in path_data.courses.values():
-                        current_course_id: str = course['id']
-                        current_course_name: str = course['name']
-                        heading = f"{current_course_id} - {current_course_name.upper()}"
-                        print(f"\n\033[45m[{heading:^85}]\033[0m")
-                        course_instance = Course(id=current_course_id, name=current_course_name)
-                        course_instance.complete_videos()
-                        print("(tasks_coordinator) The course videos has been marked as completed.")
-                    a_webdriver.quit()
-
                 if extract_transcript_task:
                     for course in path_data.courses.values():
                         current_course_id: str = course['id']
@@ -169,64 +124,23 @@ class CloudSkillsBoost:
 
                         course_instance = Course(id=current_course_id, name=current_course_name)
                         course_instance.extract_transcript()
+
+                        # Save the course name to the collection
+                        self.courses_collection.collection[course_instance.id] = course_instance.name
+                        self.courses_collection.save_json()
+
                         print("(tasks_coordinator) The transcript has been extracted.\n")
 
-                if both_tasks:
-                    for course in path_data.courses.values():
-                        current_course_id: str = course['id']
-                        current_course_name: str = course['name']
-
-                        heading = f"{current_course_id} - {current_course_name.upper()}"
-                        print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                        # TODO: Async
-                        # Use Edge for a logged in user; Chrome for a non-logged user.
-                        edge_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                        headless=False,
-                                                        browser='edge')
-                        course_instance = Course(id=course['id'], name=course['name'])
-                        course_instance.complete_videos()
-                        course_instance.extract_transcript()
-                        edge_webdriver.quit()
-                        print(
-                            "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
-
             elif a_course_id.isdigit():
-                if mark_complete_video_task:
-
-                    heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
-                    print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                    a_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                 headless=False,
-                                                 browser='edge')
-                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
-                    course_instance.complete_videos()
-                    a_webdriver.quit()
-                    print("(tasks_coordinator) The course videos has been marked as completed.")
-
                 if extract_transcript_task:
                     heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
                     print(f"\n\033[45m[{heading:^85}]\033[0m")
 
                     course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
                     course_instance.extract_transcript()
-
-                if both_tasks:
-                    heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
-                    print(f"\n\033[45m[{heading:^85}]\033[0m")
-
-                    # TODO: Async
-                    # Use Edge for a logged in user; Chrome for a non-logged user.
-                    edge_webdriver = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                                    headless=False,
-                                                    browser='edge')
-                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
-                    course_instance.complete_videos()
-                    course_instance.extract_transcript()
-                    edge_webdriver.quit()
-                    print(
-                        "(tasks_coordinator) The course videos has been marked as completed and the transcript has been extracted.")
+                    # Save the course name to the collection
+                    self.courses_collection.collection[course_instance.id] = course_instance.name
+                    self.courses_collection.save_json()
 
             elif a_course_id.lower() == "e":
                 print("\t[<< Going Back]\n")
@@ -260,11 +174,16 @@ class CloudSkillsBoost:
                                    "\t\t1. c: A Certain Course Only\n"
                                    "\t\t2. p: A Path To Select Course(s)\n"
                                    "\t\t3. l: Show me a list\n"
-                                   "\t\t4. q: Quit\n"
+                                   "\t\t9. d: DEBUG: RELOADING DATA\n"
+                                   "\t\t0. q: Quit\n"
                                    "•PLEASE SELECT: ")
 
             #  ===================================================================
-            if course_or_path.lower() == "1" or course_or_path.lower() == "c":
+            if course_or_path.lower() == '0' or course_or_path.lower() == "q":
+                print("Ya. Good day.")
+                running = False
+
+            elif course_or_path.lower() == "1" or course_or_path.lower() == "c":
                 course_id = input(f"•{'COURSE ID: ':>15}")
                 if not course_id.strip().isdigit():
                     print("ERROR: INVALID OR MISSING COURSE ID. "
@@ -354,19 +273,6 @@ class CloudSkillsBoost:
                     print("Bye.")
                     sys.exit(0)
 
-            elif course_or_path.lower() == '4' or course_or_path.lower() == "q":
-                print("Ya. Good day.")
-                running = False
-            
-            # This launches a browser to login to the website
-            elif course_or_path.lower() == '0' or course_or_path.lower() == "b":
-                print("Launching a browser instance for you to login.\n")
-                a_webdriver = launch_browser(
-                    profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                    headless=False,
-                    browser='chrome')
-                a_webdriver.get(BASE_URL)
-
             elif course_or_path.lower() == '5' or course_or_path.lower() == 'g':
                 course_id = input(f"•{'COURSE ID: ':>15}")
                 if not course_id.strip().isdigit():
@@ -384,7 +290,12 @@ class CloudSkillsBoost:
                     course.generate_prompt()
                     print("Generating prompt completed. Going back...\n")
 
-            elif course_or_path.lower() == '99':
+            elif course_or_path.lower() == '6' or course_or_path.lower() == 'h':
+                # Fetch all courses' data
+                self.courses_collection.fetch_data()
+                self.courses_collection.save_json()
+
+            elif course_or_path.lower() == '9' or course_or_path.lower() == 'd':
                 print(f"\n"
                       "\033[35mDEBUG: RELOADING THE COURSES LIST... in several minutes\033[0m\n")
                 # Refresh Paths list
@@ -416,7 +327,7 @@ class CloudSkillsBoost:
             else:
                 print("\033[31m"
                       f"[INVALID CHOICE] {course_or_path}\n"
-                      "PLEASE SELECT 1, 2, 3, or q TO QUIT THE PROGRAM."
+                      "PLEASE SELECT 1, 2, 3, 9 or q TO QUIT THE PROGRAM."
                       "\033[0m\n")
                 continue
 

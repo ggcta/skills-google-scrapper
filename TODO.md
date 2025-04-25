@@ -8,3 +8,5 @@
 - An implementation for [https://partner.cloudskillsboost.google/](https://partner.cloudskillsboost.google/)
 
 Check [CONTRIBUTION](CONTRIBUTION.md) for more.
+
+-[ ] TODO: Sync the data folder to a GCS bucket: `gcloud storage rsync --recursive data/ gs://csbhelper/`

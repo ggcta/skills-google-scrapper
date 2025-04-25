@@ -1,24 +1,15 @@
-from math import e
-from random import random
 import re
-import sys
-import time
-import html2text
 from pathlib import Path as PathlibPath
-from models.collection import Collection
+from models.base_entity import BaseEntity
+from models.labs import Labs
 from models.lab import Lab
-from services.md_helper import MDHelper
-from .base_entity import BaseEntity
-from selenium.webdriver.common.by import By
 from selenium.common import NoSuchElementException
-from selenium.webdriver.edge.webdriver import WebDriver
 import json
 import html
 import requests
 from bs4 import BeautifulSoup
-from config.settings import BASE_URL_COURSES, BASE_URL, BASE_URL_LAB, QL_IFRAME, WEBDRIVER_PROFILE_FOLDER_NAME
+from config.settings import BASE_URL, QL_IFRAME
 from utils.utils import util_replace_quote_marks, util_strip_html_tags
-from services.launch_browser import launch_browser
 
 
 # Constants for the extraction of the course data
@@ -36,8 +27,12 @@ QUIZ_ITEMS = "quizItems"
 LINK_URL_A_TAG = "ql-card.document-link a"
 
 
-# Course entity based on BaseEntity
 class Course(BaseEntity):
+    """
+    Class representing a course entity.\n
+    Inherits from BaseEntity.\n
+    This class is responsible for extracting course data from the Cloud Skills Boost platform.
+    """
     def __init__(self,
                  id: str,
                  name: str = None,
@@ -60,7 +55,7 @@ class Course(BaseEntity):
         """
         print("\nTranscript Extracting is starting...\n")
 
-        # Load the course data from JSON even it's empty
+        # Load the course data from JSON
         self.load_json()
     
         # Fetch and parse the course page
@@ -82,11 +77,6 @@ class Course(BaseEntity):
         # Save the course data
         self.save_json()
         self.save_markdown()
-
-        courses_collection = Collection(type = "Courses")
-        courses_collection.load_json()
-        courses_collection.collection[self.id] = self.name
-        courses_collection.save_json()
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 
@@ -248,7 +238,7 @@ class Course(BaseEntity):
                     lab_steps[step] = text
 
             # Set the lab's attributes.
-            lab.name = activity['title']
+            lab.name = activity['title'].strip()
             lab.description = activity.get('description', '')
             lab.steps = lab_steps
 
@@ -257,7 +247,7 @@ class Course(BaseEntity):
             lab.save_markdown()
 
             # Add the lab to the Labs Collection
-            labs_collection = Collection(type='labs', name='Labs Collection')
+            labs_collection = Labs(name='Labs Collection')
             labs_collection.load_json()
             labs_collection.collection[lab_id] = lab.name
             labs_collection.save_json()
@@ -315,123 +305,20 @@ class Course(BaseEntity):
         text = util_strip_html_tags(html.unescape(text))
         return util_replace_quote_marks(text)
 
-    # Complete the videos in the course
-    def complete_videos(self):
-        f"""
-        Mark the videos to be completed in the course.\n
-        PLEASE USE THIS AFTER YOU LOGGED IN TO CLOUDSKILLSBOOST.GOOGLE.COM\n
-        Turn off the headless mode to use a graphic browser and login to your account.
-        """
-
-        # We need a browser to complete the videos, requests can't handle dynamic web pages
-        a_webdriver = launch_browser(
-            profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-            headless=False,
-            browser='chrome')
-
-        # Browse the course url
-        try:
-            a_webdriver.get(self._url)
-        except Exception as get_course_url_error:
-            print(f"(complete_videos) Error: Unable to load the course page. {get_course_url_error}")
-            input("Press Enter to exit the script.")
-            sys.exit(1)
-
-        # Get the course outline
-        try:
-            course_title = a_webdriver.find_element(By.CSS_SELECTOR,
-                                                    ".course-info > .ql-title-medium").text.strip()
-            course_outline_element = a_webdriver.find_element(By.XPATH,
-                                                              f"//ql-course-outline")
-
-            # The modules list
-            course_modules_list = json.loads(course_outline_element.get_attribute("modules"))
-        except NoSuchElementException as course_outline_element_error:
-            print(f"(complete_videos) Unable to find course outline. {course_outline_element_error}")
-            sys.exit(1)
-
-        print(f"(complete_videos) \033[45m====| {course_title.upper()} |====\033[0m")
-
-        # Check Completion status of each video activity.
-        for course_module in course_modules_list:
-            # Go through the modules
-            module_title: str = course_module["title"].strip()
-            print(
-                f"(complete_videos) \033[34m• {module_title}\033[0m")
-
-            steps: list[dict] = course_module['steps']
-
-            # Go through the steps
-            for step in steps:
-                activity: dict = step['activities'][0]
-                activity_type: str = activity['type']
-                activity_id: str = activity['id']
-                activity_href: str = activity['href']
-                activity_title: str = activity['title'].strip()
-                activity_is_complete: bool = activity['isComplete']
-
-                # If the video is not completed yet, let complete it
-                if activity_type == "video" and activity_is_complete is False:
-                    print(f"(complete_videos) •-> "
-                          f"Video: {activity_id:>6} - {activity_title}")
-
-                    # Browse the video page
-                    a_webdriver.get(f"{BASE_URL}{activity_href}")
-
-                    # play_video(my_driver)
-                    time.sleep(random() * 6 + 6)  # Hold for 10 seconds (or any desired duration)
-
-                    # Mark the video as completed
-                    self.mark_completed_button(a_webdriver,
-                                               activity_id)
-                    print(
-                        f"(complete_videos) •-• [+]"
-                    )
-
-                    # Hold for a while before moving to the next video
-                    time.sleep(random() * 6 + 6)  # Hold for 10 seconds (or any desired duration)
-
-                # If the video is already completed, just print it out
-                elif activity_type == "video" and activity_is_complete is True:
-                    print(f"(complete_videos) •-• COMPLETED •-"
-                          f"Video: {activity_id:>6} - {activity_title}")
-
-            # Quit the WebDriver
-            a_webdriver.quit()
-
-    # Find and click the 'Mark as Completed' button for the current activity
-    def mark_completed_button(self, mywebdriver: WebDriver, activity_id: str) -> None:
-        """
-        Find and click the 'Mark as Completed' button for the current activity.
-        :param mywebdriver: WebDriver instance
-        :param activity_id: ID of the activity
-        """
-
-        button_href = f"/course_templates/{self.id}/video/{activity_id}/complete_button"
-
-        try:
-            button = mywebdriver.find_element(By.XPATH,
-                                              f"//ql-button[@href='{button_href}']")
-
-            # Click on the button
-            button.click()
-        except NoSuchElementException as mark_completed_button_error:
-            print(f"(mark_completed_button) {mark_completed_button_error}")
-            # Some video page doesn't have a Mark as Completed button, just move on
-            pass
-
-    # Generate the prompts for videos from their transcripts
     def generate_prompt(self):
-
+        """
+        Generate the prompts for videos from their transcripts.\n
+        The prompt data will be saved to a JSON file.
+        """
         # Proceed only if the course's json file does exist.
-        if not self._json_path.exists:
+        if not self._json_path.exists():
             print("Sorry, the course json not found. Please fetch the course first.")
             return
 
         # Load the course data from the JSON file
         self.load_json()
 
-        # The data structure will be simplied from the original course's json.
+        # The data structure will be simplified from the original course's json.
         course = {
             "id": self.id,
             "title": f'{self.name}'

@@ -1,28 +1,31 @@
-import os
 import threading
 import time
-from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask import Flask, request, jsonify, render_template, url_for
 from config.settings import BASE_URL, BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS
+from models.labs import Labs
+from models.courses import Courses
+from models.paths import Paths
+from models.topics import Topics
 from models.course import Course
 from models.lab import Lab
 from models.path import Path
-from models.collection import Collection
-from pathlib import Path as PathLib
 
 
 # Initialize collections
-paths_collection = Collection(type='paths', name='Paths Collection')
-courses_collection = Collection(type='courses', name='Courses Collection')
-labs_collection = Collection(type='labs', name='Labs Collection')
-topics_collection = Collection(type='topics', name='Topics Collection')
+paths_collection = Paths(name='Paths')
+courses_collection = Courses(name='Courses')
+labs_collection = Labs(name='Labs')
+topics_collection = Topics(name='Topics')
+
 
 # Load data into collections
 paths_collection.load_json()
 courses_collection.load_json()
 labs_collection.load_json()
+topics_collection.load_json()
 
 # Initialize topics and topics_to_courses as empty data structures
-topics_collection.collection = {}
+# topics_collection.collection = {}
 
 # --- New: Add a lock for thread safety ---
 topics_lock = threading.Lock()
@@ -250,16 +253,6 @@ def lab(lab_id):
     )
 
 
-@app.route('/course/<course_id>/complete_videos', methods=['POST'])
-def complete_videos(course_id):
-    """
-    Mark videos in a course as completed.
-    """
-    course = Course(id=course_id)
-    course.complete_videos()
-    return jsonify({"message": f"Videos for course {course_id} marked as completed."})
-
-
 @app.route('/course/<course_id>/extract_transcript', methods=['POST'])
 def extract_transcript(course_id):
     """
@@ -269,27 +262,6 @@ def extract_transcript(course_id):
     course.extract_transcript()
     return jsonify({"message": f"Transcript for course {course_id} extracted."})
 
-
-@app.route('/path/<path_id>/process', methods=['POST'])
-def process_path(path_id):
-    """
-    Process all courses in a path (mark videos as completed and/or extract transcripts).
-    """
-    action = request.form.get('action')  # 'complete_videos', 'extract_transcripts', or 'both'
-    path_data = Path(id=path_id)
-    path_data.load_json()
-
-    for course in path_data.courses.values():
-        course_instance = Course(id=course['id'], name=course['name'])
-        if action == 'complete_videos':
-            course_instance.complete_videos()
-        elif action == 'extract_transcripts':
-            course_instance.extract_transcript()
-        elif action == 'both':
-            course_instance.complete_videos()
-            course_instance.extract_transcript()
-
-    return jsonify({"message": f"Processed all courses in path {path_id} with action: {action}."})
 
 @app.route('/topics')
 def topics():

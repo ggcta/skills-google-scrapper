@@ -66,6 +66,7 @@ class Path(BaseEntity):
         self.datePublished = path_data['datePublished'].strip()
 
         # Courses list of the Path
+        # TODO: Use hasPart to respect the original JSON schema.
         self.courses = courses_list
 
     # Print out the courses list of a certain Path
