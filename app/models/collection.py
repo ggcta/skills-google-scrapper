@@ -56,7 +56,9 @@ class Collection(Serialize):
         Convert the entity's data to a dictionary.
         """
 
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        collection_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        collection_dict['type'] = self.type
+        return collection_dict
     
     # Load the collection from a JSON file
     def load_json(self):
