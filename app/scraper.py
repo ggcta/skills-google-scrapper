@@ -73,7 +73,7 @@ class CloudSkillsBoost:
             if extract_transcript_task:
                 heading = f"{a_course_id} - {course_name.upper()}"
                 print(f"\n\033[45m[{heading:^85}]\033[0m")
-                course = Course(id=a_course_id, name=course_name)
+                course = Course(id=a_course_id)
                 course.extract_transcript()
                 # Save the course name to the collection
                 self.courses_collection.collection[course.id] = course.name
