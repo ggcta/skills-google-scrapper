@@ -1,6 +1,9 @@
 {
   "theme": "system",
   "accentColor": "",
-  "cssTheme": "Minimal",
-  "monospaceFontFamily": "Iosevka"
+  "cssTheme": "Things",
+  "monospaceFontFamily": "Iosevka",
+  "enabledCssSnippets": [
+    "callout-checklist"
+  ]
 }
