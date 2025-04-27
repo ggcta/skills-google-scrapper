@@ -1,3 +1,4 @@
+from models.course import Course
 from models.collection import Collection
 from config.settings import BASE_URL
 
@@ -31,4 +32,26 @@ class Topics(Collection):
             "collection": self.collection
         }
 
-    # TODO: extract_topics() to gather all topics from all the courses/labs/paths.
+    def extract_topics(self, course_collection: dict):
+        """
+        Gather all unique topics from the downloaded courses.
+
+        :param courses_collection: `Courses.collection`.
+        """
+
+        if not isinstance(course_collection.collection, dict):
+            raise TypeError("The course_collection must be of type dict.")
+
+        for course_id, course_name in course_collection.collection.items():
+            course = Course(id=course_id)
+
+            if course._json_path.exists():
+                course.load_json()
+
+                if hasattr(course, 'topics'):
+                    for topic in course.topics:
+                        if topic not in self.collection:
+                            self.collection[topic] = {}
+                        self.collection[topic][course_id] = course_name
+
+        self.save_json()

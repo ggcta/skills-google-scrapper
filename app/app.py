@@ -30,44 +30,6 @@ topics_collection.load_json()
 # --- New: Add a lock for thread safety ---
 topics_lock = threading.Lock()
 
-# TODO: save topics to a file, load them from a file next run, and save them to a file after every refresh.
-def extract_topics(courses_collection):
-    """
-    Gather all unique topics from the downloaded courses in the 'data/courses/' folder.
-
-    :param courses_collection: The collection of courses.
-    :return: A sorted list of unique topics.
-    """
-
-    if not isinstance(courses_collection.collection, dict):
-        raise TypeError("courses_collection.collection must be a dictionary")
-
-    for course_id, course_name in courses_collection.collection.items():  # Updated to use items()
-        # course_file = courses_folder / f"{course_id}.json"  # Construct the file path
-        course = Course(id=course_id)  # Create a new Course instance
-
-        # Check if the course JSON file exists
-        if course._json_path.exists():
-            course.load_json()  # Load the JSON file
-
-            # If course.topics is not None/empty
-            if course.topics:
-                for topic in course.topics:
-                    # Ensure the topic is a string
-                    if not isinstance(topic, str):
-                        raise ValueError(f"Topic '{topic}' is not a string")
-                    if topic not in topics_collection.collection:
-                        topics_collection.collection[topic] = {}
-                    topics_collection.collection[topic][course_id] = course_name  # Map topic to course name directly
-
-        # Skip if the file does not exist
-        else:
-            continue
-
-        # Save the topics collection to file.
-        topics_collection.save_json()
-
-
 def refresh_topics(interval=300):
     """
     Periodically refresh the topics every 5 minutes (300 seconds).
@@ -79,7 +41,8 @@ def refresh_topics(interval=300):
     while True:
         print("Refreshing topics...")
         time.sleep(interval)  # Wait for the specified interval
-        extract_topics(courses_collection)  # Refresh topics
+        with topics_lock:  # --- New: Acquire the lock before refreshing topics ---
+            topics_collection.extract_topics(courses_collection)  # Refresh topics
 
 
 def initialize_app():
@@ -88,7 +51,8 @@ def initialize_app():
     """
 
     print("Initializing app...")
-    extract_topics(courses_collection)
+    with topics_lock:  # --- New: Acquire the lock before extracting initial topics ---
+        topics_collection.extract_topics(courses_collection)
     print("App initialized.")
 
 # Initialize the app before creating the Flask instance
