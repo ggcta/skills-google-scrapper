@@ -1,8 +1,6 @@
 import json
 from config.settings import BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
 from pathlib import Path as PathlibPath
-
-from services.md_helper import MDHelper
 from utils.utils import util_replace_special_chars
 from models.serialize import Serialize
 
@@ -144,33 +142,30 @@ class BaseEntity(Serialize):
         except Exception as e:
             print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
 
-    # Save the entity data to a Markdown file
-    def save_markdown(self):
+    def generate_front_matter(self):
         """
-        Save the entity data to a Markdown file.
+        Generate the front matter for the Markdown file.
+
+        Order:
+        - id
+        - name
+        - type
+        - url
+        - date_published
+        - topics
         """
-
-        md_helper = MDHelper()
-    
-        # Generate the Markdown content
-        # TODO: Use case statement to handle different entity types
-        match self.type:
-            case 'Path':
-                entity_md = md_helper.md_helper_path(self.to_dict())
-            case 'Course':
-                entity_md = md_helper.md_helper_course(self.to_dict())
-            case 'Lab':
-                entity_md = md_helper.md_helper_lab(self.to_dict())
-            case _:
-                raise ValueError(f"Unsupported entity type: {self.type}")
-        
-        # Create the folder if it doesn't exist
-        if not self._md_path.parent.exists():
-            self._md_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write the entity data to a Markdown file with UTF-8 encoding and Unix line endings
-        with open(self._md_path,
-                  "w",
-                  encoding="utf-8",
-                  newline='\n') as md_file:
-            md_file.write(entity_md)
+        front_matter_lines = ["---"]
+        if hasattr(self, 'id'):
+            front_matter_lines.append(f"id: {self.id}")
+        if hasattr(self, 'name'):
+            front_matter_lines.append(f"name: '{self.name}'")
+        if hasattr(self, 'type'):
+            front_matter_lines.append(f"type: {self.type}")
+        if hasattr(self, 'url'):
+            front_matter_lines.append(f"url: {self.url}")
+        if hasattr(self, 'datepublished'):
+            front_matter_lines.append(f"date_published: {self.datepublished}")
+        if hasattr(self, 'topics'):
+            front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+        front_matter_lines.append("---")
+        return "\n".join(front_matter_lines)
