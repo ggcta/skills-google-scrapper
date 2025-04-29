@@ -9,7 +9,7 @@ import html
 import requests
 from bs4 import BeautifulSoup
 from config.settings import BASE_URL, QL_IFRAME
-from utils.utils import util_replace_quote_marks, util_strip_html_tags
+from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 
 
 # Constants for the extraction of the course data
@@ -57,7 +57,7 @@ class Course(BaseEntity):
 
         # Load the course data from JSON
         self.load_json()
-    
+
         # Fetch and parse the course page
         course_html = self.fetch_course_page()
         if not course_html:
@@ -65,6 +65,7 @@ class Course(BaseEntity):
 
         # Extract course metadata
         if not self.extract_course_metadata(course_html):
+            self.save_markdown()
             return
 
         # Extract course outline
@@ -360,6 +361,95 @@ class Course(BaseEntity):
         with open(json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(course, jsonfile, ensure_ascii=False, indent=2)
 
+    def generate_markdown(self):
+        """
+        Generate the Markdown data for the course.
+        """
+        markdown = []
+        markdown.append(self.generate_front_matter())
+
+        markdown.append(f"# [{self.name}]({self.url})")
+
+        if hasattr(self, 'description') and self.description:
+            markdown.append("**Description:**")
+            markdown.append(f"{self.description}")
+
+        if hasattr(self, 'objectives') and self.objectives:
+            markdown.append("**Objectives:**")
+            objective_list = []
+            for objective in self.objectives:
+                objective_list.append(f"- {objective}")
+            markdown.append("\n".join(objective_list))
+
+        if hasattr(self, 'modules') and self.modules:
+            for module in self.modules:
+                module_title = module["title"].strip()
+                markdown.append(f"## {module_title}")
+                if module.get("description"):
+                    module['description'] = self.clean_text(module.get("description", ""))
+                    markdown.append(f"{module['description']}")
+
+                for step in module.get("steps", []):
+                    for activity in step.get("activities", []):
+                        activity_title = activity['title'].strip()
+                        activity_type = activity['type']
+                        activity_href = activity['href']
+
+                        markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+
+                        if activity_type == 'video':
+                            markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
+                            markdown.append(f"{activity.get('transcript', '(No transcript available)')}")
+
+                        elif activity_type == 'lab':
+                            markdown.append(activity.get('description'))
+                            lab_md_name = f"{util_replace_special_chars(activity_title)}.md"
+                            if activity['isComplete'] is False:
+                                markdown.append(f"- [ ] [{activity_title}](../labs/{lab_md_name})")
+                            else:
+                                markdown.append(f"- [x] [{activity_title}](../labs/{lab_md_name})")
+
+                        elif activity_type == 'quiz':
+                            if activity.get('quizItems'):
+                                quizItems = activity.get('quizItems')
+                                quiz_number = 1
+                                for quizItem in quizItems:
+                                    quiz_list = []
+                                    quiz_stem = self.clean_text(quizItem.get('stem'))
+                                    quiz_stem = quiz_stem.replace('\n\n', '')
+                                    markdown.append(f"#### Quiz {quiz_number}.")
+
+                                    quiz_list.append(f"> [!important]")
+                                    quiz_list.append(f"> **{self.clean_text(quiz_stem)}**")
+                                    quiz_list.append(">")
+
+                                    if quizItem.get('options'):
+                                        for option in quizItem.get('options', []):
+                                            quiz_list.append(f"> - [ ] {self.clean_text(option.get('title'))}")
+                                    markdown.append("\n".join(quiz_list))
+                                    quiz_number += 1
+
+                        elif activity_type == 'link':
+                            markdown.append(f"- [{activity_title}]({activity['link']})")
+
+        return "\n\n".join(markdown) + "\n"
+
+    def save_markdown(self):
+        """
+        Save the course data to a Markdown file.
+        """
+        # Generate the Markdown content
+        markdown_content = self.generate_markdown()
+
+        # Ensure the output directory exists
+        if not self._md_path.parent.exists():
+            self._md_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save the Markdown content to a file
+        with open(self._md_path, 'w', encoding='utf-8', newline='\n') as mdfile:
+            mdfile.write(markdown_content)
+
+        print(f"(save_markdown) \033[34m•-• Markdown saved: courses/{self._md_name}\033[0m")
 
 # END OF COURSE CLASS
 # END OF FILE
