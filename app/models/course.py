@@ -299,13 +299,6 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_link) Error: {error}")
 
-    def clean_text(self, text):
-        """
-        Utility method to clean and format text.
-        """
-        text = util_strip_html_tags(html.unescape(text))
-        return util_replace_quote_marks(text)
-
     def generate_prompt(self):
         """
         Generate the prompts for videos from their transcripts.\n

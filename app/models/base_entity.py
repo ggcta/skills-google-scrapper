@@ -1,7 +1,8 @@
+import html
 import json
 from config.settings import BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
 from pathlib import Path as PathlibPath
-from utils.utils import util_replace_special_chars
+from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 from models.serialize import Serialize
 
 
@@ -169,3 +170,10 @@ class BaseEntity(Serialize):
             front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
         front_matter_lines.append("---")
         return "\n".join(front_matter_lines)
+
+    def clean_text(self, text):
+        """
+        Utility method to clean and format text.
+        """
+        text = util_strip_html_tags(html.unescape(text))
+        return util_replace_quote_marks(text)
