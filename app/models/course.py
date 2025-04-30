@@ -442,7 +442,7 @@ class Course(BaseEntity):
         with open(self._md_path, 'w', encoding='utf-8', newline='\n') as mdfile:
             mdfile.write(markdown_content)
 
-        print(f"(save_markdown) \033[34m•-• Markdown saved: courses/{self._md_name}\033[0m")
+        print(f"(Course.save_markdown) \033[34m•-• Markdown saved: courses/{self._md_name}\033[0m")
 
 # END OF COURSE CLASS
 # END OF FILE
