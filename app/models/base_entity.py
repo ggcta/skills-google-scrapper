@@ -164,8 +164,8 @@ class BaseEntity(Serialize):
             front_matter_lines.append(f"type: {self.type}")
         if hasattr(self, 'url'):
             front_matter_lines.append(f"url: {self.url}")
-        if hasattr(self, 'datepublished'):
-            front_matter_lines.append(f"date_published: {self.datepublished}")
+        if hasattr(self, 'datePublished'):
+            front_matter_lines.append(f"date_published: {self.datePublished}")
         if hasattr(self, 'topics'):
             front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
         front_matter_lines.append("---")
