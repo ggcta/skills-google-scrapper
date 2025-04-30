@@ -358,18 +358,13 @@ if __name__ == "__main__":
     # STARTING THE PROGRAM
     # https://talyian.github.io/ansicolors/
     # https://en.wikipedia.org/wiki/ANSI_escape_code
+    app_title = "CloudSkillsBoost Automation Script"
+
     print()
     print("\033[45m"
-          "=================================================================="
+          f"{app_title:^87}"
           "\033[0m")
-    print("                CloudSkillsBoost Automation Script                ")
-    print("NOTE:"
-          "\n\tDO NOT NEED TO LOGIN TO CLOUDSKILLSBOOST.GOOGLE"
-          "\n\tHOWEVER, TO SAVE THE PROGRESS, PLEASE LOGIN.")
-    print("\033[45m"
-          "=================================================================="
-          "\033[0m"
-          "\n")
+    print()
 
     # Create an instance of CloudSkillsBoost and start interactive mode
     cloud_skills_boost = CloudSkillsBoost()
