@@ -143,7 +143,7 @@ class BaseEntity(Serialize):
         except Exception as e:
             print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
 
-    def generate_front_matter(self):
+    def generate_front_matter(self) -> str:
         """
         Generate the front matter for the Markdown file.
 
@@ -171,7 +171,7 @@ class BaseEntity(Serialize):
         front_matter_lines.append("---")
         return "\n".join(front_matter_lines)
 
-    def clean_text(self, text):
+    def clean_text(self, text: str) -> str:
         """
         Utility method to clean and format text.
         """
