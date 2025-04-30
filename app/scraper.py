@@ -348,12 +348,12 @@ class CloudSkillsBoost:
 if __name__ == "__main__":
 
     # Create the OUTPUT FOLDERS if they do not exist
-    if not PathlibPath(OUTPUT_FOLDER_NAME).exists():
-        PathlibPath(OUTPUT_FOLDER_NAME).mkdir(parents=True, exist_ok=True)
+    if not OUTPUT_FOLDER_NAME.exists():
+        OUTPUT_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
     
     # Create the DATA FOLDERS if they do not exist
-    if not PathlibPath(DATA_FOLDER_NAME).exists():
-        PathlibPath(OUTPUT_FOLDER_NAME).mkdir(parents=True, exist_ok=True)
+    if not DATA_FOLDER_NAME.exists():
+        DATA_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
 
     # STARTING THE PROGRAM
     # https://talyian.github.io/ansicolors/
