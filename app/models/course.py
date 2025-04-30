@@ -384,7 +384,7 @@ class Course(BaseEntity):
             markdown.append("**Objectives:**")
             objective_list = []
             for objective in self.objectives:
-                objective_list.append(f"- {objective}")
+                objective_list.append(f"* {objective}")
             markdown.append("\n".join(objective_list))
 
         if hasattr(self, 'modules') and self.modules:
@@ -404,16 +404,16 @@ class Course(BaseEntity):
                         markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
 
                         if activity_type == 'video':
-                            markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
+                            markdown.append(f"* [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
                             markdown.append(f"{activity.get('transcript', '(No transcript available)')}")
 
                         elif activity_type == 'lab':
                             markdown.append(activity.get('description'))
                             lab_md_name = f"{util_replace_special_chars(activity_title)}.md"
                             if activity['isComplete'] is False:
-                                markdown.append(f"- [ ] [{activity_title}](../labs/{lab_md_name})")
+                                markdown.append(f"* [ ] [{activity_title}](../labs/{lab_md_name})")
                             else:
-                                markdown.append(f"- [x] [{activity_title}](../labs/{lab_md_name})")
+                                markdown.append(f"* [x] [{activity_title}](../labs/{lab_md_name})")
 
                         elif activity_type == 'quiz':
                             if activity.get('quizItems'):
@@ -431,12 +431,12 @@ class Course(BaseEntity):
 
                                     if quizItem.get('options'):
                                         for option in quizItem.get('options', []):
-                                            quiz_list.append(f"> - [ ] {self.clean_text(option.get('title'))}")
+                                            quiz_list.append(f"> * [ ] {self.clean_text(option.get('title'))}")
                                     markdown.append("\n".join(quiz_list))
                                     quiz_number += 1
 
                         elif activity_type == 'link':
-                            markdown.append(f"- [{activity_title}]({activity['link']})")
+                            markdown.append(f"* [{activity_title}]({activity['link']})")
 
         return "\n\n".join(markdown) + "\n"
 
