@@ -3,6 +3,10 @@ from .base_entity import BaseEntity
 
 # Lab entity based on BaseEntity
 class Lab(BaseEntity):
+    """
+    Class representing a Lab entity.
+    """
+
     def __init__(self,
                  id: str,
                  name: str = None,
