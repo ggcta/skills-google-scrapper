@@ -108,20 +108,4 @@ class Path(BaseEntity):
 
         return "\n\n".join(markdown) + "\n"
 
-    def save_markdown(self) -> None:
-        """
-        Save the Path data to a Markdown file.
-        """
-        path_md = self.generate_markdown()
-
-        # Create the folder if it doesn't exist
-        if not self._md_path.parent.exists():
-            self._md_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write the markdown content to a file, overwrite if exists
-        with open(self._md_path, "w", encoding="utf-8", newline='\n') as mdfile:
-            mdfile.write(path_md)
-
-        # print(f"(Path.save_markdown) Markdown file saved: {self._md_path}")
-
 # TODO: Make Path() matches the json file structure from the website
