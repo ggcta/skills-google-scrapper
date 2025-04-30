@@ -11,7 +11,7 @@ from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME
 # Launch a browser with the specified profile and headless mode
 def launch_browser(profile_folder: Optional[str] = None,
                    headless=True,
-                   browser="edge" or None):
+                   browser="chrome" or None):
     """
     Launches a Selenium WebDriver instance with the specified browser and profile path.
     A default browser profile will be set to ./webdriver_profiles/ if no profile path is provided.
