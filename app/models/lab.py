@@ -17,6 +17,23 @@ class Lab(BaseEntity):
 
     # TODO: fetch_data() for fetching a lab's data
 
+    def generate_markdown(self):
+        """
+        Generate the Markdown content for the Lab entity.
+        """
+        markdown = []
+        markdown.append(self.generate_front_matter())
+
+        markdown.append(f"# [{self.name}]({self.url})")
+
+        if hasattr(self, 'description') and self.description:
+            markdown.append(f"{self.description}")
+
+        if hasattr(self, 'steps') and self.steps:
+            for step_number, step_text in self.steps.items():
+                markdown.append(f"## Step {step_number}: {step_text}")
+        return "\n\n".join(markdown) + "\n"
+
     # Save the Lab data to a Markdown file
     def save_markdown(self):
         """
