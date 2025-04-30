@@ -171,6 +171,30 @@ class BaseEntity(Serialize):
         front_matter_lines.append("---")
         return "\n".join(front_matter_lines)
 
+    def generate_markdown(self) -> str:
+        """
+        Generate the Markdown representation of the Path.
+        """
+        # Convert the Path object to a dictionary
+        markdown = []
+        markdown.append(self.generate_front_matter())
+
+        return "\n\n".join(markdown) + "\n"
+
+    def save_markdown(self) -> None:
+        """
+        Save the Path data to a Markdown file.
+        """
+        mdtext = self.generate_markdown()
+
+        # Create the folder if it doesn't exist
+        if not self._md_path.parent.exists():
+            self._md_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write the markdown content to a file, overwrite if exists
+        with open(self._md_path, "w", encoding="utf-8", newline='\n') as mdfile:
+            mdfile.write(mdtext)
+
     def clean_text(self, text: str) -> str:
         """
         Utility method to clean and format text.
