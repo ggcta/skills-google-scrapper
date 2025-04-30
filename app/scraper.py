@@ -253,10 +253,11 @@ class CloudSkillsBoost:
                 # Prompt user to select a path to proceed with
                 path_id = input("\033[34m"
                                 "\n"
-                                "SELECT A PATH ID (q to quit): "
+                                "SELECT A PATH ID (e to exit back, q to quit): "
                                 "\033[0m")
 
-                if not path_id.strip().isdigit():
+                if not path_id.strip().isdigit() and path_id.lower() != "q" and path_id.lower() != "e":
+                    # If the user provided a wrong path id
                     print("\n\033[33m[ERROR: INVALID OR MISSING PATH ID. "
                           "PLEASE PROVIDE A VALID NUMERIC PATH ID!]\033[0m\n")
                     continue
@@ -270,6 +271,11 @@ class CloudSkillsBoost:
 
                     # Proceed with the selected path id
                     self.tasks_coordinator(a_path_id=path_id)
+
+                # If the user wants to go back
+                elif path_id.lower() == "e":
+                    print("[<< Going Back]\n")
+                    continue
 
                 # User can q at this stage if not wanting to continue
                 elif path_id.lower() == "q":
