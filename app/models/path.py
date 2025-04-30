@@ -9,6 +9,10 @@ LD_JSON = "script[type='application/ld+json']"
 
 # Path entity
 class Path(BaseEntity):
+    """
+    Class representing a Path entity.
+    """
+
     def __init__(self,
                  id: str,
                  name: str = None,
