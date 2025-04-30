@@ -162,8 +162,6 @@ class CloudSkillsBoost:
         Interactive mode for the CloudSkillsBoost Automation Script.
         """
 
-        print("\033[34mInitializing the CloudSkillsBoost Automation Script...\033[0m\n")
-
         running = True
         while running:
             #  ===================================================================
