@@ -2,14 +2,17 @@ import json
 from bs4 import BeautifulSoup
 import requests
 from config.settings import *
-from services.md_helper import MDHelper
-from .base_entity import BaseEntity
+from models.base_entity import BaseEntity
 
 # Constants for the extraction of the course data
 LD_JSON = "script[type='application/ld+json']"
 
 # Path entity
 class Path(BaseEntity):
+    """
+    Class representing a Path entity.
+    """
+
     def __init__(self,
                  id: str,
                  name: str = None,
@@ -74,6 +77,7 @@ class Path(BaseEntity):
         """
         Print out the courses list of a certain Path.
         """
+
         # Show the Path Title
         heading = f"{self.id} - {self.name.upper()}"
         print(f"\n\033[45m[{heading:^85}]\033[0m\n")
@@ -83,5 +87,31 @@ class Path(BaseEntity):
             course_id = course['id']
             course_name = course['name']
             print(f"+|-• \033[35m[{course_id:>5} - {course_name:<72}]\033[0m")
+
+    def generate_markdown(self) -> str:
+        """
+        Generate the Markdown representation of the Path.
+        """
+
+        # Convert the Path object to a dictionary
+        markdown = []
+        markdown.append(self.generate_front_matter())
+
+        # Add the main heading
+        markdown.append(f"# [{self.name}]({self.url})")
+        # Add the description
+        if hasattr(self, 'description') and self.description:
+            markdown.append(f"{self.description}")
+        # Add the courses list
+        if hasattr(self, 'courses') and self.courses:
+            markdown.append("## Courses & Progress")
+            # Add each course in the Path
+            course_list = []
+            for course_id, course in self.courses.items():
+                course_md_name = f"{self.clean_text(course['name'])}.md"
+                course_list.append(f"- [ ] [{course['name']} ({course_id})](../courses/{course_md_name})")
+            markdown.append("\n".join(course_list))
+
+        return "\n\n".join(markdown) + "\n"
 
 # TODO: Make Path() matches the json file structure from the website

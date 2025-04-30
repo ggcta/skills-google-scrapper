@@ -9,7 +9,7 @@ import html
 import requests
 from bs4 import BeautifulSoup
 from config.settings import BASE_URL, QL_IFRAME
-from utils.utils import util_replace_quote_marks, util_strip_html_tags
+from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 
 
 # Constants for the extraction of the course data
@@ -33,6 +33,7 @@ class Course(BaseEntity):
     Inherits from BaseEntity.\n
     This class is responsible for extracting course data from the Cloud Skills Boost platform.
     """
+
     def __init__(self,
                  id: str,
                  name: str = None,
@@ -53,11 +54,12 @@ class Course(BaseEntity):
         """
         Main method to extract the transcript of a course.
         """
+
         print("\nTranscript Extracting is starting...\n")
 
         # Load the course data from JSON
         self.load_json()
-    
+
         # Fetch and parse the course page
         course_html = self.fetch_course_page()
         if not course_html:
@@ -65,6 +67,7 @@ class Course(BaseEntity):
 
         # Extract course metadata
         if not self.extract_course_metadata(course_html):
+            self.save_markdown()
             return
 
         # Extract course outline
@@ -84,6 +87,7 @@ class Course(BaseEntity):
         """
         Fetch the course page and return the parsed HTML.
         """
+
         try:
             response = requests.get(self.url, timeout=20)
             response.raise_for_status()
@@ -96,6 +100,7 @@ class Course(BaseEntity):
         """
         Extract course metadata such as description, objectives, and topics.
         """
+
         try:
             course_ld_json_element = course_html.select_one(COURSE_LD_JSON)
             meta_element = course_html.select_one(COURSE_META_DESCRIPTION)
@@ -133,6 +138,7 @@ class Course(BaseEntity):
         """
         Extract the course outline and modules.
         """
+
         try:
             course_outline_element = course_html.select_one(COURSE_OUTLINE)
             if not course_outline_element:
@@ -148,6 +154,7 @@ class Course(BaseEntity):
         """
         Process each module in the course.
         """
+
         for module in self.modules:
             module_title = module["title"].strip()
             print(f"(process_modules) \033[34m• MODULE: {module_title}\033[0m")
@@ -162,6 +169,7 @@ class Course(BaseEntity):
         """
         Process each step in a module.
         """
+
         for activity in step['activities']:
             activity_type = activity['type']
             activity_id = activity['id']
@@ -181,6 +189,7 @@ class Course(BaseEntity):
         """
         Process a video activity.
         """
+
         print(f"(process_video) •-> Vid: {activity['id']:>6} - {activity['title']}")
         try:
             response = requests.get(url)
@@ -206,6 +215,7 @@ class Course(BaseEntity):
         """
         Process a lab activity.
         """
+
         print(f"(process_lab) •-> Lab: {activity['id']:>6} - {activity['title']}")
         try:
             response = requests.get(url)
@@ -260,6 +270,7 @@ class Course(BaseEntity):
         """
         Process a quiz activity.
         """
+
         # TODO: Extract Quiz that need to press the 'Start quiz' button, ie. course/201
         print(f"(process_quiz) •-> Qui: {activity['id']:>6} - {activity['title']}")
         try:
@@ -281,6 +292,7 @@ class Course(BaseEntity):
         """
         Process a link activity.
         """
+
         print(f"(process_link) •-> Lnk: {activity['id']:>6} - {activity['title']}")
         try:
             response = requests.get(url)
@@ -298,18 +310,12 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_link) Error: {error}")
 
-    def clean_text(self, text):
-        """
-        Utility method to clean and format text.
-        """
-        text = util_strip_html_tags(html.unescape(text))
-        return util_replace_quote_marks(text)
-
     def generate_prompt(self):
         """
         Generate the prompts for videos from their transcripts.\n
         The prompt data will be saved to a JSON file.
         """
+
         # Proceed only if the course's json file does exist.
         if not self._json_path.exists():
             print("Sorry, the course json not found. Please fetch the course first.")
@@ -360,6 +366,79 @@ class Course(BaseEntity):
         with open(json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(course, jsonfile, ensure_ascii=False, indent=2)
 
+    def generate_markdown(self):
+        """
+        Generate the Markdown data for the course.
+        """
+
+        markdown = []
+        markdown.append(self.generate_front_matter())
+
+        markdown.append(f"# [{self.name}]({self.url})")
+
+        if hasattr(self, 'description') and self.description:
+            markdown.append("**Description:**")
+            markdown.append(f"{self.description}")
+
+        if hasattr(self, 'objectives') and self.objectives:
+            markdown.append("**Objectives:**")
+            objective_list = []
+            for objective in self.objectives:
+                objective_list.append(f"- {objective}")
+            markdown.append("\n".join(objective_list))
+
+        if hasattr(self, 'modules') and self.modules:
+            for module in self.modules:
+                module_title = module["title"].strip()
+                markdown.append(f"## {module_title}")
+                if module.get("description"):
+                    module['description'] = self.clean_text(module.get("description", ""))
+                    markdown.append(f"{module['description']}")
+
+                for step in module.get("steps", []):
+                    for activity in step.get("activities", []):
+                        activity_title = activity['title'].strip()
+                        activity_type = activity['type']
+                        activity_href = activity['href']
+
+                        markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+
+                        if activity_type == 'video':
+                            markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
+                            markdown.append(f"{activity.get('transcript', '(No transcript available)')}")
+
+                        elif activity_type == 'lab':
+                            markdown.append(activity.get('description'))
+                            lab_md_name = f"{util_replace_special_chars(activity_title)}.md"
+                            if activity['isComplete'] is False:
+                                markdown.append(f"- [ ] [{activity_title}](../labs/{lab_md_name})")
+                            else:
+                                markdown.append(f"- [x] [{activity_title}](../labs/{lab_md_name})")
+
+                        elif activity_type == 'quiz':
+                            if activity.get('quizItems'):
+                                quizItems = activity.get('quizItems')
+                                quiz_number = 1
+                                for quizItem in quizItems:
+                                    quiz_list = []
+                                    quiz_stem = self.clean_text(quizItem.get('stem'))
+                                    quiz_stem = quiz_stem.replace('\n\n', '')
+                                    markdown.append(f"#### Quiz {quiz_number}.")
+
+                                    quiz_list.append(f"> [!important]")
+                                    quiz_list.append(f"> **{self.clean_text(quiz_stem)}**")
+                                    quiz_list.append(">")
+
+                                    if quizItem.get('options'):
+                                        for option in quizItem.get('options', []):
+                                            quiz_list.append(f"> - [ ] {self.clean_text(option.get('title'))}")
+                                    markdown.append("\n".join(quiz_list))
+                                    quiz_number += 1
+
+                        elif activity_type == 'link':
+                            markdown.append(f"- [{activity_title}]({activity['link']})")
+
+        return "\n\n".join(markdown) + "\n"
 
 # END OF COURSE CLASS
 # END OF FILE

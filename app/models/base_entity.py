@@ -1,9 +1,8 @@
+import html
 import json
 from config.settings import BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
 from pathlib import Path as PathlibPath
-
-from services.md_helper import MDHelper
-from utils.utils import util_replace_special_chars
+from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 from models.serialize import Serialize
 
 
@@ -11,6 +10,7 @@ class BaseEntity(Serialize):
     """
     Base class for all entities including Path, Course, and Lab.
     """
+
     def __init__(self,
                  id: str,
                  name: str,
@@ -24,6 +24,7 @@ class BaseEntity(Serialize):
         """
         Dynamically determine the type based on the class name.
         """
+
         return self.__class__.__name__
 
     @property
@@ -31,6 +32,7 @@ class BaseEntity(Serialize):
         """
         Dynamically generate the URL based on the type.
         """
+
         base_url = {
             "Path": BASE_URL_PATHS,
             "Course": BASE_URL_COURSES,
@@ -48,6 +50,7 @@ class BaseEntity(Serialize):
         """
         Generate the JSON file name based on the entity ID.
         """
+
         return f'{self.id}.json'
     
     # Properties to get the JSON and Markdown file names and paths
@@ -56,6 +59,7 @@ class BaseEntity(Serialize):
         """
         Generate the Markdown file name based on the entity name.
         """
+
         # Replace special characters in the name for the Markdown file name
         # and ensure it ends with .md
         return f'{util_replace_special_chars(self.name)}.md'
@@ -66,6 +70,7 @@ class BaseEntity(Serialize):
         """
         Get the JSON file path based on the entity type.
         """
+
         return PathlibPath(DATA_FOLDER_NAME) / f'{self.type.lower()}s' / self._json_name
 
     # Properties to get the JSON and Markdown file names and paths
@@ -74,6 +79,7 @@ class BaseEntity(Serialize):
         """
         Get the Markdown file path based on the entity type.
         """
+
         return PathlibPath(OUTPUT_FOLDER_NAME) / f'{self.type.lower()}s' / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
@@ -81,6 +87,7 @@ class BaseEntity(Serialize):
         """
         Convert the entity's data to a dictionary.
         """
+
         # Convert the entity data to a dictionary, excluding private attributes
         # and adding the type and URL
         the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
@@ -144,33 +151,65 @@ class BaseEntity(Serialize):
         except Exception as e:
             print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
 
-    # Save the entity data to a Markdown file
-    def save_markdown(self):
+    def generate_front_matter(self) -> str:
         """
-        Save the entity data to a Markdown file.
+        Generate the front matter for the Markdown file.
+
+        Order:
+        - id
+        - name
+        - type
+        - url
+        - date_published
+        - topics
         """
 
-        md_helper = MDHelper()
-    
-        # Generate the Markdown content
-        # TODO: Use case statement to handle different entity types
-        match self.type:
-            case 'Path':
-                entity_md = md_helper.md_helper_path(self.to_dict())
-            case 'Course':
-                entity_md = md_helper.md_helper_course(self.to_dict())
-            case 'Lab':
-                entity_md = md_helper.md_helper_lab(self.to_dict())
-            case _:
-                raise ValueError(f"Unsupported entity type: {self.type}")
-        
+        front_matter_lines = ["---"]
+        if hasattr(self, 'id'):
+            front_matter_lines.append(f"id: {self.id}")
+        if hasattr(self, 'name'):
+            front_matter_lines.append(f"name: '{self.name}'")
+        if hasattr(self, 'type'):
+            front_matter_lines.append(f"type: {self.type}")
+        if hasattr(self, 'url'):
+            front_matter_lines.append(f"url: {self.url}")
+        if hasattr(self, 'datePublished'):
+            front_matter_lines.append(f"date_published: {self.datePublished}")
+        if hasattr(self, 'topics'):
+            front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+        front_matter_lines.append("---")
+        return "\n".join(front_matter_lines)
+
+    def generate_markdown(self) -> str:
+        """
+        Generate the Markdown representation of the Path.
+        """
+
+        # Convert the Path object to a dictionary
+        markdown = []
+        markdown.append(self.generate_front_matter())
+
+        return "\n\n".join(markdown) + "\n"
+
+    def save_markdown(self) -> None:
+        """
+        Save the Path data to a Markdown file.
+        """
+
+        mdtext = self.generate_markdown()
+
         # Create the folder if it doesn't exist
         if not self._md_path.parent.exists():
             self._md_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Write the entity data to a Markdown file with UTF-8 encoding and Unix line endings
-        with open(self._md_path,
-                  "w",
-                  encoding="utf-8",
-                  newline='\n') as md_file:
-            md_file.write(entity_md)
+        # Write the markdown content to a file, overwrite if exists
+        with open(self._md_path, "w", encoding="utf-8", newline='\n') as mdfile:
+            mdfile.write(mdtext)
+
+    def clean_text(self, text: str) -> str:
+        """
+        Utility method to clean and format text.
+        """
+
+        text = util_strip_html_tags(html.unescape(text))
+        return util_replace_quote_marks(text)

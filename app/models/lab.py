@@ -1,9 +1,12 @@
 # Description: This file contains the Lab class which is a subclass of BaseEntity.
-from services.md_helper import MDHelper
 from .base_entity import BaseEntity
 
 # Lab entity based on BaseEntity
 class Lab(BaseEntity):
+    """
+    Class representing a Lab entity.
+    """
+
     def __init__(self,
                  id: str,
                  name: str = None,
@@ -17,21 +20,21 @@ class Lab(BaseEntity):
 
     # TODO: fetch_data() for fetching a lab's data
 
-    # Save the Lab data to a Markdown file
-    def save_markdown(self):
+    def generate_markdown(self):
         """
-        Write the {self.to_dict()} into a Markdown files for each path.
+        Generate the Markdown content for the Lab entity.
         """
-        # Until we extract the lab content, for time being,
-        # can use the same helper for Path
-        md_helper = MDHelper()
-        # Generate the markdown content
-        path_md = md_helper.md_helper_lab(self.to_dict())
 
-        # Create the folder if it doesn't exist
-        if not self._md_path.parent.exists():
-            self._md_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown = []
+        markdown.append(self.generate_front_matter())
 
-        # Write the markdown content to a file, overwrite if exists
-        with open(self._md_path, "w", encoding="utf-8", newline='\n') as md_file:
-            md_file.write(path_md)
+        markdown.append(f"# [{self.name}]({self.url})")
+
+        if hasattr(self, 'description') and self.description:
+            markdown.append(f"{self.description}")
+
+        if hasattr(self, 'steps') and self.steps:
+            for step_number, step_text in self.steps.items():
+                markdown.append(f"## Step {step_number}: {step_text}")
+
+        return "\n\n".join(markdown) + "\n"
