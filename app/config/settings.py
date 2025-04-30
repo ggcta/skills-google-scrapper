@@ -19,7 +19,7 @@ BASE_URL_COURSES: str = f"{BASE_URL}/course_templates"
 BASE_URL_PARTNERS: str = "https://partner.cloudskillsboost.google"
 
 # Webdriver configuration
-WEBDRIVER_PROFILE_FOLDER_NAME: str = '.webdriver_profiles'
+WEBDRIVER_PROFILE_FOLDER_NAME: str = PROJECT_ROOT / '.webdriver_profiles'
 WEBDRIVER_OPTIONS_HEADLESS: bool = True
 
 # Constants for the extraction of the course data

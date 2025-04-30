@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path as PathlibPath
+import webbrowser
 from config.settings import *
 from models.path import Path
 from models.paths import Paths
@@ -174,6 +175,9 @@ class CloudSkillsBoost:
                                    "\t\t1. c: A Certain Course Only\n"
                                    "\t\t2. p: A Path To Select Course(s)\n"
                                    "\t\t3. l: Show me a list\n"
+                                   "\t\t5. g: Generate Prompt\n"
+                                   "\t\t6. h: Fetch all courses\n"
+                                   "\t\t8. w: Launch the browser\n"
                                    "\t\t9. d: DEBUG: RELOADING DATA\n"
                                    "\t\t0. q: Quit\n"
                                    "•PLEASE SELECT: ")
@@ -323,6 +327,15 @@ class CloudSkillsBoost:
                 self.courses_collection.save_json()
                 print("\n"
                       "\033[35mDEBUG: COURSES LIST RELOADED.\033[0m\n")
+
+            elif course_or_path.lower() == '8' or course_or_path.lower() == 'w':
+                # Launch the browser
+                print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
+                webbrowser = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
+                                            headless=False)
+                # Open the URL in the default web browser
+                webbrowser.get(BASE_URL_PARTNERS)
+                print("\n\033[35mDEBUG: BROWSER LAUNCHED.\033[0m\n")
 
             else:
                 print("\033[31m"
