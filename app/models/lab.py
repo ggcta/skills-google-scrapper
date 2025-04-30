@@ -24,6 +24,7 @@ class Lab(BaseEntity):
         """
         Generate the Markdown content for the Lab entity.
         """
+
         markdown = []
         markdown.append(self.generate_front_matter())
 

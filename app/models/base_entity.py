@@ -10,6 +10,7 @@ class BaseEntity(Serialize):
     """
     Base class for all entities including Path, Course, and Lab.
     """
+
     def __init__(self,
                  id: str,
                  name: str,
@@ -23,6 +24,7 @@ class BaseEntity(Serialize):
         """
         Dynamically determine the type based on the class name.
         """
+
         return self.__class__.__name__
 
     @property
@@ -30,6 +32,7 @@ class BaseEntity(Serialize):
         """
         Dynamically generate the URL based on the type.
         """
+
         base_url = {
             "Path": BASE_URL_PATHS,
             "Course": BASE_URL_COURSES,
@@ -47,6 +50,7 @@ class BaseEntity(Serialize):
         """
         Generate the JSON file name based on the entity ID.
         """
+
         return f'{self.id}.json'
     
     # Properties to get the JSON and Markdown file names and paths
@@ -55,6 +59,7 @@ class BaseEntity(Serialize):
         """
         Generate the Markdown file name based on the entity name.
         """
+
         # Replace special characters in the name for the Markdown file name
         # and ensure it ends with .md
         return f'{util_replace_special_chars(self.name)}.md'
@@ -65,6 +70,7 @@ class BaseEntity(Serialize):
         """
         Get the JSON file path based on the entity type.
         """
+
         return PathlibPath(DATA_FOLDER_NAME) / f'{self.type.lower()}s' / self._json_name
 
     # Properties to get the JSON and Markdown file names and paths
@@ -73,6 +79,7 @@ class BaseEntity(Serialize):
         """
         Get the Markdown file path based on the entity type.
         """
+
         return PathlibPath(OUTPUT_FOLDER_NAME) / f'{self.type.lower()}s' / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
@@ -80,6 +87,7 @@ class BaseEntity(Serialize):
         """
         Convert the entity's data to a dictionary.
         """
+
         # Convert the entity data to a dictionary, excluding private attributes
         # and adding the type and URL
         the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
@@ -155,6 +163,7 @@ class BaseEntity(Serialize):
         - date_published
         - topics
         """
+
         front_matter_lines = ["---"]
         if hasattr(self, 'id'):
             front_matter_lines.append(f"id: {self.id}")
@@ -175,6 +184,7 @@ class BaseEntity(Serialize):
         """
         Generate the Markdown representation of the Path.
         """
+
         # Convert the Path object to a dictionary
         markdown = []
         markdown.append(self.generate_front_matter())
@@ -185,6 +195,7 @@ class BaseEntity(Serialize):
         """
         Save the Path data to a Markdown file.
         """
+
         mdtext = self.generate_markdown()
 
         # Create the folder if it doesn't exist
@@ -199,5 +210,6 @@ class BaseEntity(Serialize):
         """
         Utility method to clean and format text.
         """
+
         text = util_strip_html_tags(html.unescape(text))
         return util_replace_quote_marks(text)

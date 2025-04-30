@@ -77,6 +77,7 @@ class Path(BaseEntity):
         """
         Print out the courses list of a certain Path.
         """
+
         # Show the Path Title
         heading = f"{self.id} - {self.name.upper()}"
         print(f"\n\033[45m[{heading:^85}]\033[0m\n")
@@ -91,6 +92,7 @@ class Path(BaseEntity):
         """
         Generate the Markdown representation of the Path.
         """
+
         # Convert the Path object to a dictionary
         markdown = []
         markdown.append(self.generate_front_matter())
