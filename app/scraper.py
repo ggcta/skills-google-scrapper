@@ -167,7 +167,7 @@ class CloudSkillsBoost:
             #  ===================================================================
             # Gathers all the courses or path names and prompts the user for selection
             # Allows working with a path, courses, or both options via a user-friendly interface
-            course_or_path = input(
+            course_or_path = input("AVAILABLE OPTIONS:\n"
                                    "\t\t1. c: A COURSE ID\n"
                                    "\t\t2. p: A PATH ID\n"
                                    "\t\t3. l: SHOW ME A LIST\n"
@@ -187,7 +187,7 @@ class CloudSkillsBoost:
             elif course_or_path.lower() == "1" or course_or_path.lower() == "c":
                 course_id = input(f"•{'COURSE ID: ':>15}")
                 if not course_id.strip().isdigit():
-                    print("ERROR: INVALID OR MISSING COURSE ID. "
+                    print("[ERROR] INVALID OR MISSING COURSE ID. "
                           "PLEASE PROVIDE A VALID NUMERIC COURSE ID!")
 
                 if self.courses_collection and course_id in self.courses_collection.collection:
@@ -204,8 +204,8 @@ class CloudSkillsBoost:
 
                 path_id = input(f"•{'PATH ID: ':>15}")
                 if not path_id.strip().isdigit():
-                    print("\n\033[33m[ERROR: INVALID OR MISSING PATH ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!]\033[0m\n")
+                    print("\n\033[33m[ERROR] INVALID OR MISSING PATH ID. "
+                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!\033[0m\n")
                     continue
 
                 # Proceed with the certain path and course
@@ -256,12 +256,12 @@ class CloudSkillsBoost:
 
                 if not path_id.strip().isdigit() and path_id.lower() != "q" and path_id.lower() != "e":
                     # If the user provided a wrong path id
-                    print("\n\033[33m[ERROR: INVALID OR MISSING PATH ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!]\033[0m\n")
+                    print("\n\033[33m[ERROR] INVALID OR MISSING PATH ID. "
+                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!\033[0m\n")
                     continue
 
                 # Ensure the user enter a correct path id which is a number
-                if path_id.strip().isdigit():
+                if path_id.strip().isdigit() and path_id in self.paths_collection.collection:
                     path_title = self.paths_collection.collection[path_id]
                     print(f"Entering... \033[45m"
                           f"•--{path_id:>{len(path_id) + 1}}: {path_title.upper()}"
