@@ -1,7 +1,5 @@
 import sys
-from pathlib import Path as PathlibPath
-import webbrowser
-from config.settings import *
+from config.settings import BASE_URL_PARTNERS, OUTPUT_FOLDER_NAME, DATA_FOLDER_NAME, WEBDRIVER_PROFILE_FOLDER_NAME
 from models.path import Path
 from models.paths import Paths
 from models.labs import Labs
