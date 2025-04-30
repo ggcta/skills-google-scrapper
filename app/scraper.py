@@ -280,6 +280,11 @@ class CloudSkillsBoost:
                     print("Bye.")
                     sys.exit(0)
 
+                else:
+                    print("\n\033[33m[ERROR] INVALID OR MISSING PATH ID. "
+                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!\033[0m\n")
+                    continue
+
             elif course_or_path.lower() == '5' or course_or_path.lower() == 'g':
                 course_id = input(f"•{'COURSE ID: ':>15}")
                 if not course_id.strip().isdigit():
