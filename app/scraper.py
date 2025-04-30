@@ -169,18 +169,17 @@ class CloudSkillsBoost:
             #  ===================================================================
             # Gathers all the courses or path names and prompts the user for selection
             # Allows working with a path, courses, or both options via a user-friendly interface
-            course_or_path = input("\033[34m"
-                                   "WHAT DO YOU WANT TO WORK WITH?:"
-                                   "\033[0m\n"
-                                   "\t\t1. c: A Certain Course Only\n"
-                                   "\t\t2. p: A Path To Select Course(s)\n"
-                                   "\t\t3. l: Show me a list\n"
-                                   "\t\t5. g: Generate Prompt\n"
-                                   "\t\t6. h: Fetch all courses\n"
-                                   "\t\t8. w: Launch the browser\n"
+            course_or_path = input(
+                                   "\t\t1. c: A COURSE ID\n"
+                                   "\t\t2. p: A PATH ID\n"
+                                   "\t\t3. l: SHOW ME A LIST\n"
+                                   "\t\t5. g: GENERATE PROMPT\n"
+                                   "\t\t6. h: FETCH ALL COURSES\n"
+                                   "\t\t8. w: LAUNCH THE BROWSER\n"
                                    "\t\t9. d: DEBUG: RELOADING DATA\n"
-                                   "\t\t0. q: Quit\n"
-                                   "•PLEASE SELECT: ")
+                                   "\t\t0. q: QUIT\n"
+                                   "•PLEASE SELECT: "
+                                )
 
             #  ===================================================================
             if course_or_path.lower() == '0' or course_or_path.lower() == "q":
