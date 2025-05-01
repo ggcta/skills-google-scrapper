@@ -381,10 +381,7 @@ class Course(BaseEntity):
 
         if hasattr(self, 'objectives') and self.objectives:
             markdown.append("**Objectives:**")
-            objective_list = []
-            for objective in self.objectives:
-                objective_list.append(f"* {objective}")
-            markdown.append("\n".join(objective_list))
+            markdown.append("\n".join([f"* {objective}" for objective in self.objectives]))
 
         if hasattr(self, 'modules') and self.modules:
             for module in self.modules:
