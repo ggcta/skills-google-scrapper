@@ -111,7 +111,7 @@ class Course(BaseEntity):
             course_description = html.unescape(meta_element['content'])
             course_description = util_strip_html_tags(course_description)
             course_description = re.sub(r'\s{2,}', '\n\n', course_description)
-            course_description = util_replace_quote_marks(course_description)
+            course_description = course_description.strip()
 
             course_objectives_json = json.loads(course_ld_json_text)
             datePublished = course_objectives_json.get('datePublished')
@@ -202,7 +202,7 @@ class Course(BaseEntity):
             activity['videoId'] = video_id
             if transcript_data:
                 transcript_json = json.loads(transcript_data)
-                activity['transcript'] = " ".join(map(lambda item: util_replace_quote_marks(item['text']), transcript_json))
+                activity['transcript'] = " ".join(map(lambda item: item['text'], transcript_json))
             else:
                 activity['transcript'] = '(No video transcript.)'
 
@@ -377,11 +377,11 @@ class Course(BaseEntity):
 
         if hasattr(self, 'description') and self.description:
             markdown.append("**Description:**")
-            markdown.append(f"{self.description}")
+            markdown.append(f"{util_replace_quote_marks(self.description)}")
 
         if hasattr(self, 'objectives') and self.objectives:
             markdown.append("**Objectives:**")
-            markdown.append("\n".join([f"* {objective}" for objective in self.objectives]))
+            markdown.append("\n".join([f"* {util_replace_quote_marks(objective)}" for objective in self.objectives]))
 
         if hasattr(self, 'modules') and self.modules:
             for module in self.modules:
@@ -389,7 +389,7 @@ class Course(BaseEntity):
                 markdown.append(f"## {module_title}")
                 if module.get("description"):
                     module['description'] = self.clean_text(module.get("description", ""))
-                    markdown.append(f"{module['description']}")
+                    markdown.append(f"{util_replace_quote_marks(module['description'])}")
 
                 for step in module.get("steps", []):
                     for activity in step.get("activities", []):
@@ -401,7 +401,7 @@ class Course(BaseEntity):
 
                         if activity_type == 'video':
                             markdown.append(f"* [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
-                            markdown.append(f"{activity.get('transcript', '(No transcript available)')}")
+                            markdown.append(f"{util_replace_quote_marks(activity.get('transcript', '(No transcript available)'))}")
 
                         elif activity_type == 'lab':
                             markdown.append(activity.get('description'))
