@@ -67,7 +67,6 @@ class Course(BaseEntity):
 
         # Extract course metadata
         if not self.extract_course_metadata(course_html):
-            self.save_markdown()
             return
 
         # Extract course outline
