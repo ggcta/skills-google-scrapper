@@ -202,7 +202,7 @@ class Course(BaseEntity):
             activity['videoId'] = video_id
             if transcript_data:
                 transcript_json = json.loads(transcript_data)
-                activity['transcript'] = " ".join([util_replace_quote_marks(item['text']) for item in transcript_json])
+                activity['transcript'] = " ".join(map(lambda item: util_replace_quote_marks(item['text']), transcript_json))
             else:
                 activity['transcript'] = '(No video transcript.)'
 
