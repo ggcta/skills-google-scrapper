@@ -1,5 +1,17 @@
 import re
+from html.parser import HTMLParser
 
+class HTMLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def get_data(self):
+        return ''.join(self.fed)
 
 def util_replace_special_chars(text_to_replace: str) -> str:
     """
@@ -51,4 +63,6 @@ def util_strip_html_tags(text: str) -> str:
     :param text: The text to process.
     :return: The text without HTML tags.
     """
-    return re.sub(r'<.*?>', '', text)
+    stripper = HTMLStripper()
+    stripper.feed(text)
+    return stripper.get_data()
