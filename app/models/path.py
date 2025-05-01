@@ -1,6 +1,7 @@
 import json
 from bs4 import BeautifulSoup
 import requests
+from utils.utils import util_replace_special_chars
 from config.settings import *
 from models.base_entity import BaseEntity
 
@@ -108,7 +109,7 @@ class Path(BaseEntity):
             # Add each course in the Path
             course_list = []
             for course_id, course in self.courses.items():
-                course_md_name = f"{self.clean_text(course['name'])}.md"
+                course_md_name = f"{util_replace_special_chars(course['name'])}.md"
                 course_list.append(f"* [ ] [{course['name']} ({course_id})](../courses/{course_md_name})")
             markdown.append("\n".join(course_list))
 
