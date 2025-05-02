@@ -196,10 +196,11 @@ class Course(BaseEntity):
             video_html = BeautifulSoup(response.text, "html.parser")
 
             video_element = video_html.select_one(QL_YOUTUBE_VIDEO)
-            transcript_data = video_element["transcript"]
-            video_id = video_element["videoid"]
+            video_id = video_element.get("videoId", None)
+            if video_id:
+                activity['videoId'] = video_id
 
-            activity['videoId'] = video_id
+            transcript_data = video_element.get("transcript", None)
             if transcript_data:
                 transcript_json = json.loads(transcript_data)
                 activity['transcript'] = " ".join(map(lambda item: item['text'], transcript_json))
