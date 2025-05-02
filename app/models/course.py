@@ -82,7 +82,7 @@ class Course(BaseEntity):
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 
-    def fetch_course_page(self):
+    def fetch_course_page(self) -> BeautifulSoup:
         """
         Fetch the course page and return the parsed HTML.
         """
@@ -95,7 +95,7 @@ class Course(BaseEntity):
             print(f"(extract_transcript) Error: Unable to load the course page. {error}")
             return None
 
-    def extract_course_metadata(self, course_html):
+    def extract_course_metadata(self, course_html) -> bool:
         """
         Extract course metadata such as description, objectives, and topics.
         """
@@ -133,7 +133,7 @@ class Course(BaseEntity):
             print(f"(extract_course_metadata) Error: {error}")
             return False
 
-    def extract_course_outline(self, course_html):
+    def extract_course_outline(self, course_html) -> bool:
         """
         Extract the course outline and modules.
         """
@@ -149,7 +149,7 @@ class Course(BaseEntity):
             print(f"(extract_course_outline) Error: {error}")
             return False
 
-    def process_modules(self):
+    def process_modules(self) -> None:
         """
         Process each module in the course.
         """
@@ -164,7 +164,7 @@ class Course(BaseEntity):
             for step in module['steps']:
                 self.process_step(step)
 
-    def process_step(self, step):
+    def process_step(self, step) -> None:
         """
         Process each step in a module.
         """
@@ -184,7 +184,7 @@ class Course(BaseEntity):
             elif activity_type == "link":
                 self.process_link(activity, activity_full_url)
 
-    def process_video(self, activity, url):
+    def process_video(self, activity, url) -> None:
         """
         Process a video activity.
         """
@@ -210,7 +210,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_video) Error: {error}")
 
-    def process_lab(self, activity, url):
+    def process_lab(self, activity, url) -> None:
         """
         Process a lab activity.
         """
@@ -265,7 +265,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_lab) Error: {error}")
 
-    def process_quiz(self, activity, url):
+    def process_quiz(self, activity, url) -> None:
         """
         Process a quiz activity.
         """
@@ -287,7 +287,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_quiz) Error: {error}")
 
-    def process_link(self, activity, url):
+    def process_link(self, activity, url) -> None:
         """
         Process a link activity.
         """
@@ -309,7 +309,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_link) Error: {error}")
 
-    def generate_prompt(self):
+    def generate_prompt(self) -> None:
         """
         Generate the prompts for videos from their transcripts.\n
         The prompt data will be saved to a JSON file.
@@ -365,7 +365,7 @@ class Course(BaseEntity):
         with open(json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(course, jsonfile, ensure_ascii=False, indent=2)
 
-    def generate_markdown(self):
+    def generate_markdown(self) -> str:
         """
         Generate the Markdown data for the course.
         """
