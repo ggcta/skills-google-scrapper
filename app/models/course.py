@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from config.settings import BASE_URL, QL_IFRAME
 from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 
-
+# TODO: Convert these constants to Enums
 # Constants for the extraction of the course data
 COURSE_LD_JSON = "script[type='application/ld+json']"
 COURSE_META_DESCRIPTION = "meta[name='description']"
