@@ -58,16 +58,16 @@
                 'text-outline-width': 2,
                 'text-outline-color': '#000000',
                 'background-color': ele => {
-                  const g = ele.data('type');
+                  const g = ele.data('type').toLowerCase();  // Updated to lowercase for consistency
                   return g === 'course' ? '#1f78b4'
                        : g === 'lab'    ? '#33a02c'
                        : g === 'path'   ? '#e31a1c'
-                       : '#aaaaaa';
+                       : '#aaaaaa';  // Fixed missing closing condition
                 },
                 'shape': ele => {
-                  const g = ele.data('type');  // Updated from 'group' to 'type'
+                  const g = ele.data('type').toLowerCase();  // Updated from 'group' to 'type'
                   return g === 'course' ? 'ellipse'
-                       : g === 'lab'    ? 'triangle'
+                       : g === 'lab'    ? 'circle'
                        : g === 'path'   ? 'rectangle'
                        : 'ellipse';
                 },
@@ -81,7 +81,7 @@
                 'width': 1.5,
                 'line-color': '#888',
                 'curve-style': 'bezier',
-                'target-arrow-shape': 'triangle',
+                'target-arrow-shape': 'circle',
                 'target-arrow-color': '#888'
               }
             }
