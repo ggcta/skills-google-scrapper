@@ -1,5 +1,6 @@
 # app.py
 import json
+import os
 from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
@@ -11,35 +12,62 @@ with open('data/paths.json')   as f: paths   = json.load(f)['collection']
 
 def build_cyto_graph():
     elements = []
-    # add nodes
-    for coll, typ in [(courses,'course'), (labs,'lab'), (paths,'path')]:
-        for id_, title in coll.items():
+
+    # Base directory for standalone files
+    base_dir = 'data'
+
+    # Add nodes for paths, courses, and labs
+    for collection, coll_type in [(paths, 'path'), (courses, 'course'), (labs, 'lab')]:
+        for item_id, title in collection.items():
             elements.append({
                 "data": {
-                    "id": f"{typ}_{id_}",
-                    "label": title,
-                    "group": typ
+                    "id": f"{item_id}",
+                    "name": title,
+                    "group": coll_type
                 }
             })
-    # add edges between any shared IDs
-    from collections import defaultdict
-    seen = defaultdict(list)
-    for el in elements:
-        gid, grp = el['data']['id'], el['data']['group']
-        seen[gid.split('_',1)[1]].append(gid)
+
+    # Add edges for relationships
     edge_id = 0
-    for id_, uids in seen.items():
-        if len(uids) > 1:
-            for i in range(len(uids)):
-                for j in range(i+1, len(uids)):
-                    edge_id += 1
-                    elements.append({
-                        "data": {
-                            "id": f"e{edge_id}",
-                            "source": uids[i],
-                            "target": uids[j]
-                        }
-                    })
+
+    # Paths to Courses
+    for path_id, path_data in paths.items():
+        path_file = os.path.join(base_dir, 'paths', f"{path_id}.json")
+        if os.path.exists(path_file):
+            with open(path_file) as f:
+                path_details = json.load(f)
+                if 'courses' in path_details:  # Check for associated courses
+                    for course_id in path_details['courses'].keys():
+                        edge_id += 1
+                        elements.append({
+                            "data": {
+                                "id": f"{edge_id}",
+                                "source": f"{path_id}",
+                                "target": f"{course_id}"
+                            }
+                        })
+
+    # Courses to Labs
+    for course_id, course_data in courses.items():
+        course_file = os.path.join(base_dir, 'courses', f"{course_id}.json")
+        if os.path.exists(course_file):
+            with open(course_file) as f:
+                course_details = json.load(f)
+                if 'modules' in course_details:  # Check for modules
+                    for module in course_details['modules']:
+                        if 'activities' in module:
+                            for activity in module['activities']:
+                                if activity.get('type') == 'lab':  # Check for lab type
+                                    lab_id = activity.get('id')
+                                    edge_id += 1
+                                    elements.append({
+                                        "data": {
+                                            "id": f"{edge_id}",
+                                            "source": f"{course_id}",
+                                            "target": f"{lab_id}"
+                                        }
+                                    })
+
     return {"elements": elements}
 
 @app.route('/graph-data')
