@@ -54,6 +54,8 @@
             animate: true
           }
         });
+        cy.resize(); // Added to ensure the graph fits the container
+        cy.fit(); // Added to fit the graph to the viewport
       })
       .catch(console.error);
   </script>
