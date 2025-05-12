@@ -83,6 +83,7 @@ def build_cyto_graph():
                                         }
                                     })
 
+    print(json.dumps(elements, indent=2))  # Print the elements for debugging
     return {"elements": elements}
 
 @app.route('/graph-data')
