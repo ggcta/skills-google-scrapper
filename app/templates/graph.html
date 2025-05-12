@@ -53,10 +53,11 @@
               selector: 'node',
               style: {
                 'label': 'data(name)',
+                'font-size': 10,
                 'text-valign': 'center',
-                'color': '#ffffff',
-                'text-outline-width': 2,
-                'text-outline-color': '#000000',
+                'color': '#fff',
+                // 'text-outline-width': 0.5,
+                'text-outline-color': '#dcdcdc',
                 'background-color': ele => {
                   const g = ele.data('type').toLowerCase();  // Updated to lowercase for consistency
                   return g === 'course' ? '#1f78b4'
@@ -67,21 +68,32 @@
                 'shape': ele => {
                   const g = ele.data('type').toLowerCase();  // Updated from 'group' to 'type'
                   return g === 'course' ? 'ellipse'
-                       : g === 'lab'    ? 'circle'
-                       : g === 'path'   ? 'rectangle'
+                       : g === 'lab'    ? 'ellipse'
+                       : g === 'path'   ? 'roundrectangle'
                        : 'ellipse';
                 },
                 'width': 30,
-                'height': 30
+                'height': 30,
+                'border-width': 1,
+                'border-color': '#fff',
+                'border-opacity': 0.5,
+                'text-wrap': 'wrap',
+                'text-max-width': 80,
+                'text-justification': 'center',
+                'text-margin-y': -5,
+                'text-margin-x': 0,
+                'text-rotation': 'autorotate',
               }
             },
             {
               selector: 'edge',
               style: {
                 'width': 1.5,
+                'opacity': 0.8,
+                'font-size': 8,
                 'line-color': '#888',
                 'curve-style': 'bezier',
-                'target-arrow-shape': 'circle',
+                'target-arrow-shape': 'triangle',
                 'target-arrow-color': '#888'
               }
             }
@@ -117,7 +129,8 @@
           'line-color': '#ffeb3b',
           'target-arrow-color': '#ffeb3b',
           'transition-property': 'background-color, line-color, target-arrow-color',
-          'transition-duration': '0.5s'
+          'transition-duration': '0.5s',
+        //   'label': 'data(name)',
         }).update();
       })
       .catch(error => {
