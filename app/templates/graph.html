@@ -58,14 +58,14 @@
                 'text-outline-width': 2,
                 'text-outline-color': '#000000',
                 'background-color': ele => {
-                  const g = ele.data('group');
+                  const g = ele.data('type');
                   return g === 'course' ? '#1f78b4'
                        : g === 'lab'    ? '#33a02c'
                        : g === 'path'   ? '#e31a1c'
                        : '#aaaaaa';
                 },
                 'shape': ele => {
-                  const g = ele.data('group');
+                  const g = ele.data('type');  // Updated from 'group' to 'type'
                   return g === 'course' ? 'ellipse'
                        : g === 'lab'    ? 'triangle'
                        : g === 'path'   ? 'rectangle'
@@ -78,7 +78,7 @@
             {
               selector: 'edge',
               style: {
-                'width': 2,
+                'width': 1.5,
                 'line-color': '#888',
                 'curve-style': 'bezier',
                 'target-arrow-shape': 'triangle',
