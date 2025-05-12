@@ -1,0 +1,94 @@
+<!-- templates/graph.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Graph Visualization</title>
+  <style>
+    svg { width: 100vw; height: 100vh; }
+    circle { stroke: #fff; stroke-width: 1.5px; }
+    text { font: 10px sans-serif; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <svg></svg>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+  // 1. fetch data
+  fetch('/graph-data')
+    .then(res => res.json())
+    .then(({nodes, links}) => {
+
+      // 2. set up simulation
+      const svg = d3.select("svg");
+      const width = +svg.attr("width") || window.innerWidth;
+      const height = +svg.attr("height") || window.innerHeight;
+
+      const color = d3.scaleOrdinal()
+        .domain(["course","lab","path"])
+        .range(["#1f78b4", "#33a02c", "#e31a1c"]);
+
+      const sim = d3.forceSimulation(nodes)
+        .force("link", d3.forceLink(links).id(d => d.uid).distance(50))
+        .force("charge", d3.forceManyBody().strength(-100))
+        .force("center", d3.forceCenter(width/2, height/2));
+
+      // 3. draw links
+      const link = svg.append("g")
+          .attr("stroke", "#999")
+          .attr("stroke-opacity", 0.6)
+        .selectAll("line")
+        .data(links)
+        .join("line")
+          .attr("stroke-width", 1);
+
+      // 4. draw nodes
+      const node = svg.append("g")
+          .attr("stroke", "#fff")
+          .attr("stroke-width", 1.5)
+        .selectAll("circle")
+        .data(nodes)
+        .join("circle")
+          .attr("r", 5)
+          .attr("fill", d => color(d.group))
+          .call(drag(sim));
+
+      // 5. labels on hover
+      node.append("title")
+          .text(d => d.title);
+
+      // 6. tick
+      sim.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+
+        node
+          .attr("cx", d => d.x)
+          .attr("cy", d => d.y);
+      });
+
+      // drag behavior
+      function drag(sim) {
+        function dragstarted(event, d) {
+          if (!event.active) sim.alphaTarget(0.3).restart();
+          d.fx = d.x; d.fy = d.y;
+        }
+        function dragged(event, d) {
+          d.fx = event.x; d.fy = event.y;
+        }
+        function dragended(event, d) {
+          if (!event.active) sim.alphaTarget(0);
+          d.fx = null; d.fy = null;
+        }
+        return d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended);
+      }
+  });
+  </script>
+</body>
+</html>
