@@ -36,7 +36,20 @@ def build_cyto_graph():
         if os.path.exists(path_file):
             with open(path_file) as f:
                 path_details = json.load(f)
-                if 'courses' in path_details:  # Check for associated courses
+                # Add the path node
+                elements.append({
+                    "data": {
+                        "id": f"{path_id}",
+                        "label": path_details.get('name', f"Path {path_id}"),
+                        "description": path_details.get('description', ''),
+                        "datePublished": path_details.get('datePublished', ''),
+                        "url": path_details.get('url', ''),
+                        "type": path_details.get('type', 'path'),
+                        "group": path_details.get('type', 'path')
+                    }
+                })
+                # Add edges to courses
+                if 'courses' in path_details:
                     for course_id in path_details['courses'].keys():
                         edge_id += 1
                         elements.append({
@@ -46,6 +59,8 @@ def build_cyto_graph():
                                 "target": f"{course_id}"
                             }
                         })
+                else:
+                    print(f"Warning: Path {path_id} does not have associated courses.")
 
     # Courses to Labs
     for course_id, course_data in courses.items():
