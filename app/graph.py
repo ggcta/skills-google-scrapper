@@ -63,7 +63,7 @@ def build_cyto_graph():
                     print(f"Warning: Path {path_id} does not have associated courses.")
 
     # Courses to Labs
-    for course_id, course_data in courses.items():
+    for course_id, course_name in courses.items():
         course_file = os.path.join(base_dir, 'courses', f"{course_id}.json")
         if os.path.exists(course_file):
             with open(course_file) as f:
