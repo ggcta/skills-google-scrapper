@@ -3,19 +3,48 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cytoscape Graph</title>
   <style>
-    html, body, #cy { width:100%; height:100%; margin:0; }
+    html, body, #cy {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #error-message {
+      display: none;
+      color: #e74c3c;
+      font-size: 1.2em;
+      text-align: center;
+      margin-top: 20px;
+    }
   </style>
-  <!-- Cytoscape.js from CDN -->
+  <!-- Cytoscape.js and Extensions -->
+  <script src="https://unpkg.com/layout-base/layout-base.js"></script>
+  <script src="https://unpkg.com/cose-base/cose-base.js"></script>
   <script src="https://unpkg.com/cytoscape@3.25.0/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-cose-bilkent/cytoscape-cose-bilkent.js"></script>
 </head>
 <body style="background-color: #2c3e50;">
   <div id="cy"></div>
+  <div id="error-message">Failed to load the graph. Please try again later.</div>
   <script>
+    // import cytoscape from 'cytoscape';
+    // import coseBilkent from 'cytoscape-cose-bilkent';
+
+    // cytoscape.use(require('cytoscape-cose-bilkent'));
+    // Fetch graph data from the server
     fetch('/graph-data')
-      .then(r => r.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then(data => {
+        // Initialize Cytoscape
         const cy = cytoscape({
           container: document.getElementById('cy'),
           elements: data.elements,
@@ -25,39 +54,77 @@
               style: {
                 'label': 'data(label)',
                 'text-valign': 'center',
-                'color': '#dcdcdc',
-                'text-outline-width': 0,
-                'text-outline-color': '#555',
+                'color': '#ffffff',
+                'text-outline-width': 2,
+                'text-outline-color': '#000000',
                 'background-color': ele => {
                   const g = ele.data('group');
                   return g === 'course' ? '#1f78b4'
                        : g === 'lab'    ? '#33a02c'
-                       : g === 'path'   ? '#e31a1c' // Added path color
-                       : '#e31a1c'; // Default color for any other group
+                       : g === 'path'   ? '#e31a1c'
+                       : '#aaaaaa';
                 },
-                'width': '10',
-                'height': '10'
+                'shape': ele => {
+                  const g = ele.data('group');
+                  return g === 'course' ? 'ellipse'
+                       : g === 'lab'    ? 'rectangle'
+                       : g === 'path'   ? 'triangle'
+                       : 'ellipse';
+                },
+                'width': 30,
+                'height': 30
               }
             },
             {
               selector: 'edge',
               style: {
                 'width': 2,
-                'line-color': '#bbb'
+                'line-color': '#888',
+                'curve-style': 'bezier',
+                'target-arrow-shape': 'triangle',
+                'target-arrow-color': '#888'
               }
             }
           ],
           layout: {
-            name: 'cose',
-            idealEdgeLength: 60,
-            nodeOverlap: 10,
+            name: 'cose-bilkent',
+            idealEdgeLength: 100,
+            nodeRepulsion: 4500,
+            edgeElasticity: 0.45,
+            gravity: 0.25,
             animate: true
           }
         });
-        cy.resize(); // Added to ensure the graph fits the container
-        cy.fit(); // Added to fit the graph to the viewport
+
+        // Add interactivity: Highlight connected nodes and edges
+        cy.on('tap', 'node', function(evt) {
+          const node = evt.target;
+          const connectedEdges = node.connectedEdges();
+          const connectedNodes = connectedEdges.connectedNodes();
+
+          // Reset all elements
+          cy.elements().removeClass('highlighted');
+
+          // Highlight the selected node, its edges, and connected nodes
+          node.addClass('highlighted');
+          connectedEdges.addClass('highlighted');
+          connectedNodes.addClass('highlighted');
+        });
+
+        // Add a class for highlighted elements
+        cy.style().selector('.highlighted').style({
+          'background-color': '#ffeb3b',
+          'line-color': '#ffeb3b',
+          'target-arrow-color': '#ffeb3b',
+          'transition-property': 'background-color, line-color, target-arrow-color',
+          'transition-duration': '0.5s'
+        }).update();
       })
-      .catch(console.error);
+      .catch(error => {
+        console.error('Error loading graph data:', error);
+        document.getElementById('cy').style.display = 'none';
+        document.getElementById('error-message').style.display = 'block';
+      });
   </script>
 </body>
 </html>
