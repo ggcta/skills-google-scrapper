@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+  <title>Preparing for your Professional Data Engineer Journey | Google Skills</title>
+  <link crossorigin href='https://cdn.qwiklabs.com' rel='preconnect'>
+  <link crossorigin href='https://fonts.gstatic.com' rel='preconnect'>
+  <link crossorigin href='https://fonts.googleapis.com' rel='preconnect'>
+  <link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/google-symbols.woff2' rel='preload'
+    type='font/woff2'>
+  <link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/material-icons.woff2' rel='preload'
+    type='font/woff2'>
+  <link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/google-material-icons.woff2'
+    rel='preload' type='font/woff2'>
+  <style>
+    @mixin font_face_props {
+      font-style: normal;
+      font-weight: 400;
+      font-display: block;
+    }
+
+    @font-face {
+      @include font_face_props;
+
+      font-family: 'Google Material Icons';
+      src: url('https://cdn.qwiklabs.com/fonts/google-material-icons.woff2') format('woff2');
+    }
+
+    @font-face {
+      @include font_face_props;
+
+      font-family: 'Material Icons';
+      src: url('https://cdn.qwiklabs.com/fonts/material-icons.woff2') format('woff2');
+    }
+
+    @font-face {
+      @include font_face_props;
+
+      font-family: 'Google Symbols';
+      src: url('https://cdn.qwiklabs.com/fonts/google-symbols.woff2') format('woff2');
+    }
+
+    .material-icons {
+      font-family: 'Material Icons';
+    }
+
+    .google-symbols {
+      font-family: 'Google Symbols';
+    }
+
+    .google-material-icons {
+      font-family: 'Google Material Icons';
+    }
+
+    .material-icons,
+    .google-symbols,
+    .google-material-icons {
+      font-weight: normal;
+      font-style: normal;
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+
+  <meta name="action-cable-url" content="/cable" />
+  <script>
+    //<![CDATA[
+    window.gon = {}; gon.deployment = "google-run";
+    //]]>
+  </script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      if (arguments[0] === 'event') {
+        dataLayer.push({ event: arguments[1], eventParams: arguments[2] }, { eventParams: undefined });
+      } else {
+        dataLayer.push(arguments);
+      }
+    }
+    let gtmLoaded = false;
+    function glueCookieNotificationBarLoaded() {
+      if (!gtmLoaded) {
+        dataLayerInit(
+          false,
+          false,
+          false,
+          false,
+          'google-run'
+        );
+        (function (w, d, s, l, i) {
+          w[l] = w[l] || []; w[l].push({
+            'gtm.start':
+              new Date().getTime(), event: 'gtm.js'
+          }); var f = d.getElementsByTagName(s)[0],
+            j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+              'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', "GTM-MBRHNDG7");
+        pushPageEvent();
+        if (typeof sessEvent !== 'undefined') {
+          pushSessionEvent(sessEvent, sessLoginStatus, sessPreviousPath);
+        }
+        gtmLoaded = true;
+      }
+    }
+  </script>
+  <script
+    src="https://cdn.qwiklabs.com/assets/hallofmirrors/polyfills/webcomponents-loader-2e147cb1679d97581f981243bfc2d1c03dc34a58.js"></script>
+  <script src="https://cdn.qwiklabs.com/assets/head_scripts-78121e337319c81329ed63eb61196ea57f74a57d.js"></script>
+  <script src="https://cdn.qwiklabs.com/assets/vendor-64a8f00d2c4f7491d2e5c39e6914bd8b28b18fbe.js"></script>
+  <script src="https://cdn.qwiklabs.com/assets/application-2ebad1dd92ba29bd1424313a1529d60486f4154b.js"></script>
+  <script
+    src="https://cdn.qwiklabs.com/assets/hallofmirrors/hallofmirrors-a20dcbf08fc810bee8dafd97eeaf2cb362c666f5.js"></script>
+  <script src="https://cdn.qwiklabs.com/nk_components/1.1.40/index.js"></script>
+  <script src="https://support.google.com/inapp/api.js"></script>
+  <script type='application/ld+json'>
+{"@context":"https://schema.org/","@id":"https://www.skills.google/course_templates/72","@type":"Course","name":"Preparing for your Professional Data Engineer Journey","description":"\u003cp\u003eThis course helps learners create a study plan for the PDE (Professional Data Engineer) certification exam. Learners explore the breadth and scope of the domains covered in the exam. Learners assess their exam readiness and create their individual study plan.\u003c/p\u003e","educationalLevel":"Advanced","image":["https://cdn.qwiklabs.com/76hyOOjHtSmxyCVT0AquwENYQwG4R7xesu4MHjHGFYg%3D"],"provider":{"@type":"Organization","name":"Google Cloud","url":"https://cloud.google.com/learn"},"publisher":{"@type":"Organization","name":"Google Skills","url":"https://www.skills.google"},"about":["Data","Cloud SQL (PST)","Custom Learning","Software Development"],"teaches":["List the domains covered on the Professional Data Engineer (PDE) certification exam.","Identify gaps in your knowledge and skills for each domain."],"datePublished":"2025-12-22","inLanguage":"en","availableLanguage":["en"],"offers":[{"@type":"Offer","category":"Free"}],"hasCourseInstance":[{"@type":"CourseInstance","courseMode":"Online","courseWorkload":"PT5H"}],"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.36","reviewCount":"623"}}
+</script>
+
+
+  <meta name="csrf-param" content="authenticity_token" />
+  <meta name="csrf-token"
+    content="GEnlnSorQcdv4rw635UdoolGPTtxo4AqUsOMKO0aJK38Z5oKcObXQx8eTLGP6aH1-8YNh9JSHpeO1u4zmGJYNw" />
+  <meta content='width=device-width, initial-scale=1.0, user-scalable=yes' name='viewport'>
+  <meta content='1rRsY0INj8RvwB5EF5pwdxt2A2P9aDgAlsICaJ0d5w0' name='google-site-verification'>
+  <meta content='#3681E4' property='msapplication-TileColor'>
+  <meta content='/google_standard_32.svg' property='msapplication-TileImage'>
+  <meta
+    content='{&quot;userId&quot;:null,&quot;experimentIds&quot;:[&quot;gamification_ui&quot;,&quot;gamification_streaks&quot;,&quot;show_org_catalog_button&quot;,&quot;innovator_gear_sign_in&quot;,&quot;catalog_filter_chips&quot;,&quot;oauth_risc_shutoff&quot;,&quot;hide_unpopular_filters&quot;,&quot;sitemap_poc&quot;,&quot;docebo_sync_org_support&quot;,&quot;credly_integration_announcement_modal&quot;,&quot;challenge_lab_fast_track&quot;,&quot;gamification_xp&quot;,&quot;in_context_all_labs&quot;,&quot;gamification_achievements&quot;,&quot;search_autocomplete&quot;,&quot;entity_api_keys&quot;,&quot;relaunch&quot;,&quot;reroute_new_interview_warmup&quot;,&quot;remove_gdp_subscription&quot;,&quot;use_docebo_features&quot;,&quot;org_invite_link&quot;,&quot;relaunch_for_sso&quot;,&quot;one_tap&quot;,&quot;landing_page&quot;,&quot;search_suggestions&quot;,&quot;switch_path_and_explore_headers&quot;,&quot;discovery_lab_duration_estimate&quot;,&quot;banner_breadcrumbs&quot;,&quot;gamification_leaderboards&quot;,&quot;onramp&quot;,&quot;gamification&quot;,&quot;show_new_course_exams&quot;,&quot;feedback&quot;,&quot;front_door_landing_page&quot;,&quot;search_async&quot;,&quot;gwg_catalog&quot;,&quot;canonical_domain_redirect&quot;,&quot;use_mosaic&quot;,&quot;cdn_fonts&quot;,&quot;course_exams&quot;,&quot;learning_plan_search&quot;,&quot;subscription_ux&quot;,&quot;gamification_leagues&quot;,&quot;interview_warmup_turndown&quot;,&quot;relaunch_subscriptions&quot;,&quot;alexandria_subscriptions_pagination&quot;,&quot;innovator_sign_in&quot;,&quot;credly&quot;,&quot;wipeout_hard_delete&quot;,&quot;docebo_ux&quot;,&quot;relaunch_extra&quot;,&quot;docebo_sync&quot;,&quot;google_dev_payment&quot;,&quot;catalog_filters_button&quot;,&quot;search_sort_by&quot;,&quot;in_context_view&quot;,&quot;learning_plan_slug&quot;,&quot;relaunch_collection_ai&quot;,&quot;sso_redirect&quot;,&quot;dashboard_jobs&quot;,&quot;cache_explore_page_result&quot;]}'
+    name='help-api-product-data'>
+  <meta content='{&quot;groupIds&quot;:[]}' name='help-api-custom-data'>
+  <meta
+    content='&amp;lt;p&amp;gt;This course helps learners create a study plan for the PDE (Professional Data Engineer) certification exam. Learners explore the breadth and scope of the domains covered in the exam. Learners assess their exam readiness and create their individual study plan.&amp;lt;/p&amp;gt;'
+    name='description'>
+  <meta content='Google Skills' name='author'>
+  <meta content='https://www.skills.google/paths/16/course_templates/72' property='og:url'>
+  <meta content='Preparing for your Professional Data Engineer Journey | Google Skills' property='og:title'>
+  <meta content='website' property='og:type'>
+  <meta content='/google_standard_32.svg' property='og:image'>
+  <meta content='Google Skills' property='og:site_name'>
+  <meta
+    content='&amp;lt;p&amp;gt;This course helps learners create a study plan for the PDE (Professional Data Engineer) certification exam. Learners explore the breadth and scope of the domains covered in the exam. Learners assess their exam readiness and create their individual study plan.&amp;lt;/p&amp;gt;'
+    property='og:description'>
+
+
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=ar' hreflang='ar' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=de' hreflang='de' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=es' hreflang='es' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=fr' hreflang='fr' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=fr_CA' hreflang='fr-CA' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=he' hreflang='he' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=id' hreflang='id' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=it' hreflang='it' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=ja' hreflang='ja' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=ko' hreflang='ko' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=pl' hreflang='pl' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=pt_BR' hreflang='pt-BR' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=pt_PT' hreflang='pt-PT' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=ru' hreflang='ru' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=tr' hreflang='tr' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=uk' hreflang='uk' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=zh' hreflang='zh' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72?locale=zh_TW' hreflang='zh-TW' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72' hreflang='en' rel='alternate'>
+  <link href='https://www.skills.google/paths/16/course_templates/72' hreflang='x-default' rel='alternate'>
+  <link href='https://cdn.qwiklabs.com/X46FrQX4iLxHW5MxL8jICvgZM0evMEKscCeQO%2BazGdo%3D' rel='icon' type='image/x-icon'>
+  <link href='https:///paths/16/course_templates/72' rel='canonical'>
+
+
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=Oswald:400|Roboto+Mono:400,700|Roboto:300,400,500,700|Google+Sans:300,400,500,700|Google+Sans+Display:400|Google+Sans+Text:400,500,700" />
+
+  <link rel="stylesheet" href="https://cdn.qwiklabs.com/assets/application-edddf7c798a85807842adbba9cead80319b544dd.css"
+    media="all" />
+  <link rel="stylesheet" href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css" />
+
+
+  <style>
+    :root {
+      --primary-text-on-surface-color: #355d9c;
+      --primary-text-on-surface-color-dark: #2f538b;
+      --primary-text-on-surface-color-darker: #29497a;
+      --primary-text-on-surface-color-darkest: #243e69;
+      --primary-surface-color: #586d8d;
+      --primary-surface-color-rgb: 88, 109, 141;
+      --primary-surface-color-light: #e0e4eb;
+      --primary-surface-color-lightest: #eff2f5;
+      --text-on-primary-color: #ffffff;
+      --accent-text-on-surface-color: #f000e8;
+      --accent-surface-color: #f9ab00;
+      --accent-surface-color-rgb: 249, 171, 0;
+      --accent-surface-color-light: #ffefcc;
+      --text-on-accent-color: #000000;
+    }
+  </style>
+
+
+
+</head>
+
+<body
+  class=' course-template-show-body course-template-show-body relaunch course-layout-body l-full no-nav relaunch  learner-layout-body relaunch '>
+  <ql-drawer-container class='body-container' relaunch>
+    <div class='sticky' slot='header'>
+      <ql-toolbar class='app-toolbar' jumpEnabled role='banner'>
+        <div class='toolbar-navigation' slot='navigation'>
+          <ql-toggle-button animatedToggle class='always-show' data-tooltip-text='Menu' for='app-nav' icon='menu'
+            id='menu-toggle' label='Menu' offIcon='menu' onIcon='menu_open'></ql-toggle-button>
+
+        </div>
+        <div class='toolbar-title gs-logo' slot='title'>
+          <a class="custom-logo" aria-label="Google Skills" href="/">
+            <div class="custom-logo"><img alt="Google Skills" height="24" aria-label="Google Skills"
+                src="https://cdn.qwiklabs.com/lqJbxogu4tSLez1OvjDcIO8rwow6cPLwvrfIdmQLf6U%3D" /></div>
+          </a>
+
+        </div>
+        <div class='search-bar tablet-hide' slot='search'>
+          <div class='search-bar-container visible-search-header'>
+            <form class="header-search-form" action="/catalog" accept-charset="UTF-8" method="get">
+              <input aria-autocomplete='list' aria-controls='searchbar-autocomplete-menu-center' aria-expanded='false'
+                autocomplete='off' class='header-search-input' id='searchbar-autocomplete-center' name='keywords'
+                placeholder='What do you want to learn today?' role='combobox'>
+              <div class='elevation-3' id='searchbar-autocomplete-loading-icon-center'>
+                <ql-spinner></ql-spinner>
+                <div class='ql-body-small'>Loading...</div>
+              </div>
+              <div class='elevation-3' id='searchbar-autocomplete-no-results-center'>
+                <div class='ql-body-small'>No results found.</div>
+              </div>
+              <ul aria-hidden='true' aria-live='polite' class='hide' id='searchbar-autocomplete-menu-center'
+                role='listbox'></ul>
+              <ql-icon-button class='search-bar-button search-button' icon='search' label='Search'
+                type='submit'></ql-icon-button>
+            </form>
+
+            <ql-icon-button class='exit-search-button show-tablet' icon='close' inert
+              label='Exit search'></ql-icon-button>
+          </div>
+        </div>
+        <div class='toolbar-actions' slot='action'>
+
+          <ql-icon-button class='header-search-button show-tablet' data-toggle='tooltip' icon='search'
+            label='Search for Google Skills content' title='Search'></ql-icon-button>
+
+          <ql-icon-button class='mobile-hide' data-tooltip-text='Help' icon='help_outline' id='help-menu-button'
+            label='Help options'></ql-icon-button>
+          <ql-menu for='help-menu-button' id='help-menu'>
+            <ql-menu-item data-analytics-action='opened_help' data-analytics-label='course' label='Help Center'
+              onclick='hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:null},&quot;context&quot;:&quot;course&quot;})'></ql-menu-item>
+            <ql-menu-item href='mailto:support-skills@google.com' label='Email support'></ql-menu-item>
+            <ql-menu-item
+              href='https://reportingwidget.google.com/widget/54?cid=1&amp;url=https://www.skills.google/paths/16/course_templates/72?'
+              label='Report Illegal Content'></ql-menu-item>
+          </ql-menu>
+
+          <ql-icon-button class='mobile-hide' data-tooltip-text='Language' icon='language' id='language'
+            label='Language options'></ql-icon-button>
+          <ql-menu for='language'>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ar'
+              href='/paths/16/course_templates/72?locale=ar' label='العربية‬‎' lang='ar'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='de'
+              href='/paths/16/course_templates/72?locale=de' label='Deutsch' lang='de'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='en'
+              href='/paths/16/course_templates/72?locale=en' label='English' lang='en'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='es'
+              href='/paths/16/course_templates/72?locale=es' label='español (Latinoamérica)' lang='es'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr'
+              href='/paths/16/course_templates/72?locale=fr' label='français' lang='fr'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr_CA'
+              href='/paths/16/course_templates/72?locale=fr_CA' label='français (Canada)' lang='fr-CA'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='he'
+              href='/paths/16/course_templates/72?locale=he' label='עברית' lang='he'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='id'
+              href='/paths/16/course_templates/72?locale=id' label='bahasa Indonesia' lang='id'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='it'
+              href='/paths/16/course_templates/72?locale=it' label='italiano' lang='it'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ja'
+              href='/paths/16/course_templates/72?locale=ja' label='日本語' lang='ja'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ko'
+              href='/paths/16/course_templates/72?locale=ko' label='한국어' lang='ko'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pl'
+              href='/paths/16/course_templates/72?locale=pl' label='polski' lang='pl'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_BR'
+              href='/paths/16/course_templates/72?locale=pt_BR' label='português (Brasil)' lang='pt-BR'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_PT'
+              href='/paths/16/course_templates/72?locale=pt_PT' label='português (Portugal)'
+              lang='pt-PT'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ru'
+              href='/paths/16/course_templates/72?locale=ru' label='русский' lang='ru'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='tr'
+              href='/paths/16/course_templates/72?locale=tr' label='Türkçe' lang='tr'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='uk'
+              href='/paths/16/course_templates/72?locale=uk' label='українська' lang='uk'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh'
+              href='/paths/16/course_templates/72?locale=zh' label='简体中文' lang='zh'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh_TW'
+              href='/paths/16/course_templates/72?locale=zh_TW' label='繁體中文' lang='zh-TW'></ql-menu-item>
+          </ql-menu>
+
+          <!-- Main more button (mobile only) -->
+          <ql-icon-button aria-expanded='false' aria-haspopup aria-label='More options' class='mobile-show'
+            data-toggle='tooltip' icon='more_vert' id='mobile-more-menu-button' title='More options'></ql-icon-button>
+          <!-- Main more menu -->
+          <ql-menu for='mobile-more-menu-button' id='mobile-more-menu'>
+
+
+            <!-- Help submenu trigger item -->
+            <ql-menu-item aria-controls='help-submenu' aria-expanded='false' aria-haspopup='true'
+              id='help-submenu-button' label='Help' role='button' tabindex='0'></ql-menu-item>
+            <!-- Language Submenu Trigger Item -->
+            <ql-menu-item aria-controls='language-submenu' aria-expanded='false' aria-haspopup='true'
+              id='language-submenu-button' label='Language' role='button' tabindex='0'></ql-menu-item>
+          </ql-menu>
+
+          <!-- Help Submenu -->
+          <!-- This menu is controlled by the item above. -->
+          <ql-menu class='submenu' for='help-submenu-button' id='help-submenu'>
+            <ql-menu-item data-analytics-action='opened_help' data-analytics-label='course' label='Help Center'
+              onclick='hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:null},&quot;context&quot;:&quot;course&quot;})'></ql-menu-item>
+            <ql-menu-item href='mailto:support-skills@google.com' label='Email support'></ql-menu-item>
+            <ql-menu-item
+              href='https://reportingwidget.google.com/widget/54?cid=1&amp;url=https%3A%2F%2Fwww.skills.google%2Fpaths%2F16%2Fcourse_templates%2F72%3F'
+              label='Report Illegal Content'></ql-menu-item>
+          </ql-menu>
+          <!-- Language Submenu -->
+          <!-- This menu is controlled by the item above. -->
+          <ql-menu class='submenu' for='language-submenu-button' id='language-submenu'>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ar'
+              href='/paths/16/course_templates/72?locale=ar' label='العربية‬‎' lang='ar' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='de'
+              href='/paths/16/course_templates/72?locale=de' label='Deutsch' lang='de' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='en'
+              href='/paths/16/course_templates/72?locale=en' label='English' lang='en' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='es'
+              href='/paths/16/course_templates/72?locale=es' label='español (Latinoamérica)' lang='es'
+              role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr'
+              href='/paths/16/course_templates/72?locale=fr' label='français' lang='fr' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr_CA'
+              href='/paths/16/course_templates/72?locale=fr_CA' label='français (Canada)' lang='fr-CA'
+              role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='he'
+              href='/paths/16/course_templates/72?locale=he' label='עברית' lang='he' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='id'
+              href='/paths/16/course_templates/72?locale=id' label='bahasa Indonesia' lang='id'
+              role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='it'
+              href='/paths/16/course_templates/72?locale=it' label='italiano' lang='it' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ja'
+              href='/paths/16/course_templates/72?locale=ja' label='日本語' lang='ja' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ko'
+              href='/paths/16/course_templates/72?locale=ko' label='한국어' lang='ko' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pl'
+              href='/paths/16/course_templates/72?locale=pl' label='polski' lang='pl' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_BR'
+              href='/paths/16/course_templates/72?locale=pt_BR' label='português (Brasil)' lang='pt-BR'
+              role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_PT'
+              href='/paths/16/course_templates/72?locale=pt_PT' label='português (Portugal)' lang='pt-PT'
+              role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ru'
+              href='/paths/16/course_templates/72?locale=ru' label='русский' lang='ru' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='tr'
+              href='/paths/16/course_templates/72?locale=tr' label='Türkçe' lang='tr' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='uk'
+              href='/paths/16/course_templates/72?locale=uk' label='українська' lang='uk'
+              role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh'
+              href='/paths/16/course_templates/72?locale=zh' label='简体中文' lang='zh' role='menuitem'></ql-menu-item>
+            <ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh_TW'
+              href='/paths/16/course_templates/72?locale=zh_TW' label='繁體中文' lang='zh-TW'
+              role='menuitem'></ql-menu-item>
+          </ql-menu>
+
+          <ql-button class='mobile-hide' data-analytics-action='clicked_header_sign_in' href='/users/sign_in'
+            label='Sign in' text></ql-button>
+          <ql-button ariaLabel='Join by creating an account' class='join-btn'
+            data-analytics-action='clicked_header_join' href='/users/sign_up' label='Join'></ql-button>
+          <script src='https://accounts.google.com/gsi/client'></script>
+          <div
+            data-authenticity_token='mFTzOqWCJGRCGsbiyg2E4rNBI_HAyTl-3ty6STplMsN8eoyt_0-y4DLmNmmacTi1wcETTWM4p8MCydhSTx1OWQ'
+            data-cancel_on_tap_outside='false'
+            data-client_id='1023251155897-tb54g624q9e77gtsrnemgv4c2ihekurv.apps.googleusercontent.com'
+            data-login_uri='/auth/google?tos=false' data-prompt_parent_id='g_id_onload' data-turbo='false'
+            id='g_id_onload'></div>
+
+
+        </div>
+      </ql-toolbar>
+    </div>
+    <!-- / "responsive" value of 768 should be aligned to scss variable "$drawer-responsive-breakpoint" -->
+    <ql-drawer id='app-nav' openWidth='15' relaunch responsive='768' slot='drawer' width='6' widthUnit='rem'>
+      <nav class='ql-sidenav relaunch'>
+        <ql-fab expandable href='/users/sign_in' icon='login' label='Sign in'></ql-fab>
+        <ql-sidenav-item href='/' icon='home' label='Home'
+          onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/&#39;, label:&#39;Home&#39;})' relaunch>
+
+        </ql-sidenav-item>
+
+        <ql-sidenav-item href='/catalog' icon='book_2' label='Catalog'
+          onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/catalog&#39;, label:&#39;Catalog&#39;})'
+          relaunch>
+
+        </ql-sidenav-item>
+
+        <ql-sidenav-item active href='/paths' icon='conversion_path' iconFill label='Paths'
+          onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/paths&#39;, label:&#39;Paths&#39;})'
+          relaunch>
+
+        </ql-sidenav-item>
+
+        <ql-sidenav-item expandable icon='category' label='Collections'
+          onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;&#39;, label:&#39;Collections&#39;})'
+          relaunch>
+          <div class='sub-items' slot='submenu'>
+            <ql-sidenav-item href='/collections/ai-boost-bites' label='AI Boost Bites'
+              onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/collections/ai-boost-bites&#39;, label:&#39;AI Boost Bites&#39;})'
+              relaunch>
+
+            </ql-sidenav-item>
+
+            <ql-sidenav-item href='/collections/career-certificates' label='Career Certificates'
+              onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/collections/career-certificates&#39;, label:&#39;Career Certificates&#39;})'
+              relaunch>
+
+            </ql-sidenav-item>
+
+            <ql-sidenav-item href='/collections/cloud' label='Cloud'
+              onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/collections/cloud&#39;, label:&#39;Cloud&#39;})'
+              relaunch>
+
+            </ql-sidenav-item>
+
+            <ql-sidenav-item href='/collections/deepmind' label='DeepMind'
+              onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/collections/deepmind&#39;, label:&#39;DeepMind&#39;})'
+              relaunch>
+
+            </ql-sidenav-item>
+
+          </div>
+
+        </ql-sidenav-item>
+
+        <ql-sidenav-item href='/subscriptions' icon='subscriptions' label='Subscriptions'
+          onclick='ql.track(&#39;click_sidenav_item&#39;, { pagePath:&#39;/subscriptions&#39;, label:&#39;Subscriptions&#39;})'
+          relaunch>
+
+        </ql-sidenav-item>
+
+      </nav>
+
+    </ql-drawer>
+    <ql-drawer-content class='body-content' slot='drawer-content'>
+      <div class='banner'>
+        <div id='callout-container'>
+        </div>
+
+      </div>
+      <div class='page-header'>
+        <div class='page-main-banner'>
+          <div class='page-main-banner-breadcrumbs'>
+            <nav aria-label='Breadcrumb' class='breadcrumbs-container' role='navigation'>
+              <ol>
+                <li class='breadcrumb-item ql-label-medium'>
+                  <ql-icon-button href='/' icon='home_filled' iconFill></ql-icon-button>
+
+                  <ql-icon class='breadcrumb-arrow'>navigate_next</ql-icon>
+                </li>
+                <li class='breadcrumb-item ql-label-medium'>
+                  <a href="/paths/16">Data Engineer</a>
+                  <ql-icon class='breadcrumb-arrow'>navigate_next</ql-icon>
+                </li>
+                <li class='breadcrumb-item ql-label-medium' tabindex='0'>
+                  Preparing for your Professional Data Engineer Journey
+                </li>
+              </ol>
+            </nav>
+
+          </div>
+          <div class='page-main-banner-console-free-trial'>
+            <div class='console-free-trial'>
+              <p class='console-free-trial-content ql-body-medium'>
+                Apply your skills in Google Cloud console
+              </p>
+              <div class='console-free-trial-actions'>
+                <ql-button data-analytics-action='gcp_cta' data-analytics-position='free trial banner'
+                  data-analytics-type='eventParams' elevated href='https://console.cloud.google.com/freetrial'
+                  label='Get started' target='_blank'></ql-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <main id='jump-content'>
+        <ql-drawer-container class='course-container'>
+          <ql-drawer-content class='course-activity' slot='drawer-content'>
+            <div class='course-activity-header'>
+              <div class='course-toc-cont'>
+              </div>
+            </div>
+            <div class='course-activity-content' role='region' tabindex='0'>
+
+
+              <div class='learning-wrapper'>
+                <div class='top-matter'>
+                  <div class='top-container'>
+                    <div class='top-content'>
+                      <div class='top-title'>
+                        <div class='learnable-type-chip'>
+                          <img alt='Course Path Icon'
+                            src='https://cdn.qwiklabs.com/assets/courses/shapes-activities-chip-7672170a090f2a4d334f3d0d47468e520e8534c7.svg'>
+                          Course
+                        </div>
+                        <h1 class='ql-display-small'>Preparing for your Professional Data Engineer Journey</h1>
+                        <div class='course-details'>
+                          <span class='course-detail'>
+                            1 hour
+                          </span>
+                          <span class='course-detail'>
+                            Advanced
+                          </span>
+                          <span class='course-detail'>
+                            Updated about 2 months ago
+                          </span>
+                        </div>
+                      </div>
+                      <div class='top-image'>
+                        <img alt='Course Path Shape'
+                          src='https://cdn.qwiklabs.com/assets/courses/shapes-activities-5b6ad5d706a5803056d637d8cbe25cdd6f33fa88.svg'>
+                      </div>
+                    </div>
+                    <div class='top-cta-progress-section'>
+                      <div class='cta-and-like-section'>
+                        <div class='course-badge-buttons__buttons'>
+                          <ql-button href='/users/sign_up' icon='login' label='Sign in or join' outlined></ql-button>
+                        </div>
+
+                      </div>
+                      <div alt='Progress bar' class='learnable-progress-bar'>
+                        <ql-progress-bar color='#0B57D0' progress='0'
+                          progressBarStyles='{&quot;height&quot;:&quot;8px&quot;,&quot;background&quot;:&quot;progress_background&quot;,&quot;width&quot;:&quot;100%&quot;}'></ql-progress-bar>
+                      </div>
+                      <div class='gamification-section'>
+                        <div class='learnable-stars'>
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class='course-table-of-content'>
+                  <ql-contents-menu
+                    modules='[{&quot;id&quot;:&quot;86822&quot;,&quot;title&quot;:&quot;Introduction to the Professional Data Engineer (PDE) Certification&quot;,&quot;description&quot;:&quot;\u003cp\u003eWelcome to Preparing for the Professional Cloud Data Engineer Journey. In this introductory module, you learn about the role of a Professional Data Engineer. We discuss the types of resources available to support your study, and how to use the workbook to create your study plan. \u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620089&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613054&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613054&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:68000,&quot;title&quot;:&quot;Course Introduction&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620090&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613055&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613055&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:91000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620091&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613056&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613056&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:242000,&quot;title&quot;:&quot;Introduction to the Professional Data Engineer role&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620092&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613057&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613057&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:40000,&quot;title&quot;:&quot;Certification value and benefits&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620093&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613058&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613058&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:244000,&quot;title&quot;:&quot;Certification process&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620094&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613059&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613059&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:198000,&quot;title&quot;:&quot;Creating your study plan&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620095&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613060&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/documents/613060&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:1800000,&quot;title&quot;:&quot;Course Workbook&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;86823&quot;,&quot;title&quot;:&quot;Designing Data Processing Systems&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module, you’ll explore considerations for designing data processing systems, which correspond to section 1 of the Professional Data Engineer Exam Guide. You start by discussing how a Professional Data Engineer performs this role at Cymbal Retail. Next, you’ll assess your skills in this section through 10 diagnostic questions. Then you’ll review these questions. Based on the areas you need to learn more about, you’ll identify resources to include in your study plan. \u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620096&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613061&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613061&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:33000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620097&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613062&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613062&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:138000,&quot;title&quot;:&quot;Migrating data from private data centers to Google Cloud for Cymbal Retail&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620098&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613063&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613063&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:28000,&quot;title&quot;:&quot;Introduction: Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620099&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613064&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613064&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:337000,&quot;title&quot;:&quot;Diagnostic Questions Practice Demo&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620100&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613065&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613065&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:3000000,&quot;title&quot;:&quot;Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620101&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613066&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613066&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:62000,&quot;title&quot;:&quot;Your study plan&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620102&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613067&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/documents/613067&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:1800000,&quot;title&quot;:&quot;Study plan resources&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620103&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;613068&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613068&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:600000,&quot;title&quot;:&quot;Knowledge Check&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;86824&quot;,&quot;title&quot;:&quot;Ingesting and Processing  Data&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module you’ll explore considerations for ingesting and processing data, which corresponds to section 2 of the Professional Data Engineer Exam Guide. You’ll start by discussing how a Professional Data Engineer performs this role at Cymbal Retail. Next, you’ll assess your skills in this section through 10 diagnostic questions. Then you’ll review these questions. Based on the areas you need to learn more about, you’ll identify resources to include in your study plan. \u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620104&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613069&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613069&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:32000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620105&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613070&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613070&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:127000,&quot;title&quot;:&quot;Ingesting and processing data for Cymbal Retail&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620106&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613071&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613071&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:17000,&quot;title&quot;:&quot;Introduction: Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620107&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613072&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613072&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:3000000,&quot;title&quot;:&quot;Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620108&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613073&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613073&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:51000,&quot;title&quot;:&quot;Your study plan&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620109&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613074&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/documents/613074&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:1800000,&quot;title&quot;:&quot;Study plan resources&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620110&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;613075&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613075&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:600000,&quot;title&quot;:&quot;Knowledge Check&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;86825&quot;,&quot;title&quot;:&quot;Storing Data&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module you’ll explore considerations for storing data, which corresponds to section 3 of the Professional Data Engineer Exam Guide. You start by discussing how a Professional Data Engineer performs this role at Cymbal Retail. Next, you’ll assess your skills in this section through 10 diagnostic questions. Then you’ll review these questions. Based on the areas you need to learn more about, you’ll identify resources to include in your study plan. \u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620111&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613076&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613076&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:30000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620112&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613077&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613077&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:103000,&quot;title&quot;:&quot;Storing Cymbal Retail’s data&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620113&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613078&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613078&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:29000,&quot;title&quot;:&quot;Introduction: Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620114&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613079&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613079&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:3000000,&quot;title&quot;:&quot;Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620115&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613080&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613080&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:63000,&quot;title&quot;:&quot;Your study plan&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620116&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613081&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/documents/613081&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:1800000,&quot;title&quot;:&quot;Study plan resources&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620117&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;613082&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613082&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:600000,&quot;title&quot;:&quot;Knowledge Check&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;86826&quot;,&quot;title&quot;:&quot;Preparing and Using Data for Analysis&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module, you’ll explore considerations when preparing and using data for analysis, which corresponds to section 4 of the Professional Data Engineer Exam Guide. You start by discussing how a Professional Data Engineer performs this role at Cymbal Retail. Next, you’ll assess your skills in this section through 10 diagnostic questions. Then you’ll review these questions. Based on the areas you need to learn more about, you’ll identify resources to include in your study plan. \u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620118&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613083&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613083&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:40000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620119&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613084&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613084&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:119000,&quot;title&quot;:&quot;Preparing and using Cymbal Retail’s data for analysis&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620120&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613085&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613085&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:29000,&quot;title&quot;:&quot;Introduction: Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620121&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613086&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613086&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:3000000,&quot;title&quot;:&quot;Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620122&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613087&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613087&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:63000,&quot;title&quot;:&quot;Your study plan&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620123&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613088&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/documents/613088&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:1800000,&quot;title&quot;:&quot;Study plan resources&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620124&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;613089&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613089&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:600000,&quot;title&quot;:&quot;Knowledge Check&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;86827&quot;,&quot;title&quot;:&quot;Maintaining and Automating Data Workloads&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module you’ll explore considerations for maintaining and automating data workloads, which corresponds to section 5 of the Professional Data Engineer Exam Guide. You start by discussing how a Professional Data Engineer performs this role at Cymbal Retail. Next, you’ll assess your skills in this section through 10 diagnostic questions. Then you’ll review these questions. Based on the areas you need to learn more about, you’ll identify resources to include in your study plan. \u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620125&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613090&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613090&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:40000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620126&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613091&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613091&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:144000,&quot;title&quot;:&quot;Maintaining and automating data workloads at Cymbal Retail&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620127&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613092&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613092&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:29000,&quot;title&quot;:&quot;Introduction: Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620128&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613093&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613093&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:3000000,&quot;title&quot;:&quot;Diagnostic questions&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620129&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613094&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613094&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:63000,&quot;title&quot;:&quot;Your study plan&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620130&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613095&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/documents/613095&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:1800000,&quot;title&quot;:&quot;Study plan resources&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620131&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;613096&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/quizzes/613096&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:600000,&quot;title&quot;:&quot;Knowledge Check&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;86828&quot;,&quot;title&quot;:&quot;Summary&quot;,&quot;description&quot;:&quot;\u003cp\u003e In this module, you focus on creating your individualized study plan. You will use the notes you’ve been taking throughout this course to put together a study plan for each week in your Professional Data Engineer journey.\u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;620132&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613097&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613097&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:20000,&quot;title&quot;:&quot;Module Overview&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;620133&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;613098&quot;,&quot;href&quot;:&quot;/paths/16/course_templates/72/video/613098&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:223000,&quot;title&quot;:&quot;Weekly Study Goals&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;next-steps&quot;,&quot;title&quot;:&quot;Your Next Steps&quot;,&quot;description&quot;:null,&quot;steps&quot;:[{&quot;id&quot;:&quot;badge-step&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;badge&quot;,&quot;href&quot;:null,&quot;isLocked&quot;:true,&quot;duration&quot;:null,&quot;title&quot;:&quot;Course Badge&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;badge&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:true,&quot;credentialType&quot;:null}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:true}]'></ql-contents-menu>
+                </div>
+                <div class='course-description-section'>
+                  <div class='course-description'>
+                    <p>This course helps learners create a study plan for the PDE (Professional Data Engineer)
+                      certification exam. Learners explore the breadth and scope of the domains covered in the exam.
+                      Learners assess their exam readiness and create their individual study plan.</p>
+                  </div>
+                  <div class='course-badge-buttons'>
+                    <div class='course-badge-buttons__text-badge-section'>
+                      <div class='course-badge-buttons__text'>
+                        <p>Earn a badge today!</p>
+                      </div>
+                    </div>
+                  </div>
+
+
+                </div>
+                <div class='course-activities'>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Course Introduction'
+                    path='/paths/16/course_templates/72/video/613054' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='2 minutes' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613055' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='4 minutes' elevation='-1'
+                    name='Introduction to the Professional Data Engineer role'
+                    path='/paths/16/course_templates/72/video/613056' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Certification value and benefits'
+                    path='/paths/16/course_templates/72/video/613057' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='4 minutes' elevation='-1' name='Certification process'
+                    path='/paths/16/course_templates/72/video/613058' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='3 minutes' elevation='-1' name='Creating your study plan'
+                    path='/paths/16/course_templates/72/video/613059' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='30 minutes' elevation='-1' name='Course Workbook'
+                    path='/paths/16/course_templates/72/documents/613060' relaunch_extra
+                    type='document'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613061' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='2 minutes' elevation='-1'
+                    name='Migrating data from private data centers to Google Cloud for Cymbal Retail'
+                    path='/paths/16/course_templates/72/video/613062' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='less than a minute' elevation='-1'
+                    name='Introduction: Diagnostic questions' path='/paths/16/course_templates/72/video/613063'
+                    relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='6 minutes' elevation='-1' name='Diagnostic Questions Practice Demo'
+                    path='/paths/16/course_templates/72/video/613064' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='1 hour' elevation='-1' name='Diagnostic questions'
+                    path='/paths/16/course_templates/72/quizzes/613065' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Your study plan'
+                    path='/paths/16/course_templates/72/video/613066' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='30 minutes' elevation='-1' name='Study plan resources'
+                    path='/paths/16/course_templates/72/documents/613067' relaunch_extra
+                    type='document'></ql-activity-card>
+                  <ql-activity-card duration='10 minutes' elevation='-1' name='Knowledge Check'
+                    path='/paths/16/course_templates/72/quizzes/613068' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613069' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='2 minutes' elevation='-1'
+                    name='Ingesting and processing data for Cymbal Retail'
+                    path='/paths/16/course_templates/72/video/613070' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='less than a minute' elevation='-1'
+                    name='Introduction: Diagnostic questions' path='/paths/16/course_templates/72/video/613071'
+                    relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='1 hour' elevation='-1' name='Diagnostic questions'
+                    path='/paths/16/course_templates/72/quizzes/613072' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Your study plan'
+                    path='/paths/16/course_templates/72/video/613073' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='30 minutes' elevation='-1' name='Study plan resources'
+                    path='/paths/16/course_templates/72/documents/613074' relaunch_extra
+                    type='document'></ql-activity-card>
+                  <ql-activity-card duration='10 minutes' elevation='-1' name='Knowledge Check'
+                    path='/paths/16/course_templates/72/quizzes/613075' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613076' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='2 minutes' elevation='-1' name='Storing Cymbal Retail’s data'
+                    path='/paths/16/course_templates/72/video/613077' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='less than a minute' elevation='-1'
+                    name='Introduction: Diagnostic questions' path='/paths/16/course_templates/72/video/613078'
+                    relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='1 hour' elevation='-1' name='Diagnostic questions'
+                    path='/paths/16/course_templates/72/quizzes/613079' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Your study plan'
+                    path='/paths/16/course_templates/72/video/613080' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='30 minutes' elevation='-1' name='Study plan resources'
+                    path='/paths/16/course_templates/72/documents/613081' relaunch_extra
+                    type='document'></ql-activity-card>
+                  <ql-activity-card duration='10 minutes' elevation='-1' name='Knowledge Check'
+                    path='/paths/16/course_templates/72/quizzes/613082' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613083' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='2 minutes' elevation='-1'
+                    name='Preparing and using Cymbal Retail’s data for analysis'
+                    path='/paths/16/course_templates/72/video/613084' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='less than a minute' elevation='-1'
+                    name='Introduction: Diagnostic questions' path='/paths/16/course_templates/72/video/613085'
+                    relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='1 hour' elevation='-1' name='Diagnostic questions'
+                    path='/paths/16/course_templates/72/quizzes/613086' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Your study plan'
+                    path='/paths/16/course_templates/72/video/613087' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='30 minutes' elevation='-1' name='Study plan resources'
+                    path='/paths/16/course_templates/72/documents/613088' relaunch_extra
+                    type='document'></ql-activity-card>
+                  <ql-activity-card duration='10 minutes' elevation='-1' name='Knowledge Check'
+                    path='/paths/16/course_templates/72/quizzes/613089' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613090' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='2 minutes' elevation='-1'
+                    name='Maintaining and automating data workloads at Cymbal Retail'
+                    path='/paths/16/course_templates/72/video/613091' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='less than a minute' elevation='-1'
+                    name='Introduction: Diagnostic questions' path='/paths/16/course_templates/72/video/613092'
+                    relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='1 hour' elevation='-1' name='Diagnostic questions'
+                    path='/paths/16/course_templates/72/quizzes/613093' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='1 minute' elevation='-1' name='Your study plan'
+                    path='/paths/16/course_templates/72/video/613094' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='30 minutes' elevation='-1' name='Study plan resources'
+                    path='/paths/16/course_templates/72/documents/613095' relaunch_extra
+                    type='document'></ql-activity-card>
+                  <ql-activity-card duration='10 minutes' elevation='-1' name='Knowledge Check'
+                    path='/paths/16/course_templates/72/quizzes/613096' relaunch_extra type='quiz'></ql-activity-card>
+                  <ql-activity-card duration='less than a minute' elevation='-1' name='Module Overview'
+                    path='/paths/16/course_templates/72/video/613097' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card duration='4 minutes' elevation='-1' name='Weekly Study Goals'
+                    path='/paths/16/course_templates/72/video/613098' relaunch_extra type='video'></ql-activity-card>
+                  <ql-activity-card elevation='-1' inactiveLinks name='Course Badge' relaunch_extra
+                    type='badge'></ql-activity-card>
+                </div>
+
+              </div>
+
+            </div>
+          </ql-drawer-content>
+        </ql-drawer-container>
+
+      </main>
+
+    </ql-drawer-content>
+    <footer slot='drawer-content'>
+      <nav ariaLabel='Footer navigation' class='application-footer relaunch-extra'>
+
+        <div class='footer-container'>
+          <div class='footer-logo'>
+            <a class="custom-logo" aria-label="Google Skills" href="/">
+              <div class="custom-logo"><img alt="Google Skills" height="24" aria-label="Google Skills"
+                  src="https://cdn.qwiklabs.com/lqJbxogu4tSLez1OvjDcIO8rwow6cPLwvrfIdmQLf6U%3D" /></div>
+            </a>
+          </div>
+          <div class='footer-row'>
+            <a href="/">Home</a>
+            <a href="/catalog">Catalog</a>
+            <a href="/paths">Paths</a>
+            <a href="/subscriptions">Subscriptions</a>
+            <a href="/profile/stay_on_track">Activities</a>
+            <a href="/profile/badges">Achievements</a>
+            <a href="/my_account/profile">Settings</a>
+            <a href="/users/sign_in">Sign in or Join</a>
+          </div>
+          <div class='footer-row'>
+            <a class="g-cloud-youtube" target="_blank" rel="noopener"
+              href="https://www.youtube.com/@googlecloud"><ql-icon icon='video_youtube'></ql-icon>
+              Youtube
+            </a><a rel="noopener"
+              onclick="hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:null},&quot;context&quot;:&quot;course&quot;}); return false;"
+              href="/help">Help Center</a>
+            <a href="/terms_of_service">Terms</a>
+            <a target="_blank" href="/privacy_policy">Privacy</a>
+            <a aria-hidden='true' class='glue-cookie-notification-bar-control'>
+              Manage cookies
+            </a>
+          </div>
+        </div>
+
+      </nav>
+    </footer>
+  </ql-drawer-container>
+
+  <span class='hidden' id='flash-sibling-before'></span>
+  <ql-snackbar></ql-snackbar>
+
+  <script data-glue-cookie-notification-bar-category='2A'
+    src='https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js'></script>
+
+
+
+  <ql-dialog id='js-challenge-help-dialog'>
+    <h1 class='ql-headline-large'>The Power of Challenge Labs</h1>
+    <p class='text--small text--light l-mtl'>
+      Now you can fast track your way to a skill badge without having to take the entire course. If you&#39;re confident
+      with your skills, jump straight to the challenge lab.
+    </p>
+  </ql-dialog>
+
+  <ql-dialog dismissalLabel='Cancel'
+    headline='A newer version of this course is available. Your progress will carry over if you choose to upgrade. However, your completion percentage may change if the new version has added or removed any learning activities. Click the preview button to see the course changes before upgrading.'
+    icon='error' id='course-session-upgrade-modal'>
+    <ql-button href='/paths/16/course_templates/72/preview' label='Preview' slot='action'>
+      Preview
+    </ql-button>
+  </ql-dialog>
+
+
+
+  <script>
+    document.addEventListener("turbo:load", function () {
+      ql.initMaterialInputs();
+      initChosen();
+      initTabs();
+      ql.list.init();
+      ql.favoriting.init();
+      ql.header.myAccount.init();
+      initTooltips();
+      ql.autocomplete.init();
+      ql.modals.init();
+      ql.toggleButtons.init();
+      ql.analytics.init();
+      Turbo.session.drive = false;
+      ql.aiFeaturesSurvey.init();
+      ql.course_resize_layout.init("Data Engineer", "Path", "Preparing for your Professional Data Engineer Journey", "Course", "");
+      ql.searchHeader.init({ isRelaunch: true });
+      (new ql.searchAutocomplete()).init({ forHeaderNew: true, topSuggestions: [{ "label": "machine learning" }, { "label": "cloud architecture" }, { "label": "generative ai" }, { "label": "data analyst" }, { "label": "security fundamentals" }] });
+      ql.messages.init();
+      ql.jumpContent.init();
+
+    }, { once: true });
+  </script>
+  <script>
+    document.addEventListener("turbo:load", function () {
+      ql.celebrations.init({ "course_complete": "COURSE COMPLETED", "document_complete": "DOCUMENT COMPLETED", "experience_label": "Experience points", "lab_complete": "LAB COMPLETED", "learning_plan_complete": "PATH COMPLETED", "lesson_complete": "LESSON COMPLETED", "quiz_complete": "QUIZ COMPLETED", "video_complete": "VIDEO COMPLETED" });
+      ql.achievements.init();
+    }, { once: true });
+  </script>
+
+</body>
+
+</html>
