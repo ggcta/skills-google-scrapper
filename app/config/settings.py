@@ -12,11 +12,11 @@ OUTPUT_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "csbmdvault"
 DATA_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "data"
 
 # Base URL for the Cloud Skills Boost website
-BASE_URL: str = "https://www.cloudskillsboost.google"
+BASE_URL: str = "https://www.skills.google/"
 BASE_URL_PATHS: str = f"{BASE_URL}/paths"
 BASE_URL_LAB: str = f"{BASE_URL}/catalog_lab"
 BASE_URL_COURSES: str = f"{BASE_URL}/course_templates"
-BASE_URL_PARTNERS: str = "https://partner.cloudskillsboost.google"
+BASE_URL_PARTNERS: str = "https://partner.skills.google/"
 
 # Webdriver configuration
 WEBDRIVER_PROFILE_FOLDER_NAME: str = PROJECT_ROOT / '.webdriver_profiles'
