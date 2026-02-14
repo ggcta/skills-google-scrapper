@@ -166,7 +166,7 @@ class BaseEntity(Serialize):
 
         front_matter_lines = ["---"]
         if hasattr(self, 'id'):
-            front_matter_lines.append(f"id: {self.id}")
+            front_matter_lines.append(f"id: '{self.id}'")
         if hasattr(self, 'name'):
             front_matter_lines.append(f"name: '{self.name}'")
         if hasattr(self, 'type'):
