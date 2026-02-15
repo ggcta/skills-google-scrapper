@@ -254,14 +254,31 @@ class Course(BaseEntity):
 
         print(f"(process_lab) •-> Lab: {activity['id']:>6} - {activity['title']}")
         try:
-            response = requests.get(url)
-            response.raise_for_status()
-            lab_page_html = BeautifulSoup(response.text, "html.parser")
+            if self.driver:
+                self.driver.get(url)
+                
+                # Check for sign-in redirect
+                if "sign_in" in self.driver.current_url:
+                     print(f"\n\033[93m[!] Authentication required for lab {activity['id']}.\033[0m")
+                     print("Please sign in to the browser window if you haven't.")
+                     input("Press Enter after you have signed in and the page is loaded...")
+                     self.driver.get(url) # Retry loading the lab page
+                
+                lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(url)
+                response.raise_for_status()
+                lab_page_html = BeautifulSoup(response.text, "html.parser")
 
             lab_review_lab_id_element = lab_page_html.select_one(LAB_REVIEW_LAB_ID)
             lab_content_outline_element = lab_page_html.select_one(LAB_CONTENT_OUTLINE)
 
-            lab_id = lab_review_lab_id_element["value"].strip()
+            if lab_review_lab_id_element:
+                lab_id = lab_review_lab_id_element["value"].strip()
+            else:
+                # Fallback to activity ID if element not found
+                # print(f"(process_lab) [Warning] lab_review_lab_id not found. Using activity ID {activity['id']}")
+                lab_id = activity['id']
 
             # Create a Lab instance for the lab_id
             lab = Lab(
@@ -310,9 +327,22 @@ class Course(BaseEntity):
         # TODO: Extract Quiz that need to press the 'Start quiz' button, ie. course/201
         print(f"(process_quiz) •-> Qui: {activity['id']:>6} - {activity['title']}")
         try:
-            response = requests.get(url)
-            response.raise_for_status()
-            quiz_page_html = BeautifulSoup(response.text, "html.parser")
+            if self.driver:
+                self.driver.get(url)
+                if "sign_in" in self.driver.current_url:
+                     # Allow silent fail or prompt? For quiz, maybe prompt if important.
+                     # But quizzes are usually less critical than labs/videos?
+                     # Let's align with others: prompt.
+                     print(f"\n\033[93m[!] Authentication required for quiz {activity['id']}.\033[0m")
+                     print("Please sign in to the browser window if you haven't.")
+                     input("Press Enter after you have signed in and the page is loaded...")
+                     self.driver.get(url)
+
+                quiz_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(url)
+                response.raise_for_status()
+                quiz_page_html = BeautifulSoup(response.text, "html.parser")
 
             quiz_element = quiz_page_html.select_one(QL_QUIZ)
             if quiz_element:
@@ -331,9 +361,21 @@ class Course(BaseEntity):
 
         print(f"(process_link) •-> Lnk: {activity['id']:>6} - {activity['title']}")
         try:
-            response = requests.get(url)
-            response.raise_for_status()
-            link_page_html = BeautifulSoup(response.text, "html.parser")
+            if self.driver:
+                self.driver.get(url)
+                # Links usually redirect to external or internal resources.
+                # If internal, might need auth.
+                if "sign_in" in self.driver.current_url:
+                     print(f"\n\033[93m[!] Authentication required for link {activity['id']}.\033[0m")
+                     print("Please sign in to the browser window if you haven't.")
+                     input("Press Enter after you have signed in and the page is loaded...")
+                     self.driver.get(url)
+                
+                link_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(url)
+                response.raise_for_status()
+                link_page_html = BeautifulSoup(response.text, "html.parser")
 
             link_url_a_tag = link_page_html.select_one(LINK_URL_A_TAG)
             if link_url_a_tag:
