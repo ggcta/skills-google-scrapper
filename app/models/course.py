@@ -208,6 +208,8 @@ class Course(BaseEntity):
                 self.process_quiz(activity, activity_full_url)
             elif activity_type == "link":
                 self.process_link(activity, activity_full_url)
+            elif activity_type == "document":
+                self.process_document(activity, activity_full_url)
 
     def process_video(self, activity, url) -> None:
         """
@@ -388,6 +390,116 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_link) Error: {error}")
 
+    def process_document(self, activity, url) -> None:
+        """
+        Process a document activity.
+        """
+        print(f"(process_document) •-> Doc: {activity['id']:>6} - {activity['title']}")
+        
+        try:
+            # Create documents directory if it doesn't exist
+            # csbmdvault/courses/documents/<course_id>/
+            doc_dir = getattr(self, '_output_path', PathlibPath("csbmdvault")) / "courses" / "documents" / self.id
+            doc_dir.mkdir(parents=True, exist_ok=True)
+            
+            if self.driver:
+                self.driver.get(url)
+                if "sign_in" in self.driver.current_url:
+                    print(f"\n\033[93m[!] Authentication required for document {activity['id']}.\033[0m")
+                    print("Please sign in to the browser window if you haven't.")
+                    input("Press Enter after you have signed in and the page is loaded...")
+                    self.driver.get(url)
+                
+                doc_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(url)
+                response.raise_for_status()
+                doc_page_html = BeautifulSoup(response.text, "html.parser")
+            
+            # Find download link
+            # Selector: a[aria-label="Download document"] or a#link
+            # Actual HTML shows <ql-button icon="download" href="..."> or <div class="download-document"><ql-button ...>
+            download_link = doc_page_html.select_one('ql-button[icon="download"]')
+            if not download_link:
+                download_link = doc_page_html.select_one('div.download-document ql-button')
+            if not download_link:
+                # Fallback to user provided selectors just in case
+                download_link = doc_page_html.select_one('a[aria-label="Download document"]')
+            if not download_link:
+                download_link = doc_page_html.select_one('a#link')
+            
+            if download_link:
+                file_url = download_link['href']
+                
+                # Check if it's a relative URL
+                if not file_url.startswith('http'):
+                     # It's likely an absolute path from root or relative
+                     if file_url.startswith('/'):
+                         file_url = f"{BASE_URL.rstrip('/')}{file_url}"
+                
+                # Extract filename
+                filename = None
+                from urllib.parse import urlparse, parse_qs, unquote
+                parsed_url = urlparse(file_url)
+                query_params = parse_qs(parsed_url.query)
+                
+                # Try to get filename from query params (response-content-disposition)
+                # content-disposition: inline; filename="filename.pdf"; filename*=UTF-8''filename.pdf
+                rcd = query_params.get('response-content-disposition', [None])[0]
+                if rcd:
+                    # Simple regex to extract filename
+                    import re
+                    match = re.search(r'filename="?([^";]+)"?', rcd)
+                    if match:
+                        filename = match.group(1)
+                
+                # Determine filename from URL path if not found
+                if not filename:
+                     filename = PathlibPath(parsed_url.path).name
+                
+                # Decode filename just in case
+                filename = unquote(filename)
+                
+                # Prepare save path
+                save_path = doc_dir / filename
+                activity['local_document_path'] = f"documents/{self.id}/{filename}"
+                
+                if save_path.exists():
+                     print(f"(process_document) •-• [+] Existed: {filename}")
+                else:
+                    print(f"(process_document) Downloading {filename}...")
+                    # Download the file
+                    # Use requests, but copy cookies from driver if available
+                    cookies = {}
+                    if self.driver:
+                        for cookie in self.driver.get_cookies():
+                            cookies[cookie['name']] = cookie['value']
+                    
+                    file_response = requests.get(file_url, cookies=cookies, stream=True)
+                    file_response.raise_for_status()
+                    
+                    # If we didn't get filename from URL, check headers now
+                    if not filename or filename == 'download': # generic name
+                        cd = file_response.headers.get('content-disposition')
+                        if cd:
+                             match = re.search(r'filename="?([^";]+)"?', cd)
+                             if match:
+                                 filename = match.group(1)
+                                 save_path = doc_dir / filename
+                                 activity['local_document_path'] = f"documents/{self.id}/{filename}"
+                    
+                    with open(save_path, 'wb') as f:
+                        for chunk in file_response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    
+                    print(f"(process_document) •-• [+] Saved: {filename}")
+
+            else:
+                 print("(process_document) [!] Download link not found.")
+
+        except Exception as error:
+            print(f"(process_document) Error: {error}")
+
     def generate_prompt(self) -> None:
         """
         Generate the prompts for videos from their transcripts.\n
@@ -512,6 +624,13 @@ class Course(BaseEntity):
 
                         elif activity_type == 'link':
                             markdown.append(f"* [{activity_title}]({activity['link']})")
+
+                        elif activity_type == 'document':
+                            # activity['local_document_path'] should have been set in process_document
+                            local_path = activity.get('local_document_path')
+                            if local_path:
+                                filename = PathlibPath(local_path).name
+                                markdown.append(f"- [{filename}]({local_path})")
 
         return "\n\n".join(markdown) + "\n"
 
