@@ -437,6 +437,9 @@ class Course(BaseEntity):
                      if file_url.startswith('/'):
                          file_url = f"{BASE_URL.rstrip('/')}{file_url}"
                 
+                # Add remote URL to activity
+                activity['document_url'] = file_url
+                
                 # Extract filename
                 filename = None
                 from urllib.parse import urlparse, parse_qs, unquote
