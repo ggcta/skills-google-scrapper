@@ -128,9 +128,12 @@ class Collection(Serialize):
             a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
         else:
             a_sorted_list = list(self.collection.items())
-        print(f"\n"
-              f"\033[45m[{self.name.upper():^85}]\033[0m"
-              "\n")
+        if self.name:
+            print(f"\n"
+                  f"\033[45m[{self.name.upper():^85}]\033[0m"
+                  "\n")
+        else:
+             print("\n")
 
         # Print the sorted list
         for an_item in a_sorted_list:
