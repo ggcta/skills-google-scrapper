@@ -16,6 +16,7 @@ from utils.utils import util_replace_quote_marks, util_replace_special_chars, ut
 COURSE_LD_JSON = "script[type='application/ld+json']"
 COURSE_META_DESCRIPTION = "meta[name='description']"
 COURSE_OUTLINE = "ql-course-outline"
+COURSE_CONTENTS_MENU = "ql-contents-menu"
 QL_YOUTUBE_VIDEO = "ql-youtube-video"
 LAB_REVIEW_LAB_ID = "#lab_review_lab_id"
 LAB_CONTENT_OUTLINE = "ul.lab-content__outline"
@@ -139,12 +140,19 @@ class Course(BaseEntity):
         """
 
         try:
-            course_outline_element = course_html.select_one(COURSE_OUTLINE)
-            if not course_outline_element:
-                raise NoSuchElementException("(extract_course_outline) ql-course-outline is not found.")
+            # Try to find the new course contents menu first
+            course_contents_element = course_html.select_one(COURSE_CONTENTS_MENU)
+            if course_contents_element:
+                 self.modules = json.loads(course_contents_element["modules"])
+                 return True
 
-            self.modules = json.loads(course_outline_element["modules"])
-            return True
+            # Fallback to the old course outline
+            course_outline_element = course_html.select_one(COURSE_OUTLINE)
+            if course_outline_element:
+                self.modules = json.loads(course_outline_element["modules"])
+                return True
+            
+            raise NoSuchElementException("(extract_course_outline) ql-contents-menu or ql-course-outline is not found.")
         except Exception as error:
             print(f"(extract_course_outline) Error: {error}")
             return False
@@ -196,7 +204,7 @@ class Course(BaseEntity):
             video_html = BeautifulSoup(response.text, "html.parser")
 
             video_element = video_html.select_one(QL_YOUTUBE_VIDEO)
-            video_id = video_element.get("videoId", None)
+            video_id = video_element.get("videoId") or video_element.get("videoid")
             if video_id:
                 activity['videoId'] = video_id
 
