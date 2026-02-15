@@ -2,6 +2,7 @@
 import sys
 import os
 import argparse
+from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS
 
 # Ensure app modules can be imported
 # Add 'app' directory to sys.path so we can import 'models' directly
@@ -11,6 +12,7 @@ from models.course import Course
 from models.path import Path
 from models.paths import Paths
 from models.courses import Courses
+from services.launch_browser import launch_browser
 
 def cmd_course(args):
     """Handle course command"""
@@ -18,12 +20,17 @@ def cmd_course(args):
     print(f"Processing course {course_id}...")
     
     # Logic adapted from scraper.py
-    # We might need to load the course collection first to get the name if not provided,
-    # but Course(id=course_id) fetch_data/extract_transcript usually handles it.
     
-    course = Course(id=course_id)
-    # If the course is in collection, we might want to use that name, but extract_transcript loads json anyway
-    course.extract_transcript()
+    # Launch browser for authenticated access
+    # We use headless=False to allow user to see/login if needed
+    # Use persistent profile to share login state
+    driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+
+    try:
+        course = Course(id=course_id, driver=driver)
+        course.extract_transcript()
+    finally:
+        driver.quit()
 
 def cmd_path(args):
     """Handle path command"""
@@ -128,6 +135,29 @@ def cmd_reload(args):
     courses_collection.save_json()
     print("\n\033[35mCOURSES LIST RELOADED.\033[0m\n")
 
+def cmd_browser(args):
+    """Handle browser command"""
+    print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
+    
+    profile = args.profile_folder if args.profile_folder else WEBDRIVER_PROFILE_FOLDER_NAME
+    
+    driver = launch_browser(profile_folder=profile, headless=False, browser="chrome")
+    
+    # Open the URL in the default web browser (PARTNERS page usually redirects to login if not logged in)
+    driver.get(BASE_URL_PARTNERS)
+    print("\n\033[35mDEBUG: BROWSER LAUNCHED.\033[0m")
+    print("You can now log in. The script will keep running. Press Ctrl+C to exit and close browser.")
+    
+    try:
+        # Keep the script running so the browser stays open
+        # We can also just input() to wait
+        input("Press Enter to close the browser and exit...")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print("Closing browser...")
+        driver.quit()
+
 def main():
     parser = argparse.ArgumentParser(description="CloudSkillsBoost Scraper CLI")
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
@@ -154,6 +184,11 @@ def main():
     # Reload command
     parser_r = subparsers.add_parser('reload', aliases=['r'], help='Reload courses/paths list')
     parser_r.set_defaults(func=cmd_reload)
+
+    # Browser command
+    parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')
+    parser_b.add_argument('--profile-folder', help='Specific webdriver profile folder', default=None)
+    parser_b.set_defaults(func=cmd_browser)
 
     # Parse arguments
     args = parser.parse_args()

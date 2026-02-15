@@ -1,4 +1,5 @@
 import re
+import time
 from pathlib import Path as PathlibPath
 from models.base_entity import BaseEntity
 from models.labs import Labs
@@ -42,7 +43,8 @@ class Course(BaseEntity):
                  datePublished: str = None,
                  objectives: list = None,
                  topics: list = None,
-                 modules: list = None):
+                 modules: list = None,
+                 driver=None):
         super().__init__(id,
                          name,
                          description)
@@ -50,6 +52,7 @@ class Course(BaseEntity):
         self.objectives = objectives or []
         self.topics = topics or []
         self.modules = modules or []
+        self.driver = driver
 
     def extract_transcript(self) -> None:
         """
@@ -89,10 +92,24 @@ class Course(BaseEntity):
         """
 
         try:
-            response = requests.get(self.url, timeout=20)
-            response.raise_for_status()
-            return BeautifulSoup(response.text, "html.parser")
-        except requests.RequestException as error:
+            if self.driver:
+                print(f"(fetch_course_page) Fetching with driver: {self.url}")
+                self.driver.get(self.url)
+                
+                # Check for sign-in redirect
+                if "sign_in" in self.driver.current_url:
+                     print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
+                     input("Press Enter after you have signed in and the page is loaded to continue...")
+                     # Reload to ensure we have the page content
+                     if "sign_in" in self.driver.current_url:
+                         self.driver.get(self.url)
+                
+                return BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(self.url, timeout=20)
+                response.raise_for_status()
+                return BeautifulSoup(response.text, "html.parser")
+        except Exception as error:
             print(f"(extract_transcript) Error: Unable to load the course page. {error}")
             return None
 
@@ -199,9 +216,20 @@ class Course(BaseEntity):
 
         print(f"(process_video) •-> Vid: {activity['id']:>6} - {activity['title']}")
         try:
-            response = requests.get(url)
-            response.raise_for_status()
-            video_html = BeautifulSoup(response.text, "html.parser")
+            if self.driver:
+                self.driver.get(url)
+                
+                if "sign_in" in self.driver.current_url:
+                     print(f"\n\033[93m[!] Authentication required for video {activity['id']}.\033[0m")
+                     print("Please sign in to the browser window if you haven't.")
+                     input("Press Enter after you have signed in and the page is loaded...")
+                     self.driver.get(url) # Retry loading the video page
+                
+                video_html = BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(url)
+                response.raise_for_status()
+                video_html = BeautifulSoup(response.text, "html.parser")
 
             video_element = video_html.select_one(QL_YOUTUBE_VIDEO)
             video_id = video_element.get("videoId") or video_element.get("videoid")
