@@ -57,21 +57,59 @@ def cmd_path(args):
             courses_collection.collection[c_id] = c_name
         courses_collection.save_json()
 
-    if args.all:
-        print(f"Extracting all courses in path {path.name}...")
-        courses_collection = Courses()
-        courses_collection.load_json()
+    driver = None
+    if args.all or args.course:
+        # Launch browser for authenticated access
+        print("\n\033[35mDEBUG: Launching browser for path extraction...\033[0m")
+        driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+
+    try:
+        courses_to_extract = []
         
-        for course_data in path.courses.values():
-            c_id = course_data['id']
-            c_name = course_data['name']
-            print(f"\n--- Processing Course: {c_name} ({c_id}) ---")
-            course_instance = Course(id=c_id, name=c_name)
-            course_instance.extract_transcript()
-            courses_collection.collection[c_id] = c_name
-            courses_collection.save_json()
-    else:
-        path.courses_list()
+        if args.all:
+            print(f"Extracting all courses in path {path.name}...")
+            courses_to_extract = list(path.courses.values())
+            
+        elif args.course:
+            course_ids = [cid.strip() for cid in args.course.split(',')]
+            print(f"Extracting courses: {course_ids} in path {path.name}...")
+            
+            for cid in course_ids:
+                # Find course data in path.courses (values are dicts with id, name)
+                # We need to find the course dict that matches the id
+                found = False
+                for course_data in path.courses.values():
+                    if str(course_data['id']) == cid:
+                         courses_to_extract.append(course_data)
+                         found = True
+                         break
+                
+                if not found:
+                    print(f"\033[33m[Warning] Course {cid} not found in path {path_id}.\033[0m")
+
+        if courses_to_extract:
+            courses_collection = Courses()
+            courses_collection.load_json()
+            
+            for course_data in courses_to_extract:
+                c_id = course_data['id']
+                c_name = course_data['name']
+                print(f"\n--- Processing Course: {c_name} ({c_id}) ---")
+                
+                # Pass driver to course instance
+                course_instance = Course(id=c_id, name=c_name, driver=driver)
+                course_instance.extract_transcript()
+                
+                courses_collection.collection[c_id] = c_name
+                courses_collection.save_json()
+        else:
+            if not args.all and not args.course:
+                path.courses_list()
+
+    finally:
+        if driver:
+            print("Closing browser...")
+            driver.quit()
 
 def cmd_list(args):
     """Handle list command"""
@@ -171,6 +209,7 @@ def main():
     parser_p = subparsers.add_parser('path', aliases=['p'], help='Process a learning path')
     parser_p.add_argument('id', help='Path ID')
     parser_p.add_argument('--all', '-a', action='store_true', help='Extract all courses in the path')
+    parser_p.add_argument('--course', '-c', help='Extract specific course IDs (comma-separated)', default=None)
     parser_p.set_defaults(func=cmd_path)
 
     # List command

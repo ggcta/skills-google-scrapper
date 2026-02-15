@@ -90,7 +90,8 @@ class BaseEntity(Serialize):
 
         # Convert the entity data to a dictionary, excluding private attributes
         # and adding the type and URL
-        the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        # Also exclude 'driver' as it is not serializable
+        the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k != 'driver'}
         the_dict['type'] = self.type
         the_dict['url'] = self.url
         return the_dict
