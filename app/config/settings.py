@@ -14,6 +14,7 @@ DATA_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "data"
 # Base URL for the Cloud Skills Boost website
 BASE_URL: str = "https://www.skills.google/"
 BASE_URL_PATHS: str = f"{BASE_URL}/paths"
+API_URL_PATHS: str = f"{BASE_URL}/catalog/list?format%5B%5D=learning_plans"
 BASE_URL_LAB: str = f"{BASE_URL}/catalog_lab"
 BASE_URL_COURSES: str = f"{BASE_URL}/course_templates"
 BASE_URL_PARTNERS: str = "https://partner.skills.google/"
