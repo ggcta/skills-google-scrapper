@@ -114,18 +114,35 @@ class Collection(Serialize):
         with open(self._json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(data, jsonfile, ensure_ascii=False, indent=2)
 
-    def print_list(self):
+    def print_list(self, sort_by: str = 'name'):
         """
         Print out the collection prior to prompting user for a selection.
+        :param sort_by: 'name' or 'id'
         """
 
         # Sort the collection by name and convert to a list
         if self.collection and all(isinstance(value, str) for value in self.collection.values()):
-            # If all values are strings, sort by values
-            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
+            # If all values are strings (id: name), sort based on param
+            if sort_by == 'id':
+                # Sort by keys (id)
+                a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
+            else:
+                # Defaults to name
+                a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
         elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
-            # If all values are dictionaries, sort by keys
-            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
+             # If values are dicts, we usually sort by ID (key) or Name (value['name'])
+             # Current implementation assumed sorting by keys (item[0]) for dicts in one branch??
+             # Let's check original code:
+             # elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
+             #    a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
+             
+             if sort_by == 'id':
+                 a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
+             else:
+                 # Try to find 'name' in dict, otherwise fallback to key
+                 # This assumes value is a dict with 'name' key
+                 a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1].get('name', item[0]))
+
         else:
             a_sorted_list = list(self.collection.items())
         if self.name:

@@ -12,6 +12,7 @@ from models.course import Course
 from models.path import Path
 from models.paths import Paths
 from models.courses import Courses
+from models.labs import Labs
 from services.launch_browser import launch_browser
 
 def cmd_course(args):
@@ -113,15 +114,45 @@ def cmd_path(args):
 
 def cmd_list(args):
     """Handle list command"""
-    print("Listing all paths...")
-    paths = Paths()
-    # verify if paths.json exists, if not fetch
-    paths.load_json()
-    if not paths.collection:
-        print("No paths found locally. Fetching...")
-        paths.fetch_paths()
     
-    paths.print_list()
+    # Determine type
+    if args.courses:
+        target_class = Courses
+        label = "courses"
+    elif args.labs:
+        target_class = Labs
+        label = "labs"
+    else:
+        # Default to paths or if args.paths is set
+        target_class = Path # Wait, Path is single, Paths is collection. 
+        # Typo in imports? from models.paths import Paths
+        # In main.py:
+        # from models.path import Path
+        # from models.paths import Paths
+        # So it should be Paths
+        target_class = Paths
+        label = "paths"
+
+    print(f"Listing all {label}...")
+    
+    # Instantiate
+    collection = target_class()
+    collection.load_json()
+    
+    # Fetch if empty (only for Paths currently as others don't have list fetch implemented)
+    if not collection.collection:
+        print(f"No {label} found locally.")
+        if label == 'paths':
+             print("Fetching...")
+             collection.fetch_paths()
+        else:
+             print("Please fetch paths first or use 'python main.py path <id> --all' to populate courses/labs.")
+             return
+
+    # Determine sort
+    sort_by = 'id' if args.id else 'name'
+    
+    collection.print_list(sort_by=sort_by)
 
 def cmd_fetch(args):
     """Handle fetch command"""
@@ -213,7 +244,19 @@ def main():
     parser_p.set_defaults(func=cmd_path)
 
     # List command
-    parser_l = subparsers.add_parser('list', aliases=['l'], help='List all paths')
+    parser_l = subparsers.add_parser('list', aliases=['l'], help='List all paths, courses, or labs')
+    
+    # Mutually exclusive group for type
+    group_type = parser_l.add_mutually_exclusive_group()
+    group_type.add_argument('--paths', '-p', action='store_true', help='List all paths (default)')
+    group_type.add_argument('--courses', '-c', action='store_true', help='List all courses')
+    group_type.add_argument('--labs', '-l', action='store_true', help='List all labs')
+    
+    # Mutually exclusive group for sorting
+    group_sort = parser_l.add_mutually_exclusive_group()
+    group_sort.add_argument('--name', '-n', action='store_true', help='Sort by name (default)')
+    group_sort.add_argument('--id', '-i', action='store_true', help='Sort by ID')
+    
     parser_l.set_defaults(func=cmd_list)
 
     # Fetch command
