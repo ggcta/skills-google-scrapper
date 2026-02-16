@@ -15,103 +15,6 @@ from models.courses import Courses
 from models.labs import Labs
 from services.launch_browser import launch_browser
 
-def cmd_course(args):
-    """Handle course command"""
-    course_id = args.id
-    print(f"Processing course {course_id}...")
-    
-    # Logic adapted from scraper.py
-    
-    # Launch browser for authenticated access
-    # We use headless=False to allow user to see/login if needed
-    # Use persistent profile to share login state
-    driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-
-    try:
-        course = Course(id=course_id, driver=driver)
-        course.extract_transcript(force=args.force, no_md=args.no_md, toc_only=args.toc, no_transcript=args.no_transcript)
-    finally:
-        driver.quit()
-
-def cmd_path(args):
-    """Handle path command"""
-    path_id = args.id
-    print(f"Processing path {path_id}...")
-    
-    path = Path(id=path_id)
-    path.load_json()
-    
-    if not path.courses:
-        print("Path data not found locally. Fetching...")
-        path.fetch_data()
-        path.save_json()
-        path.save_markdown()
-        
-        # Update courses collection
-        # This part mimics tasks_coordinator logic
-        courses_collection = Courses()
-        courses_collection.load_json()
-        
-        for course in path.courses.values():
-            c_id = course['id']
-            c_name = course['name']
-            courses_collection.collection[c_id] = c_name
-        courses_collection.save_json()
-
-    driver = None
-    if args.all or args.course:
-        # Launch browser for authenticated access
-        print("\n\033[35mDEBUG: Launching browser for path extraction...\033[0m")
-        driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-
-    try:
-        courses_to_extract = []
-        
-        if args.all:
-            print(f"Extracting all courses in path {path.name}...")
-            courses_to_extract = list(path.courses.values())
-            
-        elif args.course:
-            course_ids = [cid.strip() for cid in args.course.split(',')]
-            print(f"Extracting courses: {course_ids} in path {path.name}...")
-            
-            for cid in course_ids:
-                # Find course data in path.courses (values are dicts with id, name)
-                # We need to find the course dict that matches the id
-                found = False
-                for course_data in path.courses.values():
-                    if str(course_data['id']) == cid:
-                         courses_to_extract.append(course_data)
-                         found = True
-                         break
-                
-                if not found:
-                    print(f"\033[33m[Warning] Course {cid} not found in path {path_id}.\033[0m")
-
-        if courses_to_extract:
-            courses_collection = Courses()
-            courses_collection.load_json()
-            
-            for course_data in courses_to_extract:
-                c_id = course_data['id']
-                c_name = course_data['name']
-                print(f"\n--- Processing Course: {c_name} ({c_id}) ---")
-                
-                # Pass driver to course instance
-                course_instance = Course(id=c_id, name=c_name, driver=driver)
-                course_instance.extract_transcript(force=args.force, no_md=args.no_md, toc_only=args.toc, no_transcript=args.no_transcript)
-                
-                courses_collection.collection[c_id] = c_name
-                courses_collection.save_json()
-        else:
-            if not args.all and not args.course:
-                path.courses_list()
-
-    finally:
-        if driver:
-            print("Closing browser...")
-            driver.quit()
-
 def cmd_list(args):
     """Handle list command"""
     
@@ -124,29 +27,52 @@ def cmd_list(args):
         label = "labs"
     else:
         # Default to paths or if args.paths is set
-        target_class = Path # Wait, Path is single, Paths is collection. 
-        # Typo in imports? from models.paths import Paths
-        # In main.py:
-        # from models.path import Path
-        # from models.paths import Paths
-        # So it should be Paths
         target_class = Paths
         label = "paths"
 
+    # Reload if requested
+    if args.reload:
+        print(f"Reloading {label} list from remote...")
+        collection = target_class()
+        collection.load_json()
+        
+        # Ensure URL is up to date (specifically for Paths)
+        if label == "paths":
+            from config.settings import BASE_URL_PATHS
+            collection.url = BASE_URL_PATHS
+            
+        # Fetch list (Supports Path and Courses as they have fetch implemented)
+        # Labs fetch might need implementation check, but we assume pattern holds or fails gracefully.
+        try:
+             # Dynamically call fetch method if exists or standard naming
+             # Paths.fetch_paths, Courses.fetch_courses
+             # We can use getattr
+             method_name = f"fetch_{label}"
+             fetch_method = getattr(collection, method_name, None)
+             if fetch_method:
+                 if fetch_method(force=True): # reload implies force
+                     print(f"{label.capitalize()} list updated.")
+                 else:
+                     print(f"Failed to update {label} list.")
+             else:
+                 print(f"Reload not supported for {label}.")
+        except Exception as e:
+            print(f"Error reloading {label}: {e}")
+
     print(f"Listing all {label}...")
     
-    # Instantiate
+    # Instantiate and load (reload might have updated DB)
     collection = target_class()
     collection.load_json()
     
-    # Fetch if empty (only for Paths currently as others don't have list fetch implemented)
+    # Check if empty (only for Paths/Courses mostly)
     if not collection.collection:
         print(f"No {label} found locally.")
-        if label == 'paths':
-             print("Fetching...")
-             collection.fetch_paths()
+        if label == 'paths' and not args.reload:
+             print("Use 'list -r -p' to fetch paths list.")
+        elif label == 'courses' and not args.reload:
+             print("Use 'list -r -c' to fetch courses list.")
         else:
-             print("Please fetch paths first or use 'python main.py path <id> --all' to populate courses/labs.")
              return
 
     # Determine sort
@@ -155,129 +81,149 @@ def cmd_list(args):
     collection.print_list(sort_by=sort_by)
 
 def cmd_fetch(args):
-    """Handle fetch command"""
+    """Handle fetch (scrape) command"""
     force = args.force
+    no_md = args.no_md
+    toc_only = args.toc
+    no_transcript = args.no_transcript
 
     fetch_paths_ids = args.paths
     fetch_courses_ids = args.courses
     fetch_labs_ids = args.labs
     
-    # Determine defaults
-    # If no flags provided at all, default to fetching paths list (original behavior)
-    if fetch_paths_ids is None and fetch_courses_ids is None and fetch_labs_ids is None and not args.all:
-        print("No type specified. Defaulting to fetching paths list...")
-        should_fetch_paths_list = True
-        should_fetch_courses_list = False
-        should_fetch_labs_list = False
-    else:
-        # If flags provided without IDs (empty list), fetch list/all.
-        # If flags provided with IDs, fetch specific items.
-        should_fetch_paths_list = (fetch_paths_ids is not None and not fetch_paths_ids) or args.all
-        should_fetch_courses_list = (fetch_courses_ids is not None and not fetch_courses_ids) or args.all
-        should_fetch_labs_list = (fetch_labs_ids is not None and not fetch_labs_ids) or args.all
+    # Validation
+    if not (fetch_paths_ids or fetch_courses_ids or fetch_labs_ids):
+        print("Please specify items to fetch using -p <id>, -c <id>, or -l <id>.")
+        return
 
     # --- Paths ---
-    if fetch_paths_ids: # Specific IDs provided
-        print(f"\n--- Fetching Specific Paths: {fetch_paths_ids} ---")
+    if fetch_paths_ids:
+        print(f"\n--- Processing Paths: {fetch_paths_ids} ---")
         for pid in fetch_paths_ids:
             try:
-                print(f"Fetching Path {pid}...")
+                print(f"Processing Path {pid}...")
                 p = Path(id=pid)
+                # Load existing to see if we need to fetch? 
+                # Fetch command implies scraping/updating.
+                
+                # Fetch data (scrapes remote)
                 p.fetch_data()
-                p.save_json()
-                p.save_markdown()
+                p.save_json() # Backs up to file and syncs to DB
+                
+                if not no_md:
+                    p.save_markdown(toc_only=toc_only)
+                    print(f"Path {pid} markdown updated.")
                 print(f"Path {pid} updated.")
+                
+                # Original logic: update courses collection with courses found in path
+                # This helps populate courses list without fetching all courses
+                courses_collection = Courses()
+                # We load just to be safe, but save_json will Upsert to DB which is fine
+                
+                # But Courses.collection is a dict {id: name}. 
+                # We can't easily upsert to DB directly from here without loading Courses logic
+                # Actually, Courses.save_json upserts the whole collection dict to DB.
+                # So we should load it first to avoid overwriting with partial data if we use save_json.
+                courses_collection.load_json()
+                
+                for course in p.courses.values():
+                    c_id = course['id']
+                    c_name = course['name']
+                    courses_collection.collection[c_id] = c_name
+                
+                courses_collection.save_json()
+                
             except Exception as e:
                 print(f"Failed to fetch path {pid}: {e}")
 
-    if should_fetch_paths_list:
-        print("\n--- Fetching Paths Collection ---")
-        paths = Paths()
-        paths.load_json()
-        if not paths.name:
-            paths.name = "Paths Collection"
-        
-        # Ensure URL is up to date
-        from config.settings import BASE_URL_PATHS
-        paths.url = BASE_URL_PATHS
-        
-        if paths.fetch_paths(force=force):
-             print("Paths list updated.")
-        else:
-             print("Paths list fetch skipped or failed.")
-        
-        paths.write_md()
-        print(f"Paths markdown index saved to {paths._md_path}")
-
     # --- Courses ---
-    driver = None
-    if fetch_courses_ids: # Specific IDs provided
-        print(f"\n--- Fetching Specific Courses: {fetch_courses_ids} ---")
+    if fetch_courses_ids:
+        print(f"\n--- Processing Courses: {fetch_courses_ids} ---")
+        driver = None
         try:
              # Launch browser for authenticated access
-             # We use headless=False to allow user to see/login if needed
-             # Use persistent profile to share login state
+             print("\n\033[35mLaunching browser for course extraction...\033[0m")
              driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
              
              for cid in fetch_courses_ids:
                 try:
-                    print(f"Fetching Course {cid}...")
+                    print(f"Processing Course {cid}...")
                     c = Course(id=cid, driver=driver)
                     # extract_transcript fetches page, extracts metadata, outline, modules, saves json/md.
-                    c.extract_transcript(force=force) 
+                    c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
                     print(f"Course {cid} updated.")
                 except Exception as e:
                     print(f"Failed to fetch course {cid}: {e}")
         finally:
             if driver:
+                print("Closing browser...")
                 driver.quit()
 
-    if should_fetch_courses_list:
-        print("\n--- Fetching Courses Collection ---")
-        courses = Courses()
-        courses.load_json()
-        if courses.fetch_courses(force=force):
-            print("Courses list updated.")
-        else:
-            print("Courses list fetch skipped or failed.")
-
     # --- Labs ---
-    if fetch_labs_ids: # Specific IDs provided
-        print(f"\n--- Fetching Specific Labs: {fetch_labs_ids} ---")
-        for lid in fetch_labs_ids:
-            try:
-                print(f"Fetching Lab {lid}...")
-                l = Lab(id=lid)
-                l.load_json() 
-                # Labs don't have a 'fetch_data' like Path, they are usually scraped via Course...
-                # But we can try to implement or existing logic?
-                # Lab class has load_json/save_json.
-                # It doesn't seem to have a standalone fetch method in what I saw (I saw Lab usage in Course.process_lab).
-                # Models/lab.py might have something? I didn't view it.
-                # Assuming Lab might not support direct fetching yet or straightforward. 
-                # I'll add a placeholder or simple attempt if I can.
-                # For now, I'll skip specific lab fetching if method missing, or check Lab.
-                # User asked for 'paths, courses, or labs'.
-                # I'll Assume Lab has fetch logic or I'll need to check.
-                # Given I didn't check Lab.py, I'll proceed with caution.
-                # Actually, simply saving it might valid it if I had data, but fetching implies getting remote data.
-                # If Lab doesn't have fetch from URL, I can't do it.
-                # For safety, I'll print not implemented for Lab specific ID if not sure, 
-                # OR check Lab.py.
-                # I'll check Lab.py quickly? No, I'm in multi_replace.
-                # I will implement it for Paths and Courses as priority.
-                print(f"Fetching specific Lab {lid} is not fully supported in this version.") 
-            except Exception as e:
-                print(f"Failed to fetch lab {lid}: {e}")
+    if fetch_labs_ids:
+        print(f"\n--- Processing Labs: {fetch_labs_ids} ---")
+        # Lab scraping logic is typically embedded in Course scraping (via extract_transcript -> process_lab).
+        # We need to check if we can scrape a Lab directly.
+        # Course.py has `process_lab` but it's part of course processing.
+        # If we have a direct Lab URL or logic, we can implement it.
+        # Currently, the original code didn't have standalone Lab scraping in `cmd_lab` (it didn't exist).
+        # Use simple fallback: "Not supported directly, please fetch the parent course."
+        print("Standalone Lab fetching is not yet fully supported (requires parent Course).")
+        print("Please fetch the course containing this lab to update it.")
 
-    if should_fetch_labs_list:
-        print("\n--- Fetching Labs Collection ---")
-        labs = Labs()
-        labs.load_json()
-        if labs.fetch_labs(force=force):
-            print("Labs list updated.")
-        else:
-            print("Labs list fetch skipped or failed.")
+def cmd_search(args):
+    """Handle search command"""
+    from services.database import Database
+    
+    query = args.query
+    # Determine type from flags
+    search_type = None
+    if args.course:
+        search_type = 'course'
+    elif args.path:
+        search_type = 'path'
+    elif args.lab:
+        search_type = 'lab'
+        
+    field = args.field
+    
+    db = Database()
+    
+    # Determine tables to search
+    tables = []
+    
+    # Shortcuts for field search if query looks like specific type? No, stick to flags.
+    
+    if search_type:
+        if search_type == 'course':
+            tables.append('courses')
+        elif search_type == 'path':
+            tables.append('paths')
+        elif search_type == 'lab':
+            tables.append('labs')
+    else:
+        # Search all
+        tables = ['paths', 'courses', 'labs']
+    
+    if not field:
+        print(f"Searching for '{query}' in {tables}...")
+    else:
+        print(f"Searching for '{query}' in {tables} (field: {field})...")
+    
+    total_results = 0
+    for table in tables:
+        results = db.search(table, query, field)
+        if results:
+            print(f"\n--- {table} ({len(results)}) ---")
+            for res in results:
+                # Highlight ID and Name
+                res_id = res.get('id', 'N/A')
+                res_name = res.get('name', 'N/A')
+                print(f"+|-• \033[35m[{res_id:>5} - {res_name:<72}]\033[0m")
+            total_results += len(results)
+            
+    if total_results == 0:
+        print("No results found.")
 
 def cmd_browser(args):
     """Handle browser command"""
@@ -352,86 +298,9 @@ def cmd_md(args):
             lab.save_markdown(toc_only=toc_only)
             print(f"Markdown saved to {lab._md_path}")
 
-def cmd_search(args):
-    """Handle search command"""
-    from services.database import Database
-    
-    query = args.query
-    search_type = args.type
-    field = args.field
-    
-    db = Database()
-    
-    # Determine tables to search
-    tables = []
-    
-    # Handle 'topic' and 'module' search types
-    if search_type and search_type.lower() in ['topic', 'topics', 't']:
-        tables = ['courses']
-        field = 'topics'
-        print(f"Searching for topic '{query}' in {tables}...")
-    elif search_type and search_type.lower() in ['module', 'modules', 'm']:
-        tables = ['courses'] 
-        field = 'modules'
-        print(f"Searching for module '{query}' in {tables}...")
-    elif search_type:
-        # User specified type: course/path/lab
-        # Map to table names: courses/paths/labs
-        if search_type.lower() in ['course', 'courses', 'c']:
-            tables.append('courses')
-        elif search_type.lower() in ['path', 'paths', 'p']:
-            tables.append('paths')
-        elif search_type.lower() in ['lab', 'labs', 'l']:
-            tables.append('labs')
-    else:
-        # Search all
-        tables = ['paths', 'courses', 'labs']
-    
-    if not field and not tables:
-         print(f"Unknown search type: {search_type}")
-         return
-
-    if not field:
-        print(f"Searching for '{query}' in {tables}...")
-    
-    total_results = 0
-    for table in tables:
-        results = db.search(table, query, field)
-        if results:
-            print(f"\n--- {table} ({len(results)}) ---")
-            for res in results:
-                # Highlight ID and Name
-                res_id = res.get('id', 'N/A')
-                res_name = res.get('name', 'N/A')
-                print(f"+|-• \033[35m[{res_id:>5} - {res_name:<72}]\033[0m")
-            total_results += len(results)
-            
-    if total_results == 0:
-        print("No results found.")
-
 def main():
     parser = argparse.ArgumentParser(description="CloudSkillsBoost Scraper CLI")
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
-
-    # Course command
-    parser_c = subparsers.add_parser('course', aliases=['c'], help='Extract transcript for a course')
-    parser_c.add_argument('id', help='Course ID')
-    parser_c.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
-    parser_c.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
-    parser_c.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
-    parser_c.add_argument('--no-transcript', action='store_true', help='Skip video transcripts')
-    parser_c.set_defaults(func=cmd_course)
-
-    # Path command
-    parser_p = subparsers.add_parser('path', aliases=['p'], help='Process a learning path')
-    parser_p.add_argument('id', help='Path ID')
-    parser_p.add_argument('--all', '-a', action='store_true', help='Extract all courses in the path')
-    parser_p.add_argument('--course', '-c', help='Extract specific course IDs (comma-separated)', default=None)
-    parser_p.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
-    parser_p.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
-    parser_p.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
-    parser_p.add_argument('--no-transcript', action='store_true', help='Skip video transcripts')
-    parser_p.set_defaults(func=cmd_path)
 
     # List command
     parser_l = subparsers.add_parser('list', aliases=['l'], help='List all paths, courses, or labs')
@@ -442,6 +311,9 @@ def main():
     group_type.add_argument('--courses', '-c', action='store_true', help='List all courses')
     group_type.add_argument('--labs', '-l', action='store_true', help='List all labs')
     
+    # Reload flag
+    parser_l.add_argument('--reload', '-r', action='store_true', help='Reload list from remote before listing')
+
     # Mutually exclusive group for sorting
     group_sort = parser_l.add_mutually_exclusive_group()
     group_sort.add_argument('--name', '-n', action='store_true', help='Sort by name (default)')
@@ -449,13 +321,18 @@ def main():
     
     parser_l.set_defaults(func=cmd_list)
 
-    # Fetch command
-    parser_f = subparsers.add_parser('fetch', aliases=['f'], help='Fetch courses/paths/labs list from remote')
-    parser_f.add_argument('--paths', '-p', nargs='*', metavar='ID', help='Fetch paths list or specific path IDs')
-    parser_f.add_argument('--courses', '-c', nargs='*', metavar='ID', help='Fetch courses list or specific course IDs')
-    parser_f.add_argument('--labs', '-l', nargs='*', metavar='ID', help='Fetch labs list or specific lab IDs')
-    parser_f.add_argument('--all', '-a', action='store_true', help='Fetch all lists')
-    parser_f.add_argument('--force', '-f', action='store_true', help='Force fetch even if local data exists')
+    # Fetch command (Scrape)
+    parser_f = subparsers.add_parser('fetch', aliases=['f'], help='Fetch (scrape) courses/paths/labs content')
+    parser_f.add_argument('--paths', '-p', nargs='+', metavar='ID', help='Fetch specific path IDs')
+    parser_f.add_argument('--courses', '-c', nargs='+', metavar='ID', help='Fetch specific course IDs')
+    parser_f.add_argument('--labs', '-l', nargs='+', metavar='ID', help='Fetch specific lab IDs')
+    
+    # Flags from old course/path commands
+    parser_f.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
+    parser_f.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
+    parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
+    parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
+    
     parser_f.set_defaults(func=cmd_fetch)
 
     # Browser command
@@ -475,7 +352,9 @@ def main():
     # Search command
     parser_s = subparsers.add_parser('search', aliases=['s'], help='Search in database')
     parser_s.add_argument('query', help='Search query')
-    parser_s.add_argument('--type', '-t', help='Limit search to type (course, path, lab)', default=None)
+    parser_s.add_argument('--course', '-c', action='store_true', help='Search in courses')
+    parser_s.add_argument('--path', '-p', action='store_true', help='Search in paths')
+    parser_s.add_argument('--lab', '-l', action='store_true', help='Search in labs')
     parser_s.add_argument('--field', '-f', help='Limit search to specific field', default=None)
     parser_s.set_defaults(func=cmd_search)
 
