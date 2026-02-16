@@ -455,7 +455,7 @@ class Course(BaseEntity):
 
         # Paragraphs to double newlines
         content = re.sub(r'<p[^>]*>', '', content)
-        content = re.sub(r'</p>', '\n', content)
+        content = re.sub(r'</p>', '\n\n', content)
 
         # Bold
         content = re.sub(r'<strong[^>]*>', '**', content)
@@ -493,7 +493,7 @@ class Course(BaseEntity):
         content = html.unescape(content)
 
         # Collapse multiple newlines
-        content = re.sub(r'\n\s*\n', '\n\n', content)
+        content = re.sub(r'\n\s*\n', '\n', content)
 
         return content.strip()
 
