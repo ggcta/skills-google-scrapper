@@ -71,6 +71,8 @@ class Course(BaseEntity):
 
         # Extract course metadata
         if not self.extract_course_metadata(course_html):
+            # Sync with DB in case it's missing there, even if local file is up to date
+            self.save_json()
             return
 
         # Extract course outline

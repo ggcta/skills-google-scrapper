@@ -279,7 +279,17 @@ def cmd_search(args):
     
     # Determine tables to search
     tables = []
-    if search_type:
+    
+    # Handle 'topic' and 'module' search types
+    if search_type and search_type.lower() in ['topic', 'topics', 't']:
+        tables = ['courses']
+        field = 'topics'
+        print(f"Searching for topic '{query}' in {tables}...")
+    elif search_type and search_type.lower() in ['module', 'modules', 'm']:
+        tables = ['courses'] 
+        field = 'modules'
+        print(f"Searching for module '{query}' in {tables}...")
+    elif search_type:
         # User specified type: course/path/lab
         # Map to table names: courses/paths/labs
         if search_type.lower() in ['course', 'courses', 'c']:
@@ -292,7 +302,12 @@ def cmd_search(args):
         # Search all
         tables = ['paths', 'courses', 'labs']
     
-    print(f"Searching for '{query}' in {tables}...")
+    if not field and not tables:
+         print(f"Unknown search type: {search_type}")
+         return
+
+    if not field:
+        print(f"Searching for '{query}' in {tables}...")
     
     total_results = 0
     for table in tables:
