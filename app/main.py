@@ -267,6 +267,48 @@ def cmd_md(args):
             lab.save_markdown(toc_only=toc_only)
             print(f"Markdown saved to {lab._md_path}")
 
+def cmd_search(args):
+    """Handle search command"""
+    from services.database import Database
+    
+    query = args.query
+    search_type = args.type
+    field = args.field
+    
+    db = Database()
+    
+    # Determine tables to search
+    tables = []
+    if search_type:
+        # User specified type: course/path/lab
+        # Map to table names: Course/Path/Lab
+        if search_type.lower() in ['course', 'courses', 'c']:
+            tables.append('Course')
+        elif search_type.lower() in ['path', 'paths', 'p']:
+            tables.append('Path')
+        elif search_type.lower() in ['lab', 'labs', 'l']:
+            tables.append('Lab')
+    else:
+        # Search all
+        tables = ['Path', 'Course', 'Lab']
+    
+    print(f"Searching for '{query}' in {tables}...")
+    
+    total_results = 0
+    for table in tables:
+        results = db.search(table, query, field)
+        if results:
+            print(f"\n--- {table} ({len(results)}) ---")
+            for res in results:
+                # Highlight ID and Name
+                res_id = res.get('id', 'N/A')
+                res_name = res.get('name', 'N/A')
+                print(f"+|-• \033[35m[{res_id:>5} - {res_name:<72}]\033[0m")
+            total_results += len(results)
+            
+    if total_results == 0:
+        print("No results found.")
+
 def main():
     parser = argparse.ArgumentParser(description="CloudSkillsBoost Scraper CLI")
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
@@ -321,6 +363,13 @@ def main():
     parser_m.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_m.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
     parser_m.set_defaults(func=cmd_md)
+
+    # Search command
+    parser_s = subparsers.add_parser('search', aliases=['s'], help='Search in database')
+    parser_s.add_argument('query', help='Search query')
+    parser_s.add_argument('--type', '-t', help='Limit search to type (course, path, lab)', default=None)
+    parser_s.add_argument('--field', '-f', help='Limit search to specific field', default=None)
+    parser_s.set_defaults(func=cmd_search)
 
     # Parse arguments
     args = parser.parse_args()

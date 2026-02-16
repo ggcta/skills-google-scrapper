@@ -5,3 +5,4 @@ html2text
 flask~=3.1.0
 debugpy
 gunicorn
+tinydb~=4.8.0

@@ -114,6 +114,33 @@ class Collection(Serialize):
         with open(self._json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(data, jsonfile, ensure_ascii=False, indent=2)
 
+        # Sync items to TinyDB
+        try:
+            from services.database import Database
+            db = Database()
+            
+            # Determine table name (Singularize: Paths -> Path, Courses -> Course)
+            table_name = self.type.rstrip('s')
+            # Handle special cases if any, but 'Paths'->'Path', 'Courses'->'Course', 'Labs'->'Lab' works.
+            
+            if self.collection:
+                for item_id, item_val in self.collection.items():
+                    # item_val is usually name (str) or dict?
+                    # In print_list we handled both.
+                    name = item_val
+                    if isinstance(item_val, dict):
+                        name = item_val.get('name', 'Unknown')
+                    
+                    doc = {
+                        'id': item_id,
+                        'name': name,
+                        'type': table_name
+                    }
+                    db.upsert(table_name, doc)
+                    
+        except Exception as e:
+            print(f"(Collection.save_json) Error syncing to DB: {e}")
+
     def print_list(self, sort_by: str = 'name'):
         """
         Print out the collection prior to prompting user for a selection.
