@@ -14,13 +14,18 @@ class Paths(Collection):
                  collection: dict = None):
         super().__init__(name, url, collection)
 
-    def fetch_paths(self, base_url: str = BASE_URL_PATHS) -> bool:
+    def fetch_paths(self, base_url: str = BASE_URL_PATHS, force: bool = False) -> bool:
         """
         Gather all paths from the CloudSkillsBoost Paths page using the API.\n
         Returns a Boolean to check status.
 
         :param base_url: CloudSkillsBoost Paths page URL (unused in API method, kept for signature).
+        :param force: If True, fetch even if collection is not empty.
         """
+        if not force and self.collection:
+            print("(Collection.fetch_paths) Collection not empty. Skipping fetch.")
+            return True
+
         print(f"Fetching paths from API: {API_URL_PATHS}")
         
         all_paths = {}

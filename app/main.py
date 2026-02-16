@@ -156,53 +156,43 @@ def cmd_list(args):
 
 def cmd_fetch(args):
     """Handle fetch command"""
-    print("Fetching all courses and paths data...")
-    # This seems to correspond to gathering all paths and optionally courses?
-    # In interactive mode option 6 is "Fetch data associated with local files" 
-    # But user description says "f/fetch courses/paths list"
-    
-    paths = Paths()
-    if paths.fetch_paths():
-        print("Paths list updated.")
-        paths.print_list()
-    else:
-        print("Failed to fetch paths.")
+    force = args.force
 
-def cmd_reload(args):
-    """Handle reload command"""
-    print("Reloading courses/paths list...")
-    # Logic matching Option 9: DEBUG: RELOADING DATA
-    paths = Paths()
-    if paths.fetch_paths():
-         print("Paths List refreshed. Proceeding with courses of each path...")
-         paths.save_json()
-         paths.write_md()
-    else:
-         print("Paths List NOT refreshed. Proceeding with courses of each path (using cached)...")
-
-    # Get all courses from all the paths
-    courses_collection = Courses()
-    courses_collection.load_json()
+    fetch_paths = args.paths or args.all
+    fetch_courses = args.courses or args.all
+    fetch_labs = args.labs or args.all
     
-    # We need to iterate over a copy or loaded collection
-    # If fetch_paths failed, we use existing collection
-    for path_id, path_name in paths.collection.items():
-        print(f"+|-• \033[35m[{path_id:>5} - {path_name:<72}]\033[0m")
-        path_data = Path(id=path_id, name=path_name)
-        path_data.fetch_data()
-        
-        # Save the path data
-        path_data.save_json()
-        path_data.save_markdown()
-        
-        # Add courses from this path to the courses collection
-        for course in path_data.courses.values():
-            course_id = course['id']
-            course_name = course['name']
-            courses_collection.collection[course_id] = course_name
-            
-    courses_collection.save_json()
-    print("\n\033[35mCOURSES LIST RELOADED.\033[0m\n")
+    # Default to fetching paths if no specific type is selected
+    if not (fetch_paths or fetch_courses or fetch_labs):
+        print("No type specified. Defaulting to fetching paths...")
+        fetch_paths = True
+
+    if fetch_paths:
+        print("\n--- Fetching Paths ---")
+        paths = Paths()
+        paths.load_json() 
+        if paths.fetch_paths(force=force):
+             print("Paths list updated.")
+        else:
+             print("Paths list fetch skipped or failed.")
+
+    if fetch_courses:
+        print("\n--- Fetching Courses ---")
+        courses = Courses()
+        courses.load_json()
+        if courses.fetch_courses(force=force):
+            print("Courses list updated.")
+        else:
+            print("Courses list fetch skipped or failed.")
+
+    if fetch_labs:
+        print("\n--- Fetching Labs ---")
+        labs = Labs()
+        labs.load_json()
+        if labs.fetch_labs(force=force):
+            print("Labs list updated.")
+        else:
+            print("Labs list fetch skipped or failed.")
 
 def cmd_browser(args):
     """Handle browser command"""
@@ -260,12 +250,13 @@ def main():
     parser_l.set_defaults(func=cmd_list)
 
     # Fetch command
-    parser_f = subparsers.add_parser('fetch', aliases=['f'], help='Fetch courses/paths list')
+    parser_f = subparsers.add_parser('fetch', aliases=['f'], help='Fetch courses/paths/labs list from remote')
+    parser_f.add_argument('--paths', '-p', action='store_true', help='Fetch paths list')
+    parser_f.add_argument('--courses', '-c', action='store_true', help='Fetch courses list')
+    parser_f.add_argument('--labs', '-l', action='store_true', help='Fetch labs list')
+    parser_f.add_argument('--all', '-a', action='store_true', help='Fetch all lists')
+    parser_f.add_argument('--force', '-f', action='store_true', help='Force fetch even if local data exists')
     parser_f.set_defaults(func=cmd_fetch)
-
-    # Reload command
-    parser_r = subparsers.add_parser('reload', aliases=['r'], help='Reload courses/paths list')
-    parser_r.set_defaults(func=cmd_reload)
 
     # Browser command
     parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')
