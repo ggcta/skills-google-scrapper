@@ -66,7 +66,7 @@ class Path(BaseEntity):
 
         # Core Path details
         self.name = path_data['name'].strip()
-        self.description = path_data['description'].strip()
+        self.description = self.clean_text(path_data['description'])
         self.datePublished = path_data['datePublished'].strip()
 
         # Courses list of the Path

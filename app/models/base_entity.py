@@ -244,6 +244,9 @@ class BaseEntity(Serialize):
         """
         Utility method to clean and format text.
         """
+        if not text:
+            return ""
 
         text = util_strip_html_tags(html.unescape(text))
-        return util_replace_quote_marks(text)
+        text = text.replace('\r\n', '\n')
+        return util_replace_quote_marks(text).strip()

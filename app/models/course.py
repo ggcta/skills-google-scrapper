@@ -139,8 +139,7 @@ class Course(BaseEntity):
                 raise NoSuchElementException("(extract_course_metadata) meta_element not found.")
 
             course_ld_json_text = course_ld_json_element.string
-            course_description = html.unescape(meta_element['content'])
-            course_description = util_strip_html_tags(course_description)
+            course_description = self.clean_text(meta_element['content'])
             course_description = re.sub(r'\s{2,}', '\n\n', course_description)
             course_description = course_description.strip()
 
@@ -317,7 +316,7 @@ class Course(BaseEntity):
 
             # Set the lab's attributes.
             lab.name = activity['title'].strip()
-            lab.description = activity.get('description', '')
+            lab.description = self.clean_text(activity.get('description', ''))
             lab.steps = lab_steps
 
             # Save the lab to files.
