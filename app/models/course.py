@@ -53,6 +53,7 @@ class Course(BaseEntity):
         self.topics = topics or []
         self.modules = modules or []
         self.driver = driver
+        self.external_course_data = {}
 
     def extract_transcript(self) -> None:
         """
@@ -323,6 +324,114 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_lab) Error: {error}")
 
+    def fetch_external_course_content(self, url: str) -> dict:
+        """
+        Fetch external course content using __fetchCourse() JS function.
+        Caches the result by base URL (without hash).
+        """
+        try:
+            base_url = url.split('#')[0]
+            if base_url in self.external_course_data:
+                return self.external_course_data[base_url]
+
+            print(f"(fetch_external) Fetching external course data: {base_url}...")
+            if self.driver:
+                self.driver.get(url)
+                time.sleep(3) # Wait for scripts to load
+                
+                # Execute __fetchCourse
+                script = """
+                return (async () => {
+                    if (typeof __fetchCourse === 'function') {
+                        return await __fetchCourse();
+                    }
+                    return null;
+                })();
+                """
+                data = self.driver.execute_script(script)
+                
+                if data:
+                    self.external_course_data[base_url] = data
+                    print(f"(fetch_external) •-• [+] Cached {len(str(data))} bytes")
+                    return data
+                else:
+                    print("(fetch_external) [!] __fetchCourse not found or returned null")
+            
+            return None
+        except Exception as e:
+            print(f"(fetch_external) Error: {e}")
+            return None
+
+    def _extract_lesson_content(self, course_data: dict, lesson_id: str) -> str:
+        """
+        Extract content for a specific lesson from the full course data.
+        """
+        try:
+            lessons = course_data.get('lessons', [])
+            target_lesson = next((l for l in lessons if l.get('id') == lesson_id), None)
+            
+            if not target_lesson:
+                return None
+            
+            content_parts = []
+            
+            # Add lesson title if available
+            if 'title' in target_lesson:
+                content_parts.append(f"### {target_lesson['title']}")
+            
+            items = target_lesson.get('items', [])
+            for item in items:
+                parsed_item = self._parse_lesson_item(item)
+                if parsed_item:
+                    content_parts.append(parsed_item)
+            
+            return "\n\n".join(content_parts)
+        except Exception as e:
+            print(f"(_extract_lesson_content) Error: {e}")
+            return None
+
+    def _parse_lesson_item(self, item: dict) -> str:
+        """
+        Parse a single item from the lesson data into Markdown/HTML.
+        """
+        # Based on observed structure, items have 'heading', 'paragraph', 'list', etc.
+        # This is a best-effort parser.
+        
+        # Check for nested items (some structures might be recursive or wrapped)
+        if 'items' in item:
+             sub_content = []
+             for sub in item['items']:
+                 parsed = self._parse_lesson_item(sub)
+                 if parsed:
+                     sub_content.append(parsed)
+             return "\n\n".join(sub_content)
+
+        if 'heading' in item:
+            return f"#### {util_strip_html_tags(item['heading'])}"
+        
+        if 'paragraph' in item:
+            # Paragraphs often contain HTML, valuable to keep or strip nicely
+            # For now, let's keep it somewhat raw or just strip main tags
+            # The prompt requested "retains ... text (with or without formating)"
+            # Let's keep HTML tags that are markdown-compatible if possible, or just raw text?
+            # User example showed proper HTML in the JS object.
+            # Let's clean it up slightly but keep structure.
+            return item['paragraph']
+            
+        if 'list' in item:
+            # List usually has 'items' array inside content or similar?
+            # Need to guess structure or handle generic 'list' type if found.
+            # If it's a simple list:
+            return str(item.get('list', ''))
+
+        if 'image' in item:
+             src = item['image'].get('src')
+             alt = item['image'].get('alt', 'Image')
+             if src:
+                 return f"![{alt}]({src})"
+
+        return None
+
     def process_quiz(self, activity, url) -> None:
         """
         Process a quiz activity.
@@ -387,6 +496,27 @@ class Course(BaseEntity):
             else:
                 iframe_tag = link_page_html.select_one(QL_IFRAME)
                 activity['link'] = iframe_tag['src'] if iframe_tag else None
+
+            # Special handling for Google Storage HTML5 courses
+            if activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
+                target_url = activity['link']
+                print(f"(process_link) Detected external course content: {target_url}")
+                
+                try:
+                    # Extract lesson ID
+                    lesson_id = target_url.split('#/lessons/')[-1]
+                    
+                    # Fetch full course data (cached)
+                    course_data = self.fetch_external_course_content(target_url)
+                    
+                    if course_data:
+                        # Extract specific lesson content
+                        transcript = self._extract_lesson_content(course_data, lesson_id)
+                        if transcript:
+                            activity['transcript'] = transcript
+                            print(f"(process_link) •-• [+] Extracted transcript ({len(transcript)} chars)")
+                except Exception as e:
+                    print(f"(process_link) Error extracting external content: {e}")
 
             print(f"(process_link) •-• [+]")
         except Exception as error:
@@ -635,6 +765,8 @@ class Course(BaseEntity):
 
                         elif activity_type == 'link':
                             markdown.append(f"* [{activity_title}]({activity['link']})")
+                            if activity.get('transcript'):
+                                markdown.append("\n" + activity['transcript'] + "\n")
 
                         elif activity_type == 'document':
                             # activity['local_document_path'] should have been set in process_document
