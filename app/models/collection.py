@@ -119,14 +119,13 @@ class Collection(Serialize):
             from services.database import Database
             db = Database()
             
-            # Determine table name (Singularize: Paths -> Path, Courses -> Course)
-            table_name = self.type.rstrip('s')
-            # Handle special cases if any, but 'Paths'->'Path', 'Courses'->'Course', 'Labs'->'Lab' works.
+            # Determine table name (Plural: Paths, Courses, Labs)
+            # self.type is usually plural e.g. 'Paths'
+            table_name = self.type.lower()
             
             if self.collection:
                 for item_id, item_val in self.collection.items():
                     # item_val is usually name (str) or dict?
-                    # In print_list we handled both.
                     name = item_val
                     if isinstance(item_val, dict):
                         name = item_val.get('name', 'Unknown')

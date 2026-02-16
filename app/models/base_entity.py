@@ -152,12 +152,15 @@ class BaseEntity(Serialize):
         except Exception as e:
             print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
 
-        # Sync with TinyDB
         try:
             from services.database import Database
             db = Database()
-            # Use class name as table name (e.g. 'Course', 'Path')
-            db.upsert(self.type, entity_data)
+            # Use plural table name (e.g. 'Course' -> 'courses')
+            table_name = f"{self.type.lower()}s"
+            if self.type.lower().endswith('s'):
+                table_name = self.type.lower()
+                
+            db.upsert(table_name, entity_data)
         except Exception as e:
              # Don't fail the whole save if DB sync fails
             print(f"(BaseEntity.save_json) Error syncing to DB: {e}")

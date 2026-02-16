@@ -281,16 +281,16 @@ def cmd_search(args):
     tables = []
     if search_type:
         # User specified type: course/path/lab
-        # Map to table names: Course/Path/Lab
+        # Map to table names: courses/paths/labs
         if search_type.lower() in ['course', 'courses', 'c']:
-            tables.append('Course')
+            tables.append('courses')
         elif search_type.lower() in ['path', 'paths', 'p']:
-            tables.append('Path')
+            tables.append('paths')
         elif search_type.lower() in ['lab', 'labs', 'l']:
-            tables.append('Lab')
+            tables.append('labs')
     else:
         # Search all
-        tables = ['Path', 'Course', 'Lab']
+        tables = ['paths', 'courses', 'labs']
     
     print(f"Searching for '{query}' in {tables}...")
     

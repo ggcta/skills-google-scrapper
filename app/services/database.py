@@ -11,12 +11,31 @@ class Database:
             # Initialize TinyDB
             db_path = os.path.join(DATA_FOLDER_NAME, 'database.json')
             cls._instance.db = TinyDB(db_path)
+            # Initialize metadata if empty
+            cls._instance.update_metadata()
         return cls._instance
+
+    def update_metadata(self):
+        """Update the metadata table with app info and timestamp."""
+        import datetime
+        metadata_table = self.db.table('metadata')
+        
+        info = {
+            'app_name': 'CSBHelper',
+            'description': 'Google Cloud Skills Boost Helper and Scraper',
+            'version': '1.0.0',
+            'site_url': 'https://www.skills.google/',
+            'last_modified': datetime.datetime.now().isoformat()
+        }
+        
+        # We only need one record for app info
+        metadata_table.upsert(info, Query().app_name == 'CSBHelper')
 
     def upsert(self, table_name: str, data: dict):
         """
         Update or insert a document into the specified table.
         Uses 'id' as the unique key.
+        auto-updates metadata.
         """
         table = self.db.table(table_name)
         User = Query()
@@ -28,6 +47,13 @@ class Database:
             table.update(data, User.id == doc_id)
         else:
             table.insert(data)
+            
+        # Update metadata timestamp on every change
+        
+        # We should call update_metadata only if table_name != 'metadata' to be safe, 
+        # though logic separates them.
+        if table_name != 'metadata':
+             self.update_metadata()
 
     def search(self, table_name: str, query_str: str, field: str = None):
         """
