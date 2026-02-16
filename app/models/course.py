@@ -388,11 +388,11 @@ class Course(BaseEntity):
                 return None
 
             content_parts = []
-
-            # Add lesson title if available
-            if 'title' in target_lesson:
-                content_parts.append(f"### {target_lesson['title']}")
-
+            
+            # (REMOVED) Add lesson title if available - requested by user to be removed
+            # if 'title' in target_lesson:
+            #     content_parts.append(f"### {target_lesson['title']}")
+            
             items = target_lesson.get('items', [])
             for item in items:
                 parsed_item = self._parse_lesson_item(item)
