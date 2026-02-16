@@ -29,7 +29,7 @@ def cmd_course(args):
 
     try:
         course = Course(id=course_id, driver=driver)
-        course.extract_transcript()
+        course.extract_transcript(force=args.force)
     finally:
         driver.quit()
 
@@ -99,7 +99,7 @@ def cmd_path(args):
                 
                 # Pass driver to course instance
                 course_instance = Course(id=c_id, name=c_name, driver=driver)
-                course_instance.extract_transcript()
+                course_instance.extract_transcript(force=args.force)
                 
                 courses_collection.collection[c_id] = c_name
                 courses_collection.save_json()
@@ -342,6 +342,7 @@ def main():
     # Course command
     parser_c = subparsers.add_parser('course', aliases=['c'], help='Extract transcript for a course')
     parser_c.add_argument('id', help='Course ID')
+    parser_c.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
     parser_c.set_defaults(func=cmd_course)
 
     # Path command
@@ -349,6 +350,7 @@ def main():
     parser_p.add_argument('id', help='Path ID')
     parser_p.add_argument('--all', '-a', action='store_true', help='Extract all courses in the path')
     parser_p.add_argument('--course', '-c', help='Extract specific course IDs (comma-separated)', default=None)
+    parser_p.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
     parser_p.set_defaults(func=cmd_path)
 
     # List command
