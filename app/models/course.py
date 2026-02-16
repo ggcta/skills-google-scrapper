@@ -267,20 +267,29 @@ class Course(BaseEntity):
         """
 
         print(f"(process_lab) •-> Lab: {activity['id']:>6} - {activity['title']}")
+        
+        # Force use of Template URL to ensure consistent HTML structure (and access to outline)
+        # Session URL might be different or require enrollment context which changes structure.
+        # Template URL (Catalog view) usually exposes the outline.
+        # Format: /course_templates/<course_id>/labs/<lab_id>
+        # We need to construct absolute URL.
+        template_url = f"{BASE_URL}/course_templates/{self.id}/labs/{activity['id']}"
+        # print(f"(process_lab) Using template URL: {template_url}")
+
         try:
             if self.driver:
-                self.driver.get(url)
+                self.driver.get(template_url)
 
                 # Check for sign-in redirect
                 if "sign_in" in self.driver.current_url:
                      print(f"\n\033[93m[!] Authentication required for lab {activity['id']}.\033[0m")
                      print("Please sign in to the browser window if you haven't.")
                      input("Press Enter after you have signed in and the page is loaded...")
-                     self.driver.get(url) # Retry loading the lab page
+                     self.driver.get(template_url) # Retry loading the lab page
 
                 lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
             else:
-                response = requests.get(url)
+                response = requests.get(template_url)
                 response.raise_for_status()
                 lab_page_html = BeautifulSoup(response.text, "html.parser")
 
