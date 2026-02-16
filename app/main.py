@@ -170,11 +170,22 @@ def cmd_fetch(args):
     if fetch_paths:
         print("\n--- Fetching Paths ---")
         paths = Paths()
-        paths.load_json() 
+        paths.load_json()
+        if not paths.name:
+            paths.name = "Paths Collection"
+        
+        # Ensure URL is up to date (fix double slash if present in old JSON)
+        from config.settings import BASE_URL_PATHS
+        paths.url = BASE_URL_PATHS
+        
         if paths.fetch_paths(force=force):
              print("Paths list updated.")
         else:
              print("Paths list fetch skipped or failed.")
+        
+        # Always save markdown index
+        paths.write_md()
+        print(f"Paths markdown index saved to {paths._md_path}")
 
     if fetch_courses:
         print("\n--- Fetching Courses ---")

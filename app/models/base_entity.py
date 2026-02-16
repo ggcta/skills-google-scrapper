@@ -87,6 +87,7 @@ class BaseEntity(Serialize):
         """
         Convert the entity's data to a dictionary.
         """
+        import time
 
         # Convert the entity data to a dictionary, excluding private attributes
         # and adding the type and URL
@@ -94,6 +95,10 @@ class BaseEntity(Serialize):
         the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k != 'driver'}
         the_dict['type'] = self.type
         the_dict['url'] = self.url
+        
+        # Add scrapedTime (epoch in milliseconds)
+        the_dict['scrapedTime'] = int(time.time() * 1000)
+        
         return the_dict
 
     # Load the entity data from a JSON file
@@ -176,7 +181,10 @@ class BaseEntity(Serialize):
         - url
         - date_published
         - topics
+        - scraped_date
         """
+        from datetime import datetime
+        import time
 
         front_matter_lines = ["---"]
         if hasattr(self, 'id'):
@@ -191,6 +199,17 @@ class BaseEntity(Serialize):
             front_matter_lines.append(f"date_published: {self.datePublished}")
         if hasattr(self, 'topics'):
             front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+            
+        # Add scraped_date
+        scraped_ts = getattr(self, 'scrapedTime', None)
+        if scraped_ts:
+             dt = datetime.fromtimestamp(scraped_ts / 1000.0)
+             front_matter_lines.append(f"scraped_date: {dt.strftime('%Y-%m-%d')}")
+        else:
+             # If not present, use current time
+             now = datetime.now()
+             front_matter_lines.append(f"scraped_date: {now.strftime('%Y-%m-%d')}")
+
         front_matter_lines.append("---")
         return "\n".join(front_matter_lines)
 

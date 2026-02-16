@@ -55,9 +55,11 @@ class Collection(Serialize):
         """
         Convert the entity's data to a dictionary.
         """
+        import time
 
         collection_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
         collection_dict['type'] = self.type
+        
         return collection_dict
     
     # Load the collection from a JSON file
@@ -89,6 +91,9 @@ class Collection(Serialize):
         Save the collection to a JSON file.\n
         This will overwrite the existing contents of the file.
         """
+        import time
+        # Update scrapedTime
+        self.scrapedTime = int(time.time() * 1000)
 
         # TODO: Trigger self.collection sorting everytime it gets updated.
         # Sort the collection based on the type of values
@@ -206,6 +211,16 @@ class Collection(Serialize):
 
     def md_helper(self):
         markdown = []
+        import time
+
+        # Get scraped_date
+        scraped_ts = getattr(self, 'scrapedTime', None)
+        if scraped_ts:
+             dt = datetime.fromtimestamp(scraped_ts / 1000.0)
+             scraped_date = dt.strftime('%Y-%m-%d')
+        else:
+             now = datetime.now()
+             scraped_date = now.strftime('%Y-%m-%d')
 
         # Add front matter
         front_matter_lines = ["---",
@@ -213,6 +228,7 @@ class Collection(Serialize):
                               f"name: '{self.name}'",
                               f"url: {self.url}",
                               f"date: {self.date}",
+                              f"scraped_date: {scraped_date}",
                               "---"]
         markdown.append("\n".join(front_matter_lines))
 
