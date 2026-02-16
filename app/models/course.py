@@ -809,7 +809,7 @@ class Course(BaseEntity):
                                 markdown.append(f"* [x] [{activity_title}](../labs/{lab_md_name})")
 
                         elif activity_type == 'quiz':
-                            if activity.get('quizItems'):
+                            if not toc_only and activity.get('quizItems'):
                                 quizItems = activity.get('quizItems')
                                 quiz_number = 1
                                 for quizItem in quizItems:
@@ -830,8 +830,9 @@ class Course(BaseEntity):
 
                         elif activity_type == 'link':
                             markdown.append(f"* [{activity_title}]({activity['link']})")
-                            if activity.get('transcript'):
-                                markdown.append("\n" + activity['transcript'] + "\n")
+                            if not toc_only and not no_transcript:
+                                if activity.get('transcript'):
+                                    markdown.append("\n" + activity['transcript'] + "\n")
 
                         elif activity_type == 'document':
                             # activity['local_document_path'] should have been set in process_document
