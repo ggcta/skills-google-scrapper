@@ -65,59 +65,36 @@ class Collection(Serialize):
     # Load the collection from a JSON file
     def load_json(self):
         """
-        Load the collection from a JSON file.
+        Load the collection from the Database (TinyDB).
         """
-
-        # Don't load the JSON file if it doesn't exist
-        # Don't create the folder if it doesn't exist
-        if not self._json_path.parent.exists() or not self._json_path.exists():
-            self.__dict__.update({})
-            return
-
-        # Load the JSON file and update the entity's data
-        try:
-
-            with open(self._json_path, 'r', encoding='utf-8', newline='\n') as jsonfile:
-                data = json.load(jsonfile)
-                self.__dict__.update(data)
-        except FileNotFoundError:
-            print(f"\033[33m(Collection.load_json) The Collections data is not cached. Please fetch from website first.\033[0m\n")
-        except json.JSONDecodeError:
-            print(f"(Collection.load_json) Error decoding JSON from file: {self._json_path}")
+        from services.database import Database
+        
+        db = Database()
+        # Use plural table name
+        table_name = f"{self.type.lower()}"
+        if self.type.lower() == 'path': table_name = 'paths' # just in case
+        
+        # Collection usually stores a dict of {id: name}
+        # But TinyDB stores documents {id: ..., name: ..., type: ...}
+        # We need to reconstruction the collection dict {id: name} from DB docs
+        
+        docs = db.all(table_name)
+        self.collection = {}
+        for doc in docs:
+            doc_id = doc.get('id')
+            doc_name = doc.get('name')
+            if doc_id:
+                self.collection[doc_id] = doc_name
 
     # Save the collection to a JSON file
     def save_json(self):
         """
-        Save the collection to a JSON file.\n
-        This will overwrite the existing contents of the file.
+        Save the collection to the Database (TinyDB).
+        This will UPSERT items.
         """
         import time
         # Update scrapedTime
         self.scrapedTime = int(time.time() * 1000)
-
-        # TODO: Trigger self.collection sorting everytime it gets updated.
-        # Sort the collection based on the type of values
-        if self.collection and all(isinstance(value, str) for value in self.collection.values()):
-            # If all values are strings, sort by values
-            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[1]))
-        elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
-            # If all values are dictionaries, sort by keys
-            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[0]))
-        else:
-            # Handle mixed types or empty collection (optional)
-            print(f"(Collection.save_json) Warning: Mixed value types in collection or empty collection. Skipping sorting for {self.name}.")
-
-        data = self.to_dict()
-
-        json_paths_folder = self._json_path.parent
-
-        # Create the folder if it doesn't exist
-        if not json_paths_folder.exists():
-            json_paths_folder.mkdir(parents=True, exist_ok=True)
-
-        # This will overwrite the existing contents of the file
-        with open(self._json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
-            json.dump(data, jsonfile, ensure_ascii=False, indent=2)
 
         # Sync items to TinyDB
         try:
@@ -134,6 +111,12 @@ class Collection(Serialize):
                     name = item_val
                     if isinstance(item_val, dict):
                         name = item_val.get('name', 'Unknown')
+                    
+                    # We need to fetch existing doc to preserve other fields if any?
+                    # Or just upsert id/name/type?
+                    # If we only have ID and Name in collection, we might overwrite other details if we are not careful
+                    # But Collection.save_json is usually called after fetching a list of items (id, name).
+                    # If we upsert {id, name, type}, it matches TinyDB upsert logic which updates fields.
                     
                     doc = {
                         'id': item_id,

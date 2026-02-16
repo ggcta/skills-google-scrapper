@@ -104,37 +104,52 @@ class BaseEntity(Serialize):
     # Load the entity data from a JSON file
     def load_json(self):
         """
-        Load the entity data from a JSON file.
-        If the file doesn't exist yet, load an empty {}.
-        If the file does exist, load it with json.load and update the entity's data.
+        Load the entity data from the Database (TinyDB).
+        If the entity doesn't exist, load an empty {}.
         """
-
-        # Don't load the JSON file if it doesn't exist
-        # Don't create the folder if it doesn't exist
-        if not self._json_path.parent.exists() or not self._json_path.exists():
-            self.__dict__.update({})
-            return
-
-        # And update the entity's data
-        try:
-            with open(self._json_path,
-                      'r',
-                      encoding='utf-8') as jsonfile:
-                data = json.load(jsonfile)
-                self.__dict__.update(data)
-        except FileNotFoundError:
-            print(f"\033[33m(BaseEntity.load_json) The BaseEntity's data is not cached. Fetching... from website.\033[0m\n")
-        except json.JSONDecodeError:
-            print(f"(BaseEntity.load_json) Error decoding JSON from file: {self._json_path}")
+        from services.database import Database
+        import logging
+        
+        db = Database()
+        # Use plural table name
+        table_name = f"{self.type.lower()}s"
+        if self.type.lower().endswith('s'):
+            table_name = self.type.lower()
+            
+        data = db.get(table_name, self.id)
+        
+        if data:
+            self.__dict__.update(data)
+        else:
+            # If not found in DB, we could try file system as fallback?
+            # For now, let's assume DB is source of truth.
+            # But during migration or mixed state, file might exist.
+            # Plan said: "Update load_json to fetch data from Database service (TinyDB) instead of file system."
+            # So we strictly use DB.
+            pass
 
     def save_json(self):
         """
-        Save the entity data to a JSON file.
+        Save the entity data to the Database (TinyDB) AND a JSON file (Backup).
         """
-
-        # Convert the entity data to a dictionary, consider to sort the values
+        
+        # Convert the entity data to a dictionary
         entity_data = self.to_dict()
 
+        # 1. UPSERT to Database
+        try:
+            from services.database import Database
+            db = Database()
+            # Use plural table name (e.g. 'Course' -> 'courses')
+            table_name = f"{self.type.lower()}s"
+            if self.type.lower().endswith('s'):
+                table_name = self.type.lower()
+                
+            db.upsert(table_name, entity_data)
+        except Exception as e:
+            print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
+
+        # 2. SAVE to individual JSON file (Backup)
         # Create the folder if it doesn't exist
         if not self._json_path.parent.exists():
             self._json_path.parent.mkdir(parents=True, exist_ok=True)
@@ -156,19 +171,6 @@ class BaseEntity(Serialize):
             print(f"(BaseEntity.save_json) Error decoding JSON from file: {self._json_path}")
         except Exception as e:
             print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
-
-        try:
-            from services.database import Database
-            db = Database()
-            # Use plural table name (e.g. 'Course' -> 'courses')
-            table_name = f"{self.type.lower()}s"
-            if self.type.lower().endswith('s'):
-                table_name = self.type.lower()
-                
-            db.upsert(table_name, entity_data)
-        except Exception as e:
-             # Don't fail the whole save if DB sync fails
-            print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
 
     def generate_front_matter(self) -> str:
         """
