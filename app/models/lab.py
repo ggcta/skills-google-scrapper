@@ -20,9 +20,10 @@ class Lab(BaseEntity):
 
     # TODO: fetch_data() for fetching a lab's data
 
-    def generate_markdown(self):
+    def generate_markdown(self, toc_only: bool = False, **kwargs):
         """
         Generate the Markdown content for the Lab entity.
+        :param toc_only: If True, only generate table of contents (structure).
         """
 
         markdown = []
@@ -30,8 +31,9 @@ class Lab(BaseEntity):
 
         markdown.append(f"# [{self.name}]({self.url})")
 
-        if hasattr(self, 'description') and self.description:
-            markdown.append(f"{self.description}")
+        if not toc_only:
+            if hasattr(self, 'description') and self.description:
+                markdown.append(f"{self.description}")
 
         if hasattr(self, 'steps') and self.steps:
             for step_number, step_text in self.steps.items():

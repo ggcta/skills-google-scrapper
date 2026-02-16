@@ -559,9 +559,11 @@ class Course(BaseEntity):
         with open(json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(course, jsonfile, ensure_ascii=False, indent=2)
 
-    def generate_markdown(self) -> str:
+    def generate_markdown(self, toc_only: bool = False, no_transcript: bool = False, **kwargs) -> str:
         """
         Generate the Markdown data for the course.
+        :param toc_only: If True, only generate table of contents (structure).
+        :param no_transcript: If True, skip transcripts for videos.
         """
 
         markdown = []
@@ -569,21 +571,24 @@ class Course(BaseEntity):
 
         markdown.append(f"# [{self.name}]({self.url})")
 
-        if hasattr(self, 'description') and self.description:
-            markdown.append("**Description:**")
-            markdown.append(f"{util_replace_quote_marks(self.description)}")
+        if not toc_only:
+            if hasattr(self, 'description') and self.description:
+                markdown.append("**Description:**")
+                markdown.append(f"{util_replace_quote_marks(self.description)}")
 
-        if hasattr(self, 'objectives') and self.objectives:
-            markdown.append("**Objectives:**")
-            markdown.append("\n".join([f"* {util_replace_quote_marks(objective)}" for objective in self.objectives]))
+            if hasattr(self, 'objectives') and self.objectives:
+                markdown.append("**Objectives:**")
+                markdown.append("\n".join([f"* {util_replace_quote_marks(objective)}" for objective in self.objectives]))
 
         if hasattr(self, 'modules') and self.modules:
             for module in self.modules:
                 module_title = module["title"].strip()
                 markdown.append(f"## {module_title}")
-                if module.get("description"):
-                    module['description'] = self.clean_text(module.get("description", ""))
-                    markdown.append(f"{util_replace_quote_marks(module['description'])}")
+                
+                if not toc_only:
+                    if module.get("description"):
+                        module['description'] = self.clean_text(module.get("description", ""))
+                        markdown.append(f"{util_replace_quote_marks(module['description'])}")
 
                 for step in module.get("steps", []):
                     for activity in step.get("activities", []):
@@ -595,7 +600,8 @@ class Course(BaseEntity):
 
                         if activity_type == 'video':
                             markdown.append(f"* [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
-                            markdown.append(f"{util_replace_quote_marks(activity.get('transcript', '(No transcript available)'))}")
+                            if not toc_only and not no_transcript:
+                                markdown.append(f"{util_replace_quote_marks(activity.get('transcript', '(No transcript available)'))}")
 
                         elif activity_type == 'lab':
                             markdown.append(activity.get('description'))

@@ -89,9 +89,10 @@ class Path(BaseEntity):
             course_name = course['name']
             print(f"+|-• \033[35m[{course_id:>5} - {course_name:<72}]\033[0m")
 
-    def generate_markdown(self) -> str:
+    def generate_markdown(self, toc_only: bool = False, **kwargs) -> str:
         """
         Generate the Markdown representation of the Path.
+        :param toc_only: If True, only generate table of contents (structure).
         """
 
         # Convert the Path object to a dictionary
@@ -100,9 +101,12 @@ class Path(BaseEntity):
 
         # Add the main heading
         markdown.append(f"# [{self.name}]({self.url})")
+        
         # Add the description
-        if hasattr(self, 'description') and self.description:
-            markdown.append(f"{self.description}")
+        if not toc_only:
+            if hasattr(self, 'description') and self.description:
+                markdown.append(f"{self.description}")
+        
         # Add the courses list
         if hasattr(self, 'courses') and self.courses:
             markdown.append("## Courses & Progress")

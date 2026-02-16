@@ -181,9 +181,9 @@ class BaseEntity(Serialize):
         front_matter_lines.append("---")
         return "\n".join(front_matter_lines)
 
-    def generate_markdown(self) -> str:
+    def generate_markdown(self, **kwargs) -> str:
         """
-        Generate the Markdown representation of the Path.
+        Generate the Markdown representation of the entity.
         """
 
         # Convert the Path object to a dictionary
@@ -192,12 +192,13 @@ class BaseEntity(Serialize):
 
         return "\n\n".join(markdown) + "\n"
 
-    def save_markdown(self) -> None:
+    def save_markdown(self, **kwargs) -> None:
         """
         Save the Path data to a Markdown file.
+        passes kwargs to generate_markdown
         """
 
-        mdtext = self.generate_markdown()
+        mdtext = self.generate_markdown(**kwargs)
 
         # Create the folder if it doesn't exist
         if not self._md_path.parent.exists():

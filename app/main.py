@@ -217,6 +217,56 @@ def cmd_browser(args):
         print("Closing browser...")
         driver.quit()
 
+def cmd_md(args):
+    """Handle md command"""
+    toc_only = args.toc
+    no_transcript = args.no_transcript
+    
+    # Check if at least one type is provided
+    if not (args.course or args.path or args.lab):
+        print("Please specify at least one item type: --course, --path, or --lab.")
+        return
+
+    # Process Courses
+    if args.course:
+        course_ids = [cid.strip() for cid in args.course.split(',') if cid.strip()]
+        for cid in course_ids:
+            print(f"Generating markdown for Course {cid}...")
+            course = Course(id=cid)
+            course.load_json()
+            if not course.name: # basic check if loaded
+                 print(f"Course {cid} data not found. Please fetch/extract first.")
+                 continue
+            course.save_markdown(toc_only=toc_only, no_transcript=no_transcript)
+            print(f"Markdown saved to {course._md_path}")
+
+    # Process Paths
+    if args.path:
+        path_ids = [pid.strip() for pid in args.path.split(',') if pid.strip()]
+        for pid in path_ids:
+            print(f"Generating markdown for Path {pid}...")
+            path = Path(id=pid)
+            path.load_json()
+            if not path.name:
+                 print(f"Path {pid} data not found. Please fetch first.")
+                 continue
+            path.save_markdown(toc_only=toc_only)
+            print(f"Markdown saved to {path._md_path}")
+
+    # Process Labs
+    if args.lab:
+        lab_ids = [lid.strip() for lid in args.lab.split(',') if lid.strip()]
+        for lid in lab_ids:
+            print(f"Generating markdown for Lab {lid}...")
+            lab = Lab(id=lid)
+            lab.load_json()
+             # Lab might not be fully implemented yet, but we support the structure
+            if not lab.name:
+                 print(f"Lab {lid} data not found.")
+                 continue
+            lab.save_markdown(toc_only=toc_only)
+            print(f"Markdown saved to {lab._md_path}")
+
 def main():
     parser = argparse.ArgumentParser(description="CloudSkillsBoost Scraper CLI")
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
@@ -262,6 +312,15 @@ def main():
     parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')
     parser_b.add_argument('--profile-folder', help='Specific webdriver profile folder', default=None)
     parser_b.set_defaults(func=cmd_browser)
+
+    # MD command
+    parser_m = subparsers.add_parser('md', help='Generate markdown output')
+    parser_m.add_argument('--course', '-c', help='List of course IDs (comma-separated)', default=None)
+    parser_m.add_argument('--lab', '-l', help='List of lab IDs (comma-separated)', default=None)
+    parser_m.add_argument('--path', '-p', help='List of path IDs (comma-separated)', default=None)
+    parser_m.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
+    parser_m.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
+    parser_m.set_defaults(func=cmd_md)
 
     # Parse arguments
     args = parser.parse_args()
