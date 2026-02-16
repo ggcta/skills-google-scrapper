@@ -421,22 +421,18 @@ class Course(BaseEntity):
              return "\n\n".join(sub_content)
 
         if 'heading' in item:
-            return f"#### {util_strip_html_tags(item['heading'])}"
+            # Clean heading: remove HTML tags if any, add markdown headers
+            heading_text = self._html_to_markdown(item['heading'])
+            # If the cleaned text doesn't look like a header, force it to be one (h4)
+            if not heading_text.startswith('#'):
+                return f"#### {heading_text}"
+            return heading_text
         
         if 'paragraph' in item:
-            # Paragraphs often contain HTML, valuable to keep or strip nicely
-            # For now, let's keep it somewhat raw or just strip main tags
-            # The prompt requested "retains ... text (with or without formating)"
-            # Let's keep HTML tags that are markdown-compatible if possible, or just raw text?
-            # User example showed proper HTML in the JS object.
-            # Let's clean it up slightly but keep structure.
-            return item['paragraph']
+            return self._html_to_markdown(item['paragraph'])
             
         if 'list' in item:
-            # List usually has 'items' array inside content or similar?
-            # Need to guess structure or handle generic 'list' type if found.
-            # If it's a simple list:
-            return str(item.get('list', ''))
+            return self._html_to_markdown(item['list'])
 
         if 'image' in item:
              src = item['image'].get('src')
@@ -445,6 +441,61 @@ class Course(BaseEntity):
                  return f"![{alt}]({src})"
 
         return None
+
+    def _html_to_markdown(self, html_content: str) -> str:
+        """
+        Convert HTML content to Markdown.
+        """
+        if not html_content:
+            return ""
+
+        # Remove div tags but keep content
+        content = re.sub(r'<div[^>]*>', '', html_content)
+        content = re.sub(r'</div>', '\n', content)
+        
+        # Paragraphs to double newlines
+        content = re.sub(r'<p[^>]*>', '', content)
+        content = re.sub(r'</p>', '\n\n', content)
+
+        # Bold
+        content = re.sub(r'<strong[^>]*>', '**', content)
+        content = re.sub(r'</strong>', '**', content)
+        content = re.sub(r'<b[^>]*>', '**', content)
+        content = re.sub(r'</b>', '**', content)
+        
+        # Italic
+        content = re.sub(r'<em[^>]*>', '*', content)
+        content = re.sub(r'</em>', '*', content)
+        content = re.sub(r'<i[^>]*>', '*', content)
+        content = re.sub(r'</i>', '*', content)
+        
+        # Lists
+        content = re.sub(r'<ul[^>]*>', '', content)
+        content = re.sub(r'</ul>', '', content)
+        content = re.sub(r'<ol[^>]*>', '', content)
+        content = re.sub(r'</ol>', '', content)
+        content = re.sub(r'<li[^>]*>', '- ', content)
+        content = re.sub(r'</li>', '\n', content)
+
+        # Headers
+        content = re.sub(r'<h1[^>]*>', '# ', content)
+        content = re.sub(r'</h1>', '\n\n', content)
+        content = re.sub(r'<h2[^>]*>', '## ', content)
+        content = re.sub(r'</h2>', '\n\n', content)
+        content = re.sub(r'<h3[^>]*>', '### ', content)
+        content = re.sub(r'</h3>', '\n\n', content)
+
+        # Remove spans and other tags but keep content
+        content = re.sub(r'<span[^>]*>', '', content)
+        content = re.sub(r'</span>', '', content)
+        
+        # Decode HTML entities
+        content = html.unescape(content)
+        
+        # Collapse multiple newlines
+        content = re.sub(r'\n\s*\n', '\n\n', content)
+        
+        return content.strip()
 
     def process_quiz(self, activity, url) -> None:
         """
