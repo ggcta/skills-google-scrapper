@@ -64,7 +64,7 @@ class Course(BaseEntity):
             del the_dict['external_course_data']
         return the_dict
 
-    def extract_transcript(self) -> None:
+    def extract_transcript(self, force=False) -> None:
         """
         Main method to extract the transcript of a course.
         """
@@ -80,7 +80,7 @@ class Course(BaseEntity):
             return
 
         # Extract course metadata
-        if not self.extract_course_metadata(course_html):
+        if not self.extract_course_metadata(course_html, force=force):
             # Sync with DB in case it's missing there, even if local file is up to date
             self.save_json()
             return
@@ -125,7 +125,7 @@ class Course(BaseEntity):
             print(f"(extract_transcript) Error: Unable to load the course page. {error}")
             return None
 
-    def extract_course_metadata(self, course_html) -> bool:
+    def extract_course_metadata(self, course_html, force=False) -> bool:
         """
         Extract course metadata such as description, objectives, and topics.
         """
@@ -147,7 +147,7 @@ class Course(BaseEntity):
             datePublished = course_objectives_json.get('datePublished')
 
             # If the course has the same datePublished, return False and not continue.
-            if datePublished == self.datePublished:
+            if not force and datePublished == self.datePublished:
                 print(f"(extract_course_metadata) Course {self.id} already extracted. datePublished: {datePublished}\n")
                 return False
 
