@@ -55,6 +55,15 @@ class Course(BaseEntity):
         self.driver = driver
         self.external_course_data = {}
 
+    def to_dict(self):
+        """
+        Convert the entity's data to a dictionary, excluding external_course_data.
+        """
+        the_dict = super().to_dict()
+        if 'external_course_data' in the_dict:
+            del the_dict['external_course_data']
+        return the_dict
+
     def extract_transcript(self) -> None:
         """
         Main method to extract the transcript of a course.
@@ -367,7 +376,12 @@ class Course(BaseEntity):
         Extract content for a specific lesson from the full course data.
         """
         try:
-            lessons = course_data.get('lessons', [])
+            # Check if data is wrapped in 'course' key (common in Rise 360 / Google Storage)
+            if 'course' in course_data:
+                lessons = course_data['course'].get('lessons', [])
+            else:
+                lessons = course_data.get('lessons', [])
+
             target_lesson = next((l for l in lessons if l.get('id') == lesson_id), None)
             
             if not target_lesson:
