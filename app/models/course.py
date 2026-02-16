@@ -107,7 +107,7 @@ class Course(BaseEntity):
             if self.driver:
                 print(f"(fetch_course_page) Fetching with driver: {self.url}")
                 self.driver.get(self.url)
-                
+
                 # Check for sign-in redirect
                 if "sign_in" in self.driver.current_url:
                      print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
@@ -115,7 +115,7 @@ class Course(BaseEntity):
                      # Reload to ensure we have the page content
                      if "sign_in" in self.driver.current_url:
                          self.driver.get(self.url)
-                
+
                 return BeautifulSoup(self.driver.page_source, "html.parser")
             else:
                 response = requests.get(self.url, timeout=20)
@@ -180,7 +180,7 @@ class Course(BaseEntity):
             if course_outline_element:
                 self.modules = json.loads(course_outline_element["modules"])
                 return True
-            
+
             raise NoSuchElementException("(extract_course_outline) ql-contents-menu or ql-course-outline is not found.")
         except Exception as error:
             print(f"(extract_course_outline) Error: {error}")
@@ -232,13 +232,13 @@ class Course(BaseEntity):
         try:
             if self.driver:
                 self.driver.get(url)
-                
+
                 if "sign_in" in self.driver.current_url:
                      print(f"\n\033[93m[!] Authentication required for video {activity['id']}.\033[0m")
                      print("Please sign in to the browser window if you haven't.")
                      input("Press Enter after you have signed in and the page is loaded...")
                      self.driver.get(url) # Retry loading the video page
-                
+
                 video_html = BeautifulSoup(self.driver.page_source, "html.parser")
             else:
                 response = requests.get(url)
@@ -270,14 +270,14 @@ class Course(BaseEntity):
         try:
             if self.driver:
                 self.driver.get(url)
-                
+
                 # Check for sign-in redirect
                 if "sign_in" in self.driver.current_url:
                      print(f"\n\033[93m[!] Authentication required for lab {activity['id']}.\033[0m")
                      print("Please sign in to the browser window if you haven't.")
                      input("Press Enter after you have signed in and the page is loaded...")
                      self.driver.get(url) # Retry loading the lab page
-                
+
                 lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
             else:
                 response = requests.get(url)
@@ -347,7 +347,7 @@ class Course(BaseEntity):
             if self.driver:
                 self.driver.get(url)
                 time.sleep(3) # Wait for scripts to load
-                
+
                 # Execute __fetchCourse
                 script = """
                 return (async () => {
@@ -358,14 +358,14 @@ class Course(BaseEntity):
                 })();
                 """
                 data = self.driver.execute_script(script)
-                
+
                 if data:
                     self.external_course_data[base_url] = data
                     print(f"(fetch_external) •-• [+] Cached {len(str(data))} bytes")
                     return data
                 else:
                     print("(fetch_external) [!] __fetchCourse not found or returned null")
-            
+
             return None
         except Exception as e:
             print(f"(fetch_external) Error: {e}")
@@ -383,22 +383,22 @@ class Course(BaseEntity):
                 lessons = course_data.get('lessons', [])
 
             target_lesson = next((l for l in lessons if l.get('id') == lesson_id), None)
-            
+
             if not target_lesson:
                 return None
-            
+
             content_parts = []
-            
+
             # Add lesson title if available
             if 'title' in target_lesson:
                 content_parts.append(f"### {target_lesson['title']}")
-            
+
             items = target_lesson.get('items', [])
             for item in items:
                 parsed_item = self._parse_lesson_item(item)
                 if parsed_item:
                     content_parts.append(parsed_item)
-            
+
             return "\n\n".join(content_parts)
         except Exception as e:
             print(f"(_extract_lesson_content) Error: {e}")
@@ -410,7 +410,7 @@ class Course(BaseEntity):
         """
         # Based on observed structure, items have 'heading', 'paragraph', 'list', etc.
         # This is a best-effort parser.
-        
+
         # Check for nested items (some structures might be recursive or wrapped)
         if 'items' in item:
              sub_content = []
@@ -427,10 +427,10 @@ class Course(BaseEntity):
             if not heading_text.startswith('#'):
                 return f"#### {heading_text}"
             return heading_text
-        
+
         if 'paragraph' in item:
             return self._html_to_markdown(item['paragraph'])
-            
+
         if 'list' in item:
             return self._html_to_markdown(item['list'])
 
@@ -452,23 +452,23 @@ class Course(BaseEntity):
         # Remove div tags but keep content
         content = re.sub(r'<div[^>]*>', '', html_content)
         content = re.sub(r'</div>', '\n', content)
-        
+
         # Paragraphs to double newlines
         content = re.sub(r'<p[^>]*>', '', content)
-        content = re.sub(r'</p>', '\n\n', content)
+        content = re.sub(r'</p>', '\n', content)
 
         # Bold
         content = re.sub(r'<strong[^>]*>', '**', content)
         content = re.sub(r'</strong>', '**', content)
         content = re.sub(r'<b[^>]*>', '**', content)
         content = re.sub(r'</b>', '**', content)
-        
+
         # Italic
         content = re.sub(r'<em[^>]*>', '*', content)
         content = re.sub(r'</em>', '*', content)
         content = re.sub(r'<i[^>]*>', '*', content)
         content = re.sub(r'</i>', '*', content)
-        
+
         # Lists
         content = re.sub(r'<ul[^>]*>', '', content)
         content = re.sub(r'</ul>', '', content)
@@ -488,13 +488,13 @@ class Course(BaseEntity):
         # Remove spans and other tags but keep content
         content = re.sub(r'<span[^>]*>', '', content)
         content = re.sub(r'</span>', '', content)
-        
+
         # Decode HTML entities
         content = html.unescape(content)
-        
+
         # Collapse multiple newlines
         content = re.sub(r'\n\s*\n', '\n\n', content)
-        
+
         return content.strip()
 
     def process_quiz(self, activity, url) -> None:
@@ -548,7 +548,7 @@ class Course(BaseEntity):
                      print("Please sign in to the browser window if you haven't.")
                      input("Press Enter after you have signed in and the page is loaded...")
                      self.driver.get(url)
-                
+
                 link_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
             else:
                 response = requests.get(url)
@@ -566,14 +566,14 @@ class Course(BaseEntity):
             if activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
                 target_url = activity['link']
                 print(f"(process_link) Detected external course content: {target_url}")
-                
+
                 try:
                     # Extract lesson ID
                     lesson_id = target_url.split('#/lessons/')[-1]
-                    
+
                     # Fetch full course data (cached)
                     course_data = self.fetch_external_course_content(target_url)
-                    
+
                     if course_data:
                         # Extract specific lesson content
                         transcript = self._extract_lesson_content(course_data, lesson_id)
@@ -592,13 +592,13 @@ class Course(BaseEntity):
         Process a document activity.
         """
         print(f"(process_document) •-> Doc: {activity['id']:>6} - {activity['title']}")
-        
+
         try:
             # Create documents directory if it doesn't exist
             # csbmdvault/courses/documents/<course_id>/
             doc_dir = getattr(self, '_output_path', PathlibPath("csbmdvault")) / "courses" / "documents" / self.id
             doc_dir.mkdir(parents=True, exist_ok=True)
-            
+
             if self.driver:
                 self.driver.get(url)
                 if "sign_in" in self.driver.current_url:
@@ -606,13 +606,13 @@ class Course(BaseEntity):
                     print("Please sign in to the browser window if you haven't.")
                     input("Press Enter after you have signed in and the page is loaded...")
                     self.driver.get(url)
-                
+
                 doc_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
             else:
                 response = requests.get(url)
                 response.raise_for_status()
                 doc_page_html = BeautifulSoup(response.text, "html.parser")
-            
+
             # Find download link
             # Selector: a[aria-label="Download document"] or a#link
             # Actual HTML shows <ql-button icon="download" href="..."> or <div class="download-document"><ql-button ...>
@@ -624,25 +624,25 @@ class Course(BaseEntity):
                 download_link = doc_page_html.select_one('a[aria-label="Download document"]')
             if not download_link:
                 download_link = doc_page_html.select_one('a#link')
-            
+
             if download_link:
                 file_url = download_link['href']
-                
+
                 # Check if it's a relative URL
                 if not file_url.startswith('http'):
                      # It's likely an absolute path from root or relative
                      if file_url.startswith('/'):
                          file_url = f"{BASE_URL.rstrip('/')}{file_url}"
-                
+
                 # Add remote URL to activity
                 activity['document_url'] = file_url
-                
+
                 # Extract filename
                 filename = None
                 from urllib.parse import urlparse, parse_qs, unquote
                 parsed_url = urlparse(file_url)
                 query_params = parse_qs(parsed_url.query)
-                
+
                 # Try to get filename from query params (response-content-disposition)
                 # content-disposition: inline; filename="filename.pdf"; filename*=UTF-8''filename.pdf
                 rcd = query_params.get('response-content-disposition', [None])[0]
@@ -652,18 +652,18 @@ class Course(BaseEntity):
                     match = re.search(r'filename="?([^";]+)"?', rcd)
                     if match:
                         filename = match.group(1)
-                
+
                 # Determine filename from URL path if not found
                 if not filename:
                      filename = PathlibPath(parsed_url.path).name
-                
+
                 # Decode filename just in case
                 filename = unquote(filename)
-                
+
                 # Prepare save path
                 save_path = doc_dir / filename
                 activity['local_document_path'] = f"documents/{self.id}/{filename}"
-                
+
                 if save_path.exists():
                      print(f"(process_document) •-• [+] Existed: {filename}")
                 else:
@@ -674,10 +674,10 @@ class Course(BaseEntity):
                     if self.driver:
                         for cookie in self.driver.get_cookies():
                             cookies[cookie['name']] = cookie['value']
-                    
+
                     file_response = requests.get(file_url, cookies=cookies, stream=True)
                     file_response.raise_for_status()
-                    
+
                     # If we didn't get filename from URL, check headers now
                     if not filename or filename == 'download': # generic name
                         cd = file_response.headers.get('content-disposition')
@@ -687,11 +687,11 @@ class Course(BaseEntity):
                                  filename = match.group(1)
                                  save_path = doc_dir / filename
                                  activity['local_document_path'] = f"documents/{self.id}/{filename}"
-                    
+
                     with open(save_path, 'wb') as f:
                         for chunk in file_response.iter_content(chunk_size=8192):
                             f.write(chunk)
-                    
+
                     print(f"(process_document) •-• [+] Saved: {filename}")
 
             else:
@@ -781,7 +781,7 @@ class Course(BaseEntity):
             for module in self.modules:
                 module_title = module["title"].strip()
                 markdown.append(f"## {module_title}")
-                
+
                 if not toc_only:
                     if module.get("description"):
                         module['description'] = self.clean_text(module.get("description", ""))
