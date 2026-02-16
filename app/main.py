@@ -210,20 +210,27 @@ def cmd_fetch(args):
         print(f"Paths markdown index saved to {paths._md_path}")
 
     # --- Courses ---
+    driver = None
     if fetch_courses_ids: # Specific IDs provided
         print(f"\n--- Fetching Specific Courses: {fetch_courses_ids} ---")
-        for cid in fetch_courses_ids:
-            try:
-                print(f"Fetching Course {cid}...")
-                c = Course(id=cid)
-                # extract_transcript fetches page, extracts metadata, outline, modules, saves json/md.
-                # We use existing method to be robust. 
-                # Note: This might trigger browser if configured/needed, or use requests.
-                # We don't prefer browser for 'fetch' but strict consistency implies re-using Course logic.
-                c.extract_transcript(force=force) 
-                print(f"Course {cid} updated.")
-            except Exception as e:
-                print(f"Failed to fetch course {cid}: {e}")
+        try:
+             # Launch browser for authenticated access
+             # We use headless=False to allow user to see/login if needed
+             # Use persistent profile to share login state
+             driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+             
+             for cid in fetch_courses_ids:
+                try:
+                    print(f"Fetching Course {cid}...")
+                    c = Course(id=cid, driver=driver)
+                    # extract_transcript fetches page, extracts metadata, outline, modules, saves json/md.
+                    c.extract_transcript(force=force) 
+                    print(f"Course {cid} updated.")
+                except Exception as e:
+                    print(f"Failed to fetch course {cid}: {e}")
+        finally:
+            if driver:
+                driver.quit()
 
     if should_fetch_courses_list:
         print("\n--- Fetching Courses Collection ---")
