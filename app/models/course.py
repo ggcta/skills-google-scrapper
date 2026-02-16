@@ -64,7 +64,7 @@ class Course(BaseEntity):
             del the_dict['external_course_data']
         return the_dict
 
-    def extract_transcript(self, force=False) -> None:
+    def extract_transcript(self, force=False, no_md=False, toc_only=False, no_transcript=False) -> None:
         """
         Main method to extract the transcript of a course.
         """
@@ -94,7 +94,8 @@ class Course(BaseEntity):
 
         # Save the course data
         self.save_json()
-        self.save_markdown()
+        if not no_md:
+            self.save_markdown(toc_only=toc_only, no_transcript=no_transcript)
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 

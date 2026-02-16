@@ -29,7 +29,7 @@ def cmd_course(args):
 
     try:
         course = Course(id=course_id, driver=driver)
-        course.extract_transcript(force=args.force)
+        course.extract_transcript(force=args.force, no_md=args.no_md, toc_only=args.toc, no_transcript=args.no_transcript)
     finally:
         driver.quit()
 
@@ -99,7 +99,7 @@ def cmd_path(args):
                 
                 # Pass driver to course instance
                 course_instance = Course(id=c_id, name=c_name, driver=driver)
-                course_instance.extract_transcript(force=args.force)
+                course_instance.extract_transcript(force=args.force, no_md=args.no_md, toc_only=args.toc, no_transcript=args.no_transcript)
                 
                 courses_collection.collection[c_id] = c_name
                 courses_collection.save_json()
@@ -343,6 +343,9 @@ def main():
     parser_c = subparsers.add_parser('course', aliases=['c'], help='Extract transcript for a course')
     parser_c.add_argument('id', help='Course ID')
     parser_c.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
+    parser_c.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
+    parser_c.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
+    parser_c.add_argument('--no-transcript', action='store_true', help='Skip video transcripts')
     parser_c.set_defaults(func=cmd_course)
 
     # Path command
@@ -351,6 +354,9 @@ def main():
     parser_p.add_argument('--all', '-a', action='store_true', help='Extract all courses in the path')
     parser_p.add_argument('--course', '-c', help='Extract specific course IDs (comma-separated)', default=None)
     parser_p.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
+    parser_p.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
+    parser_p.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
+    parser_p.add_argument('--no-transcript', action='store_true', help='Skip video transcripts')
     parser_p.set_defaults(func=cmd_path)
 
     # List command
