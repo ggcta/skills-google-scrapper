@@ -210,6 +210,10 @@ class Course(BaseEntity):
         """
 
         for activity in step['activities']:
+            # Fix HREF if it is a session URL
+            if activity.get('href') and '/course_sessions/' in activity['href']:
+                 activity['href'] = re.sub(r'/course_sessions/[^/]+', f'/course_templates/{self.id}', activity['href'])
+
             activity_type = activity['type']
             activity_id = activity['id']
             activity_title = activity['title'].strip()
