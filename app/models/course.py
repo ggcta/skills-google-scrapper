@@ -10,6 +10,9 @@ import html
 import requests
 from bs4 import BeautifulSoup
 from config.settings import BASE_URL, QL_IFRAME
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 
 # TODO: Convert these constants to Enums
@@ -511,7 +514,6 @@ class Course(BaseEntity):
         Process a quiz activity.
         """
 
-        # TODO: Extract Quiz that need to press the 'Start quiz' button, ie. course/201
         print(f"(process_quiz) •-> Qui: {activity['id']:>6} - {activity['title']}")
         try:
             if self.driver:
@@ -524,6 +526,21 @@ class Course(BaseEntity):
                      print("Please sign in to the browser window if you haven't.")
                      input("Press Enter after you have signed in and the page is loaded...")
                      self.driver.get(url)
+
+                # Check for Start Quiz button
+                try:
+                    start_button = self.driver.find_element(By.XPATH, XPATH_START_BUTTON)
+                    if start_button:
+                        print(f"(process_quiz) Start Quiz button found. Clicking...")
+                        start_button.click()
+                        # Wait for quiz content to load
+                        WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_element_located((By.XPATH, XPATH_QUIZ))
+                        )
+                except NoSuchElementException:
+                    pass # Button not found, proceed as usual
+                except Exception as e:
+                    print(f"(process_quiz) Warning: Error clicking Start Quiz button: {e}")
 
                 quiz_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
             else:
