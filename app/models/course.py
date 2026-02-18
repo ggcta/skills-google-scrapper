@@ -31,7 +31,7 @@ QUIZ_VERSION = "quizVersion"
 QUIZ_ITEMS = "quizItems"
 LINK_URL_A_TAG = "ql-card.document-link a"
 
-
+# MARK: Course (class)
 class Course(BaseEntity):
     """
     Class representing a course entity.\n
@@ -102,6 +102,7 @@ class Course(BaseEntity):
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 
+    # MARK: fetch_course_page
     def fetch_course_page(self) -> BeautifulSoup:
         """
         Fetch the course page and return the parsed HTML.
@@ -129,6 +130,7 @@ class Course(BaseEntity):
             print(f"(extract_transcript) Error: Unable to load the course page. {error}")
             return None
 
+    # MARK: extract_course_metadata
     def extract_course_metadata(self, course_html, force=False) -> bool:
         """
         Extract course metadata such as description, objectives, and topics.
@@ -166,6 +168,7 @@ class Course(BaseEntity):
             print(f"(extract_course_metadata) Error: {error}")
             return False
 
+    # MARK: extract_course_outline
     def extract_course_outline(self, course_html) -> bool:
         """
         Extract the course outline and modules.
@@ -189,6 +192,7 @@ class Course(BaseEntity):
             print(f"(extract_course_outline) Error: {error}")
             return False
 
+    # MARK: process_modules
     def process_modules(self) -> None:
         """
         Process each module in the course.
@@ -204,6 +208,7 @@ class Course(BaseEntity):
             for step in module['steps']:
                 self.process_step(step)
 
+    # MARK: process_step
     def process_step(self, step) -> None:
         """
         Process each step in a module.
@@ -230,6 +235,7 @@ class Course(BaseEntity):
             elif activity_type == "document":
                 self.process_document(activity, activity_full_url)
 
+    # MARK: process_video
     def process_video(self, activity, url) -> None:
         """
         Process a video activity.
@@ -268,6 +274,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_video) Error: {error}")
 
+    # MARK: process_lab
     def process_lab(self, activity, url) -> None:
         """
         Process a lab activity.
@@ -349,6 +356,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_lab) Error: {error}")
 
+    # MARK: fetch_external_course_content
     def fetch_external_course_content(self, url: str) -> dict:
         """
         Fetch external course content using __fetchCourse() JS function.
@@ -387,6 +395,7 @@ class Course(BaseEntity):
             print(f"(fetch_external) Error: {e}")
             return None
 
+    # MARK: _extract_lesson_content
     def _extract_lesson_content(self, course_data: dict, lesson_id: str) -> str:
         """
         Extract content for a specific lesson from the full course data.
@@ -420,6 +429,7 @@ class Course(BaseEntity):
             print(f"(_extract_lesson_content) Error: {e}")
             return None
 
+    # MARK: _parse_lesson_item
     def _parse_lesson_item(self, item: dict) -> str:
         """
         Parse a single item from the lesson data into Markdown/HTML.
@@ -458,6 +468,7 @@ class Course(BaseEntity):
 
         return None
 
+    # MARK: _html_to_markdown
     def _html_to_markdown(self, html_content: str) -> str:
         """
         Convert HTML content to Markdown.
@@ -513,6 +524,7 @@ class Course(BaseEntity):
 
         return content.strip()
 
+    # MARK: process_quiz
     def process_quiz(self, activity, url) -> None:
         """
         Process a quiz activity.
@@ -562,6 +574,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_quiz) Error: {error}")
 
+    # MARK: process_link
     def process_link(self, activity, url) -> None:
         """
         Process a link activity.
@@ -617,6 +630,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_link) Error: {error}")
 
+    # MARK: process_document
     def process_document(self, activity, url) -> None:
         """
         Process a document activity.
@@ -730,6 +744,7 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_document) Error: {error}")
 
+    # MARK: generate_prompt
     def generate_prompt(self) -> None:
         """
         Generate the prompts for videos from their transcripts.\n
@@ -786,6 +801,7 @@ class Course(BaseEntity):
         with open(json_path, 'w', encoding='utf-8', newline='\n') as jsonfile:
             json.dump(course, jsonfile, ensure_ascii=False, indent=2)
 
+    # MARK: generate_markdown
     def generate_markdown(self, toc_only: bool = False, no_transcript: bool = False, **kwargs) -> str:
         """
         Generate the Markdown data for the course.
