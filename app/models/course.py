@@ -9,7 +9,7 @@ import json
 import html
 import requests
 from bs4 import BeautifulSoup
-from config.settings import BASE_URL, QL_IFRAME
+from config.settings import BASE_URL, QL_IFRAME, OUTPUT_FOLDER_NAME
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -626,7 +626,7 @@ class Course(BaseEntity):
         try:
             # Create documents directory if it doesn't exist
             # csbmdvault/courses/documents/<course_id>/
-            doc_dir = getattr(self, '_output_path', PathlibPath("csbmdvault")) / "courses" / "documents" / self.id
+            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / "courses" / "documents" / self.id
             doc_dir.mkdir(parents=True, exist_ok=True)
 
             if self.driver:
