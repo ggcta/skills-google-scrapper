@@ -4,7 +4,7 @@ import json
 import re
 from bs4 import BeautifulSoup
 from selenium.common import NoSuchElementException
-import requests
+from selenium.common import NoSuchElementException
 from config.settings import BASE_URL_LAB, LAB_CONTENT_OUTLINE, LAB_REVIEW_LAB_ID, LAB_TITLE, LD_JSON, META_DESCRIPTION, COURSE_OUTLINE, META_DESCRIPTION, PATH_CARDS
 from models.collection import Collection
 from models.course import Course
@@ -13,11 +13,11 @@ from models.path import Path
 from utils.utils import util_replace_quote_marks, util_strip_html_tags
 
 class DataManagement():
-    def __init__(self):
+    def __init__(self, driver=None):
+        self.driver = driver
         self.paths_collection, self.courses_collection, self.labs_collection = self.load_data()
 
-    @staticmethod
-    def load_data():
+    def load_data(self):
         col_paths = Collection(type='paths')
         col_paths.load_json()
 
@@ -35,14 +35,23 @@ class DataManagement():
         Fetch path data based on the provided path_id.
         """
         # Path URL
-        a_path = Path(id=path_id)
+        a_path = Path(id=path_id, driver=self.driver)
 
         try:
-            # Navigate to the path URL
-            response = requests.get(a_path.url, timeout=20)
-            response.raise_for_status()
+            if not self.driver:
+                print("fetch_path_data(): Webdriver is required.")
+                return {}
 
-            path_html = BeautifulSoup(response.text, "html.parser")
+            # Navigate to the path URL
+            self.driver.get(a_path.url)
+            
+            if "sign_in" in self.driver.current_url:
+                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
+                 input("Press Enter after you have signed in and the page is loaded to continue...")
+                 if "sign_in" in self.driver.current_url:
+                     self.driver.get(a_path.url)
+
+            path_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
             # Locate the <script> tag containing the JSON data
             script_element = path_html.select_one(LD_JSON)
@@ -87,18 +96,27 @@ class DataManagement():
         """
 
         # The course URL
-        a_course = Course(id=course_id)
+        a_course = Course(id=course_id, driver=self.driver)
 
         # Browse the course url
         try:
-            response = requests.get(a_course.url, timeout=20)
-            response.raise_for_status()
-        except requests.RequestException as get_course_url_error:
+            if not self.driver:
+                print("fetch_course_data(): Webdriver is required.")
+                return
+
+            self.driver.get(a_course.url)
+            if "sign_in" in self.driver.current_url:
+                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
+                 input("Press Enter after you have signed in and the page is loaded to continue...")
+                 if "sign_in" in self.driver.current_url:
+                     self.driver.get(a_course.url)
+                     
+        except Exception as get_course_url_error:
             print(f"(extract_transcript) Error: Unable to load the course page. {get_course_url_error}")
             return
 
         # Parse the HTML content
-        course_html = BeautifulSoup(response.text, "html.parser")
+        course_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
         # Get the course properties from the ld+json element including the course objectives, description, etc.
         try:
@@ -163,10 +181,18 @@ class DataManagement():
         
         # Get the lab title, description, and permalink
         try:
-            response = requests.get(a_lab.url)
-            response.raise_for_status()
+            if not self.driver:
+                print("fetch_lab_data(): Webdriver is required.")
+                return
 
-            lab_page_html = BeautifulSoup(response.text, "html.parser")
+            self.driver.get(a_lab.url)
+            if "sign_in" in self.driver.current_url:
+                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
+                 input("Press Enter after you have signed in and the page is loaded to continue...")
+                 if "sign_in" in self.driver.current_url:
+                     self.driver.get(a_lab.url)
+
+            lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
             lab_title_element = lab_page_html.select_one(LAB_TITLE)
             lab_id_element = lab_page_html.select_one(LAB_REVIEW_LAB_ID)
@@ -219,7 +245,7 @@ class DataManagement():
 
         # Get all courses from all the paths
         for path_id in self.paths_collection.collection.keys():
-            path_data = Path(id=path_id)
+            path_data = Path(id=path_id, driver=self.driver)
 
             path_data.fetch_data()
             path_data.save_json()

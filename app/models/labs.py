@@ -10,20 +10,25 @@ class Labs(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL_LAB,
-                 collection: dict = None):
+                 collection: dict = None,
+                 driver=None):
         super().__init__(name, url, collection)
+        self.driver = driver
 
     def fetch_labs(self, force: bool = False) -> bool:
         """
         Gather all labs from the CloudSkillsBoost Labs page using the API.
         Returns a Boolean to check status.
         """
+        if not self.driver:
+            print("(Labs.fetch_labs) Error: Webdriver is required to fetch labs.")
+            return False
+
         if not force and self.collection:
             print("(Labs.fetch_labs) Collection not empty. Skipping fetch.")
             return True
 
         from config.settings import API_URL_LABS
-        import requests
         import json
 
         print(f"Fetching labs from API: {API_URL_LABS}")
@@ -42,14 +47,17 @@ class Labs(Collection):
                 url = f"{API_URL_LABS}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
-                response = requests.get(url, headers=headers, timeout=10)
-                
-                if response.status_code != 200:
-                    print(f"\nFailed to fetch page {page}. Status: {response.status_code}")
-                    break
-                
+                self.driver.get(url)
+
                 try:
-                    data = response.json()
+                    pre_element = self.driver.find_element("tag name", "pre")
+                    json_text = pre_element.text
+                except Exception:
+                    body_element = self.driver.find_element("tag name", "body")
+                    json_text = body_element.text
+
+                try:
+                    data = json.loads(json_text)
                 except json.JSONDecodeError:
                     print(f"\nFailed to decode JSON on page {page}")
                     break
@@ -92,9 +100,6 @@ class Labs(Collection):
                 print("(Labs.fetch_labs) No labs found.")
                 return False
 
-        except requests.RequestException as req_err:
-            print(f"(Labs.fetch_labs) Network error: {req_err}")
-            return False
         except Exception as error:
             print(f"(Labs.fetch_labs) Error occurred: {error}")
             return False

@@ -1,6 +1,5 @@
 import json
 from bs4 import BeautifulSoup
-import requests
 from utils.utils import util_replace_special_chars
 from config.settings import *
 from models.base_entity import BaseEntity
@@ -19,12 +18,14 @@ class Path(BaseEntity):
                  name: str = None,
                  description: str = None,
                  datePublished: str = None,
-                 courses: dict = None):
+                 courses: dict = None,
+                 driver=None):
         super().__init__(id,
                          name,
                          description)
         self.datePublished = datePublished
         self.courses = courses or {}
+        self.driver = driver
 
     # Fetch the Path data from the website
     def fetch_data(self):
@@ -33,11 +34,20 @@ class Path(BaseEntity):
         """
 
         try:
-            # Navigate to the path URL
-            response = requests.get(self.url, timeout=20)
-            response.raise_for_status()
+            if not self.driver:
+                print("(fetch_data) Error: Webdriver is required to fetch path data.")
+                return {}
 
-            path_html = BeautifulSoup(response.text, "html.parser")
+            # Navigate to the path URL
+            self.driver.get(self.url)
+            
+            if "sign_in" in self.driver.current_url:
+                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
+                 input("Press Enter after you have signed in and the page is loaded to continue...")
+                 if "sign_in" in self.driver.current_url:
+                     self.driver.get(self.url)
+
+            path_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
             # Locate the <script> tag containing the JSON data
             script_element = path_html.select_one(LD_JSON)

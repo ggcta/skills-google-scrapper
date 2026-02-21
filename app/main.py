@@ -31,33 +31,37 @@ def cmd_list(args):
         label = "paths"
 
     # Reload if requested
-    if args.reload:
-        print(f"Reloading {label} list from remote...")
-        collection = target_class()
-        collection.load_json()
-        
-        # Ensure URL is up to date (specifically for Paths)
-        if label == "paths":
-            from config.settings import BASE_URL_PATHS
-            collection.url = BASE_URL_PATHS
-            
-        # Fetch list (Supports Path and Courses as they have fetch implemented)
-        # Labs fetch might need implementation check, but we assume pattern holds or fails gracefully.
+        driver = None
         try:
-             # Dynamically call fetch method if exists or standard naming
-             # Paths.fetch_paths, Courses.fetch_courses
-             # We can use getattr
-             method_name = f"fetch_{label}"
-             fetch_method = getattr(collection, method_name, None)
-             if fetch_method:
-                 if fetch_method(force=True): # reload implies force
-                     print(f"{label.capitalize()} list updated.")
+            print("\n\033[35mLaunching browser for list extraction...\033[0m")
+            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+
+            print(f"Reloading {label} list from remote...")
+            collection = target_class(driver=driver)
+            collection.load_json()
+            
+            # Ensure URL is up to date (specifically for Paths)
+            if label == "paths":
+                from config.settings import BASE_URL_PATHS
+                collection.url = BASE_URL_PATHS
+                
+            # Fetch list (Supports Path and Courses as they have fetch implemented)
+            try:
+                 method_name = f"fetch_{label}"
+                 fetch_method = getattr(collection, method_name, None)
+                 if fetch_method:
+                     if fetch_method(force=True): # reload implies force
+                         print(f"{label.capitalize()} list updated.")
+                     else:
+                         print(f"Failed to update {label} list.")
                  else:
-                     print(f"Failed to update {label} list.")
-             else:
-                 print(f"Reload not supported for {label}.")
-        except Exception as e:
-            print(f"Error reloading {label}: {e}")
+                     print(f"Reload not supported for {label}.")
+            except Exception as e:
+                print(f"Error reloading {label}: {e}")
+        finally:
+            if driver:
+                print("Closing browser...")
+                driver.quit()
 
     print(f"Listing all {label}...")
     
@@ -99,42 +103,45 @@ def cmd_fetch(args):
     # --- Paths ---
     if fetch_paths_ids:
         print(f"\n--- Processing Paths: {fetch_paths_ids} ---")
-        for pid in fetch_paths_ids:
-            try:
-                print(f"Processing Path {pid}...")
-                p = Path(id=pid)
-                # Load existing to see if we need to fetch? 
-                # Fetch command implies scraping/updating.
-                
-                # Fetch data (scrapes remote)
-                p.fetch_data()
-                p.save_json() # Backs up to file and syncs to DB
-                
-                if not no_md:
-                    p.save_markdown(toc_only=toc_only)
-                    print(f"Path {pid} markdown updated.")
-                print(f"Path {pid} updated.")
-                
-                # Original logic: update courses collection with courses found in path
-                # This helps populate courses list without fetching all courses
-                courses_collection = Courses()
-                # We load just to be safe, but save_json will Upsert to DB which is fine
-                
-                # But Courses.collection is a dict {id: name}. 
-                # We can't easily upsert to DB directly from here without loading Courses logic
-                # Actually, Courses.save_json upserts the whole collection dict to DB.
-                # So we should load it first to avoid overwriting with partial data if we use save_json.
-                courses_collection.load_json()
-                
-                for course in p.courses.values():
-                    c_id = course['id']
-                    c_name = course['name']
-                    courses_collection.collection[c_id] = c_name
-                
-                courses_collection.save_json()
-                
-            except Exception as e:
-                print(f"Failed to fetch path {pid}: {e}")
+        driver = None
+        try:
+            print("\n\033[35mLaunching browser for path extraction...\033[0m")
+            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            
+            for pid in fetch_paths_ids:
+                try:
+                    print(f"Processing Path {pid}...")
+                    p = Path(id=pid, driver=driver)
+                    # Load existing to see if we need to fetch? 
+                    # Fetch command implies scraping/updating.
+                    
+                    # Fetch data (scrapes remote)
+                    p.fetch_data()
+                    p.save_json() # Backs up to file and syncs to DB
+                    
+                    if not no_md:
+                        p.save_markdown(toc_only=toc_only)
+                        print(f"Path {pid} markdown updated.")
+                    print(f"Path {pid} updated.")
+                    
+                    # Original logic: update courses collection with courses found in path
+                    # This helps populate courses list without fetching all courses
+                    courses_collection = Courses()
+                    courses_collection.load_json()
+                    
+                    for course in p.courses.values():
+                        c_id = course['id']
+                        c_name = course['name']
+                        courses_collection.collection[c_id] = c_name
+                    
+                    courses_collection.save_json()
+                    
+                except Exception as e:
+                    print(f"Failed to fetch path {pid}: {e}")
+        finally:
+            if driver:
+                print("Closing browser...")
+                driver.quit()
 
     # --- Courses ---
     if fetch_courses_ids:

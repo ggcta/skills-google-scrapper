@@ -11,20 +11,25 @@ class Courses(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL_COURSES,
-                 collection: dict = None):
+                 collection: dict = None,
+                 driver=None):
         super().__init__(name, url, collection)
+        self.driver = driver
 
     def fetch_courses(self, force: bool = False) -> bool:
         """
         Gather all courses from the CloudSkillsBoost Courses page using the API.
         Returns a Boolean to check status.
         """
+        if not self.driver:
+            print("(Courses.fetch_courses) Error: Webdriver is required to fetch courses.")
+            return False
+
         if not force and self.collection:
             print("(Courses.fetch_courses) Collection not empty. Skipping fetch.")
             return True
 
         from config.settings import API_URL_COURSES
-        import requests
         import json
 
         print(f"Fetching courses from API: {API_URL_COURSES}")
@@ -43,14 +48,18 @@ class Courses(Collection):
                 url = f"{API_URL_COURSES}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
-                response = requests.get(url, headers=headers, timeout=10)
-                
-                if response.status_code != 200:
-                    print(f"\nFailed to fetch page {page}. Status: {response.status_code}")
-                    break
-                
+                self.driver.get(url)
+
                 try:
-                    data = response.json()
+                    pre_element = self.driver.find_element("tag name", "pre")
+                    json_text = pre_element.text
+                except Exception:
+                    # Fallback to body if <pre> isn't where JSON is rendered
+                    body_element = self.driver.find_element("tag name", "body")
+                    json_text = body_element.text
+
+                try:
+                    data = json.loads(json_text)
                 except json.JSONDecodeError:
                     print(f"\nFailed to decode JSON on page {page}")
                     break
@@ -93,9 +102,6 @@ class Courses(Collection):
                 print("(Courses.fetch_courses) No courses found.")
                 return False
 
-        except requests.RequestException as req_err:
-            print(f"(Courses.fetch_courses) Network error: {req_err}")
-            return False
         except Exception as error:
             print(f"(Courses.fetch_courses) Error occurred: {error}")
             return False

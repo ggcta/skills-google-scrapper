@@ -37,27 +37,31 @@ class CloudSkillsBoost:
 
         extract_transcript_task = False
 
-        task_selection = True
-        while task_selection:
-            # Ask for what to do with the selected path id or course id.
-            task_to_do = input("WHAT TASK YOU WANT TO GO WITH? (THIS IS A MUST): \n"
-                               "\t\te. Extract Transcripts\n"
-                               "\t\tb. Back\n"
-                               "\t\tq. Quit\n"
-                               "•PLEASE SELECT: ")
+        self.driver = None
+        try:
+            task_selection = True
+            while task_selection:
+                # Ask for what to do with the selected path id or course id.
+                task_to_do = input("WHAT TASK YOU WANT TO GO WITH? (THIS IS A MUST): \n"
+                                   "\t\te. Extract Transcripts\n"
+                                   "\t\tb. Back\n"
+                                   "\t\tq. Quit\n"
+                                   "•PLEASE SELECT: ")
 
-            # Set variables accordingly for each selection.
-            if task_to_do.lower() == "e":
-                extract_transcript_task = True
-                task_selection = False
-            elif task_to_do.lower() == "b":
-                return
-            elif task_to_do.lower() == "q":
-                print("Got it. Bye.")
-                sys.exit(0)
-            else:
-                print("Please select a valid choice: e or q to quit the program.")
-                continue
+                # Set variables accordingly for each selection.
+                if task_to_do.lower() == "e":
+                    extract_transcript_task = True
+                    task_selection = False
+                    print("\n\033[35mLaunching browser for transcript extraction...\033[0m")
+                    self.driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+                elif task_to_do.lower() == "b":
+                    return
+                elif task_to_do.lower() == "q":
+                    print("Got it. Bye.")
+                    sys.exit(0)
+                else:
+                    print("Please select a valid choice: e or q to quit the program.")
+                    continue
 
         #  =======================================================================
         # If no path id, extract transcript for a certain course id only.
@@ -73,7 +77,7 @@ class CloudSkillsBoost:
             if extract_transcript_task:
                 heading = f"{a_course_id} - {course_name.upper()}"
                 print(f"\n\033[45m[{heading:^85}]\033[0m")
-                course = Course(id=a_course_id)
+                course = Course(id=a_course_id, driver=self.driver)
                 course.extract_transcript()
                 # Save the course name to the collection
                 # TODO: Save only those missing courses.
@@ -83,7 +87,7 @@ class CloudSkillsBoost:
         #  =======================================================================
         # A path is submitted, list all the courses in the path and let user select
         if a_path_id:
-            path_data = Path(id=a_path_id)
+            path_data = Path(id=a_path_id, driver=self.driver)
             path_data.load_json()
 
             # If the path has no data yet
@@ -121,7 +125,7 @@ class CloudSkillsBoost:
                         heading = f"{current_course_id} - {current_course_name.upper()}"
                         print(f"\n\033[45m[{heading:^85}]\033[0m")
 
-                        course_instance = Course(id=current_course_id, name=current_course_name)
+                        course_instance = Course(id=current_course_id, name=current_course_name, driver=self.driver)
                         course_instance.extract_transcript()
 
                         # Save the course name to the collection
@@ -135,7 +139,7 @@ class CloudSkillsBoost:
                     heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
                     print(f"\n\033[45m[{heading:^85}]\033[0m")
 
-                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'])
+                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'], driver=self.driver)
                     course_instance.extract_transcript()
                     # Save the course name to the collection
                     self.courses_collection.collection[course_instance.id] = course_instance.name
@@ -152,6 +156,11 @@ class CloudSkillsBoost:
             else:
                 print("You need to choose a course id or A(ll) or q to quit the program.")
                 return
+                
+        finally:
+            if self.driver:
+                print("Closing browser...")
+                self.driver.quit()
 
     # Interactive mode for the CloudSkillsBoost Automation Script
     # TODO: Command-line interface for the CloudSkillsBoost Automation Script

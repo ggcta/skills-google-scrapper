@@ -1,6 +1,5 @@
 from models.collection import Collection
 from config.settings import BASE_URL_PATHS, API_URL_PATHS
-import requests
 import json
 
 class Paths(Collection):
@@ -11,8 +10,10 @@ class Paths(Collection):
     def __init__(self,
                  name: str = None,
                  url: str = BASE_URL_PATHS,
-                 collection: dict = None):
+                 collection: dict = None,
+                 driver=None):
         super().__init__(name, url, collection)
+        self.driver = driver
 
     def fetch_paths(self, base_url: str = BASE_URL_PATHS, force: bool = False) -> bool:
         """
@@ -22,6 +23,10 @@ class Paths(Collection):
         :param base_url: CloudSkillsBoost Paths page URL (unused in API method, kept for signature).
         :param force: If True, fetch even if collection is not empty.
         """
+        if not self.driver:
+            print("(Paths.fetch_paths) Error: Webdriver is required to fetch paths.")
+            return False
+
         if not force and self.collection:
             print("(Collection.fetch_paths) Collection not empty. Skipping fetch.")
             return True
@@ -42,16 +47,19 @@ class Paths(Collection):
                 url = f"{API_URL_PATHS}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
-                response = requests.get(url, headers=headers, timeout=10)
-                # The API might allow 404 or just return empty list/error for out of range?
-                # Based on debug, it returns list.
-                
-                if response.status_code != 200:
-                    print(f"\nFailed to fetch page {page}. Status: {response.status_code}")
-                    break
+                self.driver.get(url)
+
+                # The browser will likely display raw JSON. We can extract it from the <body> or <pre>
+                try:
+                    pre_element = self.driver.find_element("tag name", "pre")
+                    json_text = pre_element.text
+                except Exception:
+                    # Fallback to body if <pre> isn't where JSON is rendered
+                    body_element = self.driver.find_element("tag name", "body")
+                    json_text = body_element.text
                 
                 try:
-                    data = response.json()
+                    data = json.loads(json_text)
                 except json.JSONDecodeError:
                     print(f"\nFailed to decode JSON on page {page}")
                     break
@@ -97,9 +105,6 @@ class Paths(Collection):
                 print("(Collection.fetch_paths) No paths found.")
                 return False
 
-        except requests.RequestException as req_err:
-            print(f"(Collection.get_paths) Network error: {req_err}")
-            return False
         except Exception as error:
             print(f"(Collection.get_paths) Error occurred: {error}")
             return False
