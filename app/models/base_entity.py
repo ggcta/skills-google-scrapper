@@ -13,11 +13,21 @@ class BaseEntity(Serialize):
 
     def __init__(self,
                  id: str,
-                 name: str,
-                 description: str):
+                 name: str = None,
+                 description: str = None,
+                 title: str = None):
         self.id = id
-        self.name = name
+        self.title = title or name
         self.description = description
+
+    @property
+    def name(self):
+        """Alias for title for backward compatibility."""
+        return self.title
+
+    @name.setter
+    def name(self, value):
+        self.title = value
 
     @property
     def type(self):
@@ -60,9 +70,9 @@ class BaseEntity(Serialize):
         Generate the Markdown file name based on the entity name.
         """
 
-        # Replace special characters in the name for the Markdown file name
+        # Replace special characters in the title for the Markdown file name
         # and ensure it ends with .md
-        return f'{util_replace_special_chars(self.name)}.md'
+        return f'{util_replace_special_chars(self.title)}.md'
 
     # Properties to get the JSON and Markdown file names and paths
     @property
@@ -91,8 +101,8 @@ class BaseEntity(Serialize):
 
         # Convert the entity data to a dictionary, excluding private attributes
         # and adding the type and URL
-        # Also exclude 'driver' as it is not serializable
-        the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k != 'driver'}
+        # Also exclude 'driver' and 'name' as they are not serialized directly
+        the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k not in ('driver', 'name')}
         the_dict['type'] = self.type
         the_dict['url'] = self.url
         
@@ -120,6 +130,9 @@ class BaseEntity(Serialize):
         
         if data:
             self.__dict__.update(data)
+            # Backward compatibility: migrate 'name' to 'title' on load
+            if 'name' in self.__dict__:
+                self.title = self.__dict__.pop('name')
         else:
             # If not found in DB, we could try file system as fallback?
             # For now, let's assume DB is source of truth.
@@ -178,7 +191,7 @@ class BaseEntity(Serialize):
 
         Order:
         - id
-        - name
+        - title
         - type
         - url
         - date_published
@@ -191,8 +204,8 @@ class BaseEntity(Serialize):
         front_matter_lines = ["---"]
         if hasattr(self, 'id'):
             front_matter_lines.append(f"id: '{self.id}'")
-        if hasattr(self, 'name'):
-            front_matter_lines.append(f"name: '{self.name}'")
+        if hasattr(self, 'title') and self.title:
+            front_matter_lines.append(f"title: '{self.title}'")
         if hasattr(self, 'type'):
             front_matter_lines.append(f"type: {self.type}")
         if hasattr(self, 'url'):

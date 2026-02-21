@@ -46,10 +46,12 @@ class Course(BaseEntity):
                  objectives: list = None,
                  topics: list = None,
                  modules: list = None,
-                 driver=None):
-        super().__init__(id,
-                         name,
-                         description)
+                 driver=None,
+                 title: str = None):
+        super().__init__(id=id,
+                         name=name,
+                         description=description,
+                         title=title)
         self.datePublished = datePublished or ""
         self.objectives = objectives or []
         self.topics = topics or []

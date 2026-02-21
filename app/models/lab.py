@@ -11,11 +11,12 @@ class Lab(BaseEntity):
                  id: str,
                  name: str = None,
                  description: str = None,
-                 steps: dict = None):
-        super().__init__(id,
-                         name,
-                         description
-                         )
+                 steps: dict = None,
+                 title: str = None):
+        super().__init__(id=id,
+                         name=name,
+                         description=description,
+                         title=title)
         self.steps = steps or {}
 
     # TODO: fetch_data() for fetching a lab's data

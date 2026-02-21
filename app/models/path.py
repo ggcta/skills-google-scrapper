@@ -19,10 +19,12 @@ class Path(BaseEntity):
                  description: str = None,
                  datePublished: str = None,
                  courses: dict = None,
-                 driver=None):
-        super().__init__(id,
-                         name,
-                         description)
+                 driver=None,
+                 title: str = None):
+        super().__init__(id=id,
+                         name=name,
+                         description=description,
+                         title=title)
         self.datePublished = datePublished
         self.courses = courses or {}
         self.driver = driver
