@@ -232,6 +232,8 @@ class Course(BaseEntity):
                 self.process_quiz(activity, activity_full_url)
             elif activity_type == "link":
                 self.process_link(activity, activity_full_url)
+            elif activity_type == "html_bundle":
+                self.process_html_bundle(activity, activity_full_url)
             elif activity_type == "document":
                 self.process_document(activity, activity_full_url)
 
@@ -630,6 +632,60 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(process_link) Error: {error}")
 
+    # MARK: process_html_bundle
+    def process_html_bundle(self, activity, url) -> None:
+        """
+        Process a html_bundle activity.
+        """
+
+        print(f"(process_html_bundle) •-> HTM: {activity['id']:>6} - {activity['title']}")
+        try:
+            if self.driver:
+                self.driver.get(url)
+                if "sign_in" in self.driver.current_url:
+                     print(f"\n\033[93m[!] Authentication required for html_bundle {activity['id']}.\033[0m")
+                     print("Please sign in to the browser window if you haven't.")
+                     input("Press Enter after you have signed in and the page is loaded...")
+                     self.driver.get(url)
+
+                html_bundle_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
+            else:
+                response = requests.get(url)
+                response.raise_for_status()
+                html_bundle_page_html = BeautifulSoup(response.text, "html.parser")
+
+            link_url_a_tag = html_bundle_page_html.select_one(LINK_URL_A_TAG)
+            if link_url_a_tag:
+                activity['link'] = link_url_a_tag['href']
+            else:
+                iframe_tag = html_bundle_page_html.select_one(QL_IFRAME)
+                activity['link'] = iframe_tag['src'] if iframe_tag else None
+
+            # Special handling for Google Storage HTML5 courses
+            if activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
+                target_url = activity['link']
+                print(f"(process_html_bundle) Detected external course content: {target_url}")
+
+                try:
+                    # Extract lesson ID
+                    lesson_id = target_url.split('#/lessons/')[-1]
+
+                    # Fetch full course data (cached)
+                    course_data = self.fetch_external_course_content(target_url)
+
+                    if course_data:
+                        # Extract specific lesson content
+                        transcript = self._extract_lesson_content(course_data, lesson_id)
+                        if transcript:
+                            activity['transcript'] = transcript
+                            print(f"(process_html_bundle) •-• [+] Extracted transcript ({len(transcript)} chars)")
+                except Exception as e:
+                    print(f"(process_html_bundle) Error extracting external content: {e}")
+
+            print(f"(process_html_bundle) •-• [+]")
+        except Exception as error:
+            print(f"(process_html_bundle) Error: {error}")
+
     # MARK: process_document
     def process_document(self, activity, url) -> None:
         """
@@ -839,7 +895,10 @@ class Course(BaseEntity):
                         activity_type = activity['type']
                         activity_href = activity['href']
 
-                        markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+                        if activity_type == 'html_bundle':
+                            markdown.append(f"### HTML - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+                        else:
+                            markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
 
                         if activity_type == 'video':
                             markdown.append(f"* [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
@@ -874,7 +933,7 @@ class Course(BaseEntity):
                                     markdown.append("\n".join(quiz_list))
                                     quiz_number += 1
 
-                        elif activity_type == 'link':
+                        elif activity_type in ('link', 'html_bundle'):
                             markdown.append(f"* [{activity_title}]({activity['link']})")
                             if not toc_only and not no_transcript:
                                 if activity.get('transcript'):
