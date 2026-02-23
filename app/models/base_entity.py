@@ -68,7 +68,7 @@ class BaseEntity(Serialize):
         """
 
         return f'{self.id}.json'
-    
+
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _md_name(self):
@@ -111,10 +111,10 @@ class BaseEntity(Serialize):
         the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k not in ('driver', 'name')}
         the_dict['type'] = self.type
         the_dict['url'] = self.url
-        
+
         # Add scrapedTime (epoch in milliseconds)
         the_dict['scrapedTime'] = int(time.time() * 1000)
-        
+
         return the_dict
 
     # Load the entity data from a JSON file
@@ -125,15 +125,15 @@ class BaseEntity(Serialize):
         """
         from services.database import Database
         import logging
-        
+
         db = Database()
         # Use plural table name
         table_name = f"{self.type.lower()}s"
         if self.type.lower().endswith('s'):
             table_name = self.type.lower()
-            
+
         data = db.get(table_name, self.id)
-        
+
         if data:
             self.__dict__.update(data)
             # Backward compatibility: migrate 'name' to 'title' on load
@@ -151,7 +151,7 @@ class BaseEntity(Serialize):
         """
         Save the entity data to the Database (TinyDB) AND a JSON file (Backup).
         """
-        
+
         # Convert the entity data to a dictionary
         entity_data = self.to_dict()
 
@@ -163,7 +163,7 @@ class BaseEntity(Serialize):
             table_name = f"{self.type.lower()}s"
             if self.type.lower().endswith('s'):
                 table_name = self.type.lower()
-                
+
             db.upsert(table_name, entity_data)
         except Exception as e:
             print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
@@ -229,7 +229,7 @@ class BaseEntity(Serialize):
             front_matter_lines.append(f"date_published: {self.datePublished}")
         if hasattr(self, 'topics'):
             front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
-            
+
         # Add scraped_date
         scraped_ts = getattr(self, 'scrapedTime', None)
         if scraped_ts:
