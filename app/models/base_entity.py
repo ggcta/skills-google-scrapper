@@ -15,10 +15,16 @@ class BaseEntity(Serialize):
                  id: str,
                  name: str = None,
                  description: str = None,
-                 title: str = None):
+                 title: str = None,
+                 author: str = "Google Skills",
+                 publisher: str = "Google Skills",
+                 subject: str = ""):
         self.id = id
         self.title = title or name
         self.description = description
+        self.author = author
+        self.publisher = publisher
+        self.subject = subject
 
     @property
     def name(self):
@@ -206,6 +212,15 @@ class BaseEntity(Serialize):
             front_matter_lines.append(f"id: '{self.id}'")
         if hasattr(self, 'title') and self.title:
             front_matter_lines.append(f"title: '{self.title}'")
+
+        # Extra properties for Markdown/Pandoc conversion
+        if hasattr(self, 'author') and self.author:
+            front_matter_lines.append(f"author: '{self.author}'")
+        if hasattr(self, 'publisher') and self.publisher:
+            front_matter_lines.append(f"publisher: '{self.publisher}'")
+        if hasattr(self, 'subject'):
+            front_matter_lines.append(f"subject: '{self.subject}'" if self.subject else "subject: ")
+
         if hasattr(self, 'type'):
             front_matter_lines.append(f"type: {self.type}")
         if hasattr(self, 'url'):
