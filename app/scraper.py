@@ -257,6 +257,18 @@ def _action_browser(portal: str) -> None:
     main.cmd_browser(args)
 
 
+def _action_login(portal: str) -> None:
+    """
+    (Hidden) Sign in to the current working portal.
+
+    Opens a browser at the portal's home page so the user can log in; the
+    session is saved to the webdriver profile for subsequent fetches.
+    Delegates to cmd_login. Not listed in the menu.
+    """
+    import main  # lazy import
+    main.cmd_login(SimpleNamespace(portal=portal))
+
+
 # MARK: interactive loop
 def interactive_mode() -> None:
     """Run the interactive menu loop with a persistent working portal."""
@@ -277,6 +289,8 @@ def interactive_mode() -> None:
         "m": _action_markdown,
         "5": _action_browser,
         "w": _action_browser,
+        # Hidden: sign in to the current working portal. Not shown in the menu.
+        "login": _action_login,
     }
 
     while True:
