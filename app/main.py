@@ -26,6 +26,27 @@ def _resolve_portal(raw, default_portal):
     inferred_portal, ident = util_portal_and_id(raw)
     return (inferred_portal or default_portal), ident
 
+
+def add_portal_flags(parser):
+    """
+    Add shorthand portal-selection flags to a subparser, so callers can avoid
+    the verbose ``--portal <name>`` form:
+
+        -A / -a / --public   -> public portal (default)
+        -B / -b / --partner  -> partner portal
+
+    ``--portal/-P <name>`` is kept for scripting/explicitness. All are mutually
+    exclusive and resolve to ``args.portal``.
+    """
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-A', '-a', '--public', dest='portal', action='store_const', const='public',
+                       help='Use the public portal (default)')
+    group.add_argument('-B', '-b', '--partner', dest='portal', action='store_const', const='partner',
+                       help='Use the partner portal')
+    group.add_argument('--portal', '-P', dest='portal', choices=list(PORTALS.keys()),
+                       help='Explicit portal name (advanced)')
+    parser.set_defaults(portal=DEFAULT_PORTAL)
+
 def cmd_list(args):
     """Handle list command"""
 
@@ -379,8 +400,7 @@ def main():
     
     # Reload flag
     parser_l.add_argument('--reload', '-r', action='store_true', help='Reload list from remote before listing')
-    parser_l.add_argument('--portal', '-P', choices=list(PORTALS.keys()), default=DEFAULT_PORTAL,
-                          help='Which portal to list (default: public)')
+    add_portal_flags(parser_l)
 
     # Mutually exclusive group for sorting
     group_sort = parser_l.add_mutually_exclusive_group()
@@ -400,8 +420,7 @@ def main():
     parser_f.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
     parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
-    parser_f.add_argument('--portal', '-P', choices=list(PORTALS.keys()), default=DEFAULT_PORTAL,
-                          help='Portal for bare IDs (default: public). A full URL infers its own portal.')
+    add_portal_flags(parser_f)
 
     parser_f.set_defaults(func=cmd_fetch)
 
@@ -421,8 +440,7 @@ def main():
     parser_m.add_argument('--path', '-p', help='List of path IDs (comma-separated)', default=None)
     parser_m.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_m.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
-    parser_m.add_argument('--portal', '-P', choices=list(PORTALS.keys()), default=DEFAULT_PORTAL,
-                          help='Which portal the items belong to (default: public)')
+    add_portal_flags(parser_m)
     parser_m.set_defaults(func=cmd_md)
 
     # Search command
@@ -432,8 +450,7 @@ def main():
     parser_s.add_argument('--path', '-p', action='store_true', help='Search in paths')
     parser_s.add_argument('--lab', '-l', action='store_true', help='Search in labs')
     parser_s.add_argument('--field', '-f', help='Limit search to specific field', default=None)
-    parser_s.add_argument('--portal', '-P', choices=list(PORTALS.keys()), default=DEFAULT_PORTAL,
-                          help='Which portal to search (default: public)')
+    add_portal_flags(parser_s)
     parser_s.set_defaults(func=cmd_search)
 
     # Parse arguments
