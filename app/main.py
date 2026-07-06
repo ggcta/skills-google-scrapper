@@ -2,7 +2,7 @@
 import sys
 import os
 import argparse
-from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS
+from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS, portal_config
 
 # Ensure app modules can be imported
 # Add 'app' directory to sys.path so we can import 'models' directly
@@ -320,6 +320,35 @@ def cmd_search(args):
     if total_results == 0:
         print("No results found.")
 
+def cmd_login(args):
+    """
+    Handle the (hidden) login command.
+
+    Opens a browser at the selected portal's home page so the user can sign in
+    manually, then closes it. The webdriver profile persists the session, so
+    subsequent fetches for that portal are already authenticated. No scraping
+    happens here — it is purely a user-space sign-in step.
+    """
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    url = portal_config(portal)["base"]
+
+    print(f"\n\033[35mLaunching browser to sign in to the '{portal}' portal...\033[0m")
+    print(f"Opening: {url}")
+
+    driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+    try:
+        driver.get(url)
+        print("Sign in to the portal in the browser window.")
+        try:
+            input("Press Enter when you are done to close the browser...")
+        except (KeyboardInterrupt, EOFError):
+            pass
+    finally:
+        print("Closing browser...")
+        driver.quit()
+
+    print(f"Done. Your '{portal}' session is saved to the browser profile.")
+
 def cmd_browser(args):
     """Handle browser command"""
     print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
@@ -396,7 +425,12 @@ def cmd_md(args):
 
 def main():
     parser = argparse.ArgumentParser(description="CloudSkillsBoost Scraper CLI")
-    subparsers = parser.add_subparsers(dest='command', help='Command to execute')
+    # A fixed metavar keeps the visible command list stable and omits the
+    # hidden 'login' command from the usage line.
+    subparsers = parser.add_subparsers(
+        dest='command',
+        metavar='{list,l,fetch,f,interactive,i,browser,b,w,md,search,s}',
+        help='Command to execute')
 
     # List command
     parser_l = subparsers.add_parser('list', aliases=['l'], help='List all paths, courses, or labs')
@@ -436,6 +470,12 @@ def main():
     # Interactive command
     parser_i = subparsers.add_parser('interactive', aliases=['i'], help='Launch the interactive menu')
     parser_i.set_defaults(func=cmd_interactive)
+
+    # Login command (hidden): open the browser at a portal to sign in.
+    # Omitting `help` keeps it out of the subcommand help listing.
+    parser_login = subparsers.add_parser('login')
+    add_portal_flags(parser_login)
+    parser_login.set_defaults(func=cmd_login)
 
     # Browser command
     parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')
