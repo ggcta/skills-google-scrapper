@@ -99,7 +99,7 @@ class Course(BaseEntity):
 
         # Process course modules if not toc_only
         if not toc_only:
-            self.process_modules(no_transcript=no_transcript)
+            self.process_modules(no_transcript=no_transcript, force=force)
 
         # Save the course data
         self.save_json()
@@ -193,9 +193,12 @@ class Course(BaseEntity):
             return False
 
     # MARK: process_modules
-    def process_modules(self, no_transcript: bool = False) -> None:
+    def process_modules(self, no_transcript: bool = False, force: bool = False) -> None:
         """
         Process each module in the course.
+
+        :param force: If True, re-fetch activities (e.g. labs) even if they
+            already exist locally. Inherited from the course-level force flag.
         """
 
         for module in self.modules:
@@ -206,12 +209,15 @@ class Course(BaseEntity):
                 module['description'] = self.clean_text(module.get("description", ""))
 
             for step in module['steps']:
-                self.process_step(step, no_transcript=no_transcript)
+                self.process_step(step, no_transcript=no_transcript, force=force)
 
     # MARK: process_step
-    def process_step(self, step, no_transcript: bool = False) -> None:
+    def process_step(self, step, no_transcript: bool = False, force: bool = False) -> None:
         """
         Process each step in a module.
+
+        :param force: If True, re-fetch activities (e.g. labs) even if they
+            already exist locally. Inherited from the course-level force flag.
         """
 
         for activity in step['activities']:
@@ -227,7 +233,7 @@ class Course(BaseEntity):
             if activity_type == "video":
                 self.process_video(activity, activity_full_url, no_transcript=no_transcript)
             elif activity_type == "lab":
-                self.process_lab(activity, activity_full_url)
+                self.process_lab(activity, activity_full_url, force=force)
             elif activity_type == "quiz":
                 self.process_quiz(activity, activity_full_url)
             elif activity_type == "link":
@@ -276,9 +282,12 @@ class Course(BaseEntity):
             print(f"(process_video) Error: {error}")
 
     # MARK: process_lab
-    def process_lab(self, activity, url) -> None:
+    def process_lab(self, activity, url, force: bool = False) -> None:
         """
         Process a lab activity.
+
+        :param force: If True, re-fetch the lab even if it already exists
+            locally. Inherited from the course-level force flag.
         """
 
         print(f"(process_lab) •-> Lab: {activity['id']:>6} - {activity['title']}")
@@ -320,7 +329,8 @@ class Course(BaseEntity):
             lab.load_json()
 
             # If the lab.name does exist, that means the lab has been extracted already.
-            if lab.name:
+            # Skip it unless force is set (force is inherited from the course).
+            if lab.name and not force:
                 print(f"(process_lab) •-• [+] Existed: {lab.id} - {lab.name}")
                 return False
 
