@@ -26,11 +26,13 @@ class Lab(BaseEntity):
                  description: str = None,
                  steps: dict = None,
                  driver=None,
-                 title: str = None):
+                 title: str = None,
+                 portal: str = None):
         super().__init__(id=id,
                          name=name,
                          description=description,
-                         title=title)
+                         title=title,
+                         portal=portal)
         self.steps = steps or {}
         self.driver = driver
 

@@ -49,6 +49,14 @@ def _prompt_ids(message: str) -> list:
     return [part for part in raw.replace(',', ' ').split() if part]
 
 
+def _prompt_portal() -> str:
+    """Prompt for a portal, defaulting to the configured default portal."""
+    from config.settings import DEFAULT_PORTAL, PORTALS
+    keys = list(PORTALS.keys())
+    choice = _prompt(f"• Portal {keys} (default {DEFAULT_PORTAL}): ").lower()
+    return choice if choice in keys else DEFAULT_PORTAL
+
+
 def _yes_no(message: str, default: bool = False) -> bool:
     """
     Prompt a yes/no question. Enter accepts the default.
@@ -104,7 +112,8 @@ def _action_fetch() -> None:
         return
 
     label = {"p": "path", "c": "course", "l": "lab"}[kind]
-    ids = _prompt_ids(f"• Enter {label} ID(s) (space/comma separated): ")
+    portal = _prompt_portal()
+    ids = _prompt_ids(f"• Enter {label} ID(s) or URL(s) (space/comma separated): ")
     if not ids:
         print(f"{YELLOW}No IDs provided. Cancelled.{RESET}")
         return
@@ -112,6 +121,7 @@ def _action_fetch() -> None:
     flags = _prompt_fetch_flags()
 
     # Build the same namespace cmd_fetch receives from argparse.
+    # (A full URL among the IDs infers its own portal and overrides this one.)
     args = SimpleNamespace(
         paths=ids if kind == "p" else None,
         courses=ids if kind == "c" else None,
@@ -120,6 +130,7 @@ def _action_fetch() -> None:
         no_md=flags["no_md"],
         toc=flags["toc"],
         no_transcript=flags["no_transcript"],
+        portal=portal,
     )
     main.cmd_fetch(args)
 
@@ -143,9 +154,10 @@ def _action_list() -> None:
         print(f"{YELLOW}Please select p, c, or l.{RESET}")
         return
 
+    portal = _prompt_portal()
     sort_by = "id" if _yes_no("Sort by ID (instead of name)?", default=False) else "name"
 
-    collection = target()
+    collection = target(portal=portal)
     collection.load_json()
     if not collection.collection:
         print(f"{YELLOW}Nothing found locally.{RESET}")
@@ -166,6 +178,7 @@ def _action_search() -> None:
         "• Limit to type? [a]ll / [p]ath / [c]ourse / [l]ab (default all): "
     ).lower()
     field = _prompt("• Limit to a specific field (blank for any): ") or None
+    portal = _prompt_portal()
 
     args = SimpleNamespace(
         query=query,
@@ -173,6 +186,7 @@ def _action_search() -> None:
         course=(kind == "c"),
         lab=(kind == "l"),
         field=field,
+        portal=portal,
     )
     main.cmd_search(args)
 
@@ -193,6 +207,7 @@ def _action_markdown() -> None:
         print(f"{YELLOW}Please select p, c, or l.{RESET}")
         return
 
+    portal = _prompt_portal()
     ids = _prompt_ids("• Enter ID(s) (space/comma separated): ")
     if not ids:
         print(f"{YELLOW}No IDs provided. Cancelled.{RESET}")
@@ -211,6 +226,7 @@ def _action_markdown() -> None:
         lab=joined if kind == "l" else None,
         toc=toc,
         no_transcript=no_transcript,
+        portal=portal,
     )
     main.cmd_md(args)
 
@@ -273,6 +289,10 @@ if __name__ == "__main__":
     # Create the OUTPUT/DATA folders if they do not exist.
     OUTPUT_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
     DATA_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
+
+    # Migrate any legacy (pre-portal) data into the public scope.
+    from services.migration import migrate_to_portal_layout
+    migrate_to_portal_layout()
 
     app_title = "CloudSkillsBoost Automation Script"
     print()

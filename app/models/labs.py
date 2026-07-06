@@ -1,5 +1,5 @@
 from models.collection import Collection
-from config.settings import BASE_URL_LAB
+from config.settings import DEFAULT_PORTAL, portal_config
 
 
 class Labs(Collection):
@@ -9,10 +9,11 @@ class Labs(Collection):
 
     def __init__(self,
                  name: str = None,
-                 url: str = BASE_URL_LAB,
+                 url: str = None,
                  collection: dict = None,
-                 driver=None):
-        super().__init__(name, url, collection)
+                 driver=None,
+                 portal: str = DEFAULT_PORTAL):
+        super().__init__(name, url or portal_config(portal)["lab"], collection, portal=portal)
         self.driver = driver
 
     def fetch_labs(self, force: bool = False) -> bool:
@@ -28,10 +29,10 @@ class Labs(Collection):
             print("(Labs.fetch_labs) Collection not empty. Skipping fetch.")
             return True
 
-        from config.settings import API_URL_LABS
         import json
 
-        print(f"Fetching labs from API: {API_URL_LABS}")
+        api_url_labs = portal_config(self.portal)["api_labs"]
+        print(f"Fetching labs from API: {api_url_labs}")
         
         all_labs = {}
         page = 1
@@ -44,7 +45,7 @@ class Labs(Collection):
 
         try:
             while has_more:
-                url = f"{API_URL_LABS}&page={page}"
+                url = f"{api_url_labs}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
                 self.driver.get(url)

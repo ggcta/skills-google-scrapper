@@ -8,7 +8,7 @@ from selenium.common import NoSuchElementException
 import json
 import html
 from bs4 import BeautifulSoup
-from config.settings import BASE_URL, QL_IFRAME, OUTPUT_FOLDER_NAME
+from config.settings import QL_IFRAME, OUTPUT_FOLDER_NAME
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -46,11 +46,13 @@ class Course(BaseEntity):
                  topics: list = None,
                  modules: list = None,
                  driver=None,
-                 title: str = None):
+                 title: str = None,
+                 portal: str = None):
         super().__init__(id=id,
                          name=name,
                          description=description,
-                         title=title)
+                         title=title,
+                         portal=portal)
         self.datePublished = datePublished or ""
         self.objectives = objectives or []
         self.topics = topics or []
@@ -223,7 +225,7 @@ class Course(BaseEntity):
             activity_type = activity['type']
             activity_id = activity['id']
             activity_title = activity['title'].strip()
-            activity_full_url = f"{BASE_URL}{activity['href']}"
+            activity_full_url = f"{self.base_url}{activity['href']}"
 
             if activity_type == "video":
                 self.process_video(activity, activity_full_url, no_transcript=no_transcript)
@@ -292,7 +294,7 @@ class Course(BaseEntity):
         # Template URL (Catalog view) usually exposes the outline.
         # Format: /course_templates/<course_id>/labs/<lab_id>
         # We need to construct absolute URL.
-        template_url = f"{BASE_URL}/course_templates/{self.id}/labs/{activity['id']}"
+        template_url = f"{self.base_url}/course_templates/{self.id}/labs/{activity['id']}"
         # print(f"(process_lab) Using template URL: {template_url}")
 
         try:
@@ -316,9 +318,10 @@ class Course(BaseEntity):
                 # print(f"(process_lab) [Warning] lab_review_lab_id not found. Using activity ID {activity['id']}")
                 lab_id = activity['id']
 
-            # Create a Lab instance for the lab_id
+            # Create a Lab instance for the lab_id (same portal as the course)
             lab = Lab(
-                id=lab_id
+                id=lab_id,
+                portal=self.portal
             )
             # Load the lab data from JSON even it's empty
             lab.load_json()
@@ -342,7 +345,7 @@ class Course(BaseEntity):
             lab.save_markdown()
 
             # Add the lab to the Labs Collection
-            labs_collection = Labs(name='Labs Collection')
+            labs_collection = Labs(name='Labs Collection', portal=self.portal)
             labs_collection.load_json()
             labs_collection.collection[lab_id] = lab.name
             labs_collection.save_json()
@@ -704,7 +707,7 @@ class Course(BaseEntity):
                 if not file_url.startswith('http'):
                      # It's likely an absolute path from root or relative
                      if file_url.startswith('/'):
-                         file_url = f"{BASE_URL.rstrip('/')}{file_url}"
+                         file_url = f"{self.base_url.rstrip('/')}{file_url}"
 
                 # Add remote URL to activity
                 activity['document_url'] = file_url
@@ -868,16 +871,16 @@ class Course(BaseEntity):
                         activity_href = activity['href']
 
                         if activity_type == 'html_bundle':
-                            markdown.append(f"### HTML - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+                            markdown.append(f"### HTML - [{activity_title}]({self.base_url}{activity_href if activity_href else ''})")
                         else:
-                            markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+                            markdown.append(f"### {activity_type.title()} - [{activity_title}]({self.base_url}{activity_href if activity_href else ''})")
 
                         if activity_type == 'video':
                             video_id = activity.get('videoId')
                             if video_id:
                                 markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={video_id})")
                             elif activity_href:
-                                markdown.append(f"- [Video Link]({BASE_URL}{activity_href})")
+                                markdown.append(f"- [Video Link]({self.base_url}{activity_href})")
                             if not toc_only and not no_transcript:
                                 markdown.append(f"{util_replace_quote_marks(activity.get('transcript', '(No transcript available)'))}")
 
@@ -910,7 +913,7 @@ class Course(BaseEntity):
                                     quiz_number += 1
 
                         elif activity_type in ('link', 'html_bundle'):
-                            link_url = activity.get('link') or (f"{BASE_URL}{activity_href}" if activity_href else "")
+                            link_url = activity.get('link') or (f"{self.base_url}{activity_href}" if activity_href else "")
                             markdown.append(f"- [{activity_title}]({link_url})")
                             if not toc_only and not no_transcript:
                                 if activity.get('transcript'):
