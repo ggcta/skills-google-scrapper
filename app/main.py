@@ -26,6 +26,29 @@ def _resolve_portal(raw, default_portal):
     inferred_portal, ident = util_portal_and_id(raw)
     return (inferred_portal or default_portal), ident
 
+
+def _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only):
+    """
+    Fetch a single lab and persist it (JSON, markdown, and the labs collection).
+    Returns the Lab if fetched, or None if it was skipped (already stored).
+    """
+    lab = Lab(id=lid, driver=driver, portal=portal)
+    # fetch_data scrapes the lab's catalog page (name, description, steps).
+    # Honors force: skips if already stored unless force is set.
+    if not lab.fetch_data(force=force):
+        return None
+
+    lab.save_json()  # Backs up to file and syncs to DB
+    if not no_md:
+        lab.save_markdown(toc_only=toc_only)
+
+    # Keep the labs collection in sync (same portal).
+    labs_collection = Labs(portal=portal)
+    labs_collection.load_json()
+    labs_collection.collection[lab.id] = lab.name
+    labs_collection.save_json()
+    return lab
+
 def cmd_list(args):
     """Handle list command"""
 
@@ -135,32 +158,34 @@ def cmd_fetch(args):
                         print(f"Path {pid} markdown updated.")
                     print(f"Path {pid} updated.")
 
-                    # Original logic: update courses collection with courses found in path
-                    # This helps populate courses list without fetching all courses
-                    # (scoped to the same portal as the path).
+                    # Cascade down the tree and fetch every activity in the path.
+                    # Partner plans list both courses and standalone labs, so
+                    # dispatch by type: courses go through Course.extract_transcript
+                    # (which fetches their own labs), labs through the lab helper.
+                    # Flags AND the portal are inherited from the path.
                     courses_collection = Courses(portal=portal)
                     courses_collection.load_json()
 
-                    for course in p.courses.values():
-                        c_id = course['id']
-                        c_name = course['name']
-                        courses_collection.collection[c_id] = c_name
-
-                    courses_collection.save_json()
-
-                    # Cascade down the tree: fetch every course in the path
-                    # (which in turn fetches each course's labs). Flags AND the
-                    # portal are inherited from the path. Reuse the driver.
-                    for course in p.courses.values():
-                        c_id = course['id']
-                        c_name = course['name']
+                    for activity in p.courses.values():
+                        a_id = activity['id']
+                        a_name = activity['name']
+                        a_type = (activity.get('type') or 'course').lower()
                         try:
-                            print(f"\n--- Path {pid} > Course {c_id} - {c_name} [{portal}] ---")
-                            c = Course(id=c_id, name=c_name, driver=driver, portal=portal)
-                            c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
-                            print(f"Course {c_id} updated.")
+                            if 'lab' in a_type:
+                                print(f"\n--- Path {pid} > Lab {a_id} - {a_name} [{portal}] ---")
+                                if _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only):
+                                    print(f"Lab {a_id} updated.")
+                            else:
+                                print(f"\n--- Path {pid} > Course {a_id} - {a_name} [{portal}] ---")
+                                courses_collection.collection[a_id] = a_name
+                                c = Course(id=a_id, name=a_name, driver=driver, portal=portal)
+                                c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
+                                print(f"Course {a_id} updated.")
                         except Exception as e:
-                            print(f"Failed to fetch course {c_id} in path {pid}: {e}")
+                            print(f"Failed to fetch {a_type} {a_id} in path {pid}: {e}")
+
+                    # Persist the course names discovered in this path.
+                    courses_collection.save_json()
 
                 except Exception as e:
                     print(f"Failed to fetch path {pid}: {e}")
@@ -205,24 +230,8 @@ def cmd_fetch(args):
                 portal, lid = _resolve_portal(raw_lid, default_portal)
                 try:
                     print(f"Processing Lab {lid} [{portal}]...")
-                    lab = Lab(id=lid, driver=driver, portal=portal)
-                    # fetch_data scrapes the lab's catalog page (name, description, steps).
-                    # Honors force: skips if already stored unless force is set.
-                    if not lab.fetch_data(force=force):
-                        continue
-
-                    lab.save_json()  # Backs up to file and syncs to DB
-                    if not no_md:
-                        lab.save_markdown(toc_only=toc_only)
-                        print(f"Lab {lid} markdown updated.")
-
-                    # Keep the labs collection in sync (same portal).
-                    labs_collection = Labs(portal=portal)
-                    labs_collection.load_json()
-                    labs_collection.collection[lab.id] = lab.name
-                    labs_collection.save_json()
-
-                    print(f"Lab {lid} updated.")
+                    if _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only):
+                        print(f"Lab {lid} updated.")
                 except Exception as e:
                     print(f"Failed to fetch lab {lid}: {e}")
         finally:
