@@ -49,12 +49,29 @@ def _prompt_ids(message: str) -> list:
     return [part for part in raw.replace(',', ' ').split() if part]
 
 
-def _prompt_portal() -> str:
-    """Prompt for a portal, defaulting to the configured default portal."""
-    from config.settings import DEFAULT_PORTAL, PORTALS
+def _switch_portal(current: str) -> str:
+    """
+    Select the working portal for the session. Accepts the a/b shorthand
+    (a=public, b=partner) or the full portal name. Returns the new portal, or
+    the current one if the input is not recognised.
+    """
+    from config.settings import PORTALS
     keys = list(PORTALS.keys())
-    choice = _prompt(f"• Portal {keys} (default {DEFAULT_PORTAL}): ").lower()
-    return choice if choice in keys else DEFAULT_PORTAL
+    choice = _prompt(
+        f"{CYAN}Select working portal:{RESET}\n"
+        "  a. public\n"
+        "  b. partner\n"
+        f"• Select (current: {current}): "
+    ).lower()
+
+    mapping = {"a": "public", "public": "public", "b": "partner", "partner": "partner"}
+    new_portal = mapping.get(choice)
+    if new_portal in keys:
+        print(f"{CYAN}Working portal set to: {new_portal}{RESET}")
+        return new_portal
+
+    print(f"{YELLOW}Portal unchanged (still {current}).{RESET}")
+    return current
 
 
 def _yes_no(message: str, default: bool = False) -> bool:
@@ -88,15 +105,16 @@ def _prompt_fetch_flags() -> dict:
 
 
 # MARK: menu actions
-def _action_fetch() -> None:
+def _action_fetch(portal: str) -> None:
     """
     Gather a fetch request and delegate to cmd_fetch, which cascades a path
     down to its courses and labs and inherits the flags down the tree.
+    Uses the session portal; a full URL among the IDs overrides it per-item.
     """
     import main  # lazy import to avoid a circular import with main.py
 
     kind = _prompt(
-        f"{CYAN}Fetch what?{RESET}\n"
+        f"{CYAN}Fetch what?{RESET} [portal: {portal}]\n"
         "  p. A PATH   (→ its courses → their labs)\n"
         "  c. A COURSE (→ its labs)\n"
         "  l. A LAB\n"
@@ -112,7 +130,6 @@ def _action_fetch() -> None:
         return
 
     label = {"p": "path", "c": "course", "l": "lab"}[kind]
-    portal = _prompt_portal()
     ids = _prompt_ids(f"• Enter {label} ID(s) or URL(s) (space/comma separated): ")
     if not ids:
         print(f"{YELLOW}No IDs provided. Cancelled.{RESET}")
@@ -135,14 +152,14 @@ def _action_fetch() -> None:
     main.cmd_fetch(args)
 
 
-def _action_list() -> None:
-    """List paths, courses, or labs from the local database."""
+def _action_list(portal: str) -> None:
+    """List paths, courses, or labs from the local database (session portal)."""
     from models.paths import Paths
     from models.courses import Courses
     from models.labs import Labs
 
     kind = _prompt(
-        f"{CYAN}List what?{RESET}\n"
+        f"{CYAN}List what?{RESET} [portal: {portal}]\n"
         "  p. Paths\n"
         "  c. Courses\n"
         "  l. Labs\n"
@@ -154,7 +171,6 @@ def _action_list() -> None:
         print(f"{YELLOW}Please select p, c, or l.{RESET}")
         return
 
-    portal = _prompt_portal()
     sort_by = "id" if _yes_no("Sort by ID (instead of name)?", default=False) else "name"
 
     collection = target(portal=portal)
@@ -165,10 +181,11 @@ def _action_list() -> None:
     collection.print_list(sort_by=sort_by)
 
 
-def _action_search() -> None:
-    """Search the local database, delegating to cmd_search."""
+def _action_search(portal: str) -> None:
+    """Search the local database (session portal), delegating to cmd_search."""
     import main  # lazy import
 
+    print(f"{CYAN}Search{RESET} [portal: {portal}]")
     query = _prompt("• Search query: ")
     if not query:
         print(f"{YELLOW}Empty query. Cancelled.{RESET}")
@@ -178,7 +195,6 @@ def _action_search() -> None:
         "• Limit to type? [a]ll / [p]ath / [c]ourse / [l]ab (default all): "
     ).lower()
     field = _prompt("• Limit to a specific field (blank for any): ") or None
-    portal = _prompt_portal()
 
     args = SimpleNamespace(
         query=query,
@@ -191,12 +207,12 @@ def _action_search() -> None:
     main.cmd_search(args)
 
 
-def _action_markdown() -> None:
-    """(Re)generate markdown from stored data, delegating to cmd_md."""
+def _action_markdown(portal: str) -> None:
+    """(Re)generate markdown from stored data (session portal), via cmd_md."""
     import main  # lazy import
 
     kind = _prompt(
-        f"{CYAN}Generate markdown for?{RESET}\n"
+        f"{CYAN}Generate markdown for?{RESET} [portal: {portal}]\n"
         "  p. Path(s)\n"
         "  c. Course(s)\n"
         "  l. Lab(s)\n"
@@ -207,7 +223,6 @@ def _action_markdown() -> None:
         print(f"{YELLOW}Please select p, c, or l.{RESET}")
         return
 
-    portal = _prompt_portal()
     ids = _prompt_ids("• Enter ID(s) (space/comma separated): ")
     if not ids:
         print(f"{YELLOW}No IDs provided. Cancelled.{RESET}")
@@ -231,8 +246,12 @@ def _action_markdown() -> None:
     main.cmd_md(args)
 
 
-def _action_browser() -> None:
-    """Launch a browser for manual login, delegating to cmd_browser."""
+def _action_browser(portal: str) -> None:
+    """Launch a browser for manual login, delegating to cmd_browser.
+
+    Portal is accepted for a uniform action signature; the login page is
+    shared across portals so it is not portal-specific here.
+    """
     import main  # lazy import
     args = SimpleNamespace(profile_folder=None)
     main.cmd_browser(args)
@@ -240,7 +259,13 @@ def _action_browser() -> None:
 
 # MARK: interactive loop
 def interactive_mode() -> None:
-    """Run the interactive menu loop."""
+    """Run the interactive menu loop with a persistent working portal."""
+    from config.settings import DEFAULT_PORTAL
+
+    # The session's working portal. All actions operate within it until
+    # switched; fetch can still override per-item via a full URL.
+    portal = DEFAULT_PORTAL
+
     actions = {
         "1": _action_fetch,
         "f": _action_fetch,
@@ -257,12 +282,13 @@ def interactive_mode() -> None:
     while True:
         choice = _prompt(
             "\n"
-            f"{CYAN}AVAILABLE OPTIONS:{RESET}\n"
+            f"{CYAN}AVAILABLE OPTIONS{RESET}  (working portal: {CYAN}{portal}{RESET})\n"
             "  1. f: FETCH content (path / course / lab)\n"
             "  2. l: LIST paths / courses / labs\n"
             "  3. s: SEARCH the database\n"
             "  4. m: GENERATE markdown\n"
             "  5. w: LAUNCH browser (manual login)\n"
+            "  6. p: SWITCH portal (public / partner)\n"
             "  0. q: QUIT\n"
             "• PLEASE SELECT: "
         ).lower()
@@ -271,10 +297,14 @@ def interactive_mode() -> None:
             print("Good day.")
             return
 
+        if choice in ("6", "p"):
+            portal = _switch_portal(portal)
+            continue
+
         action = actions.get(choice)
         if action:
             try:
-                action()
+                action(portal)
             except KeyboardInterrupt:
                 print(f"\n{YELLOW}Cancelled.{RESET}")
             except Exception as error:  # keep the menu alive on any failure
