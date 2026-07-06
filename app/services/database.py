@@ -15,6 +15,8 @@ class Database:
     def _initialize(self):
         """Initialize the database by loading from file or creating default structure."""
         self.db_path = os.path.join(DATA_FOLDER_NAME, 'database.json')
+        # Ensure the data folder exists so TinyDB can create the file
+        os.makedirs(DATA_FOLDER_NAME, exist_ok=True)
         # TinyDB handles file creation
         self.db = TinyDB(self.db_path, indent=2, encoding='utf-8')
         

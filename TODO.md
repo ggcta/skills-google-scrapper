@@ -1,6 +1,6 @@
 ## TODO
 
-- [ ] Create the `data` folder if it does not exist to avoid the below `FileNotFoundError` error.
+- [x] Create the `data` folder if it does not exist to avoid the below `FileNotFoundError` error.
 
 ```bash
 $ uv run app/main.py list
