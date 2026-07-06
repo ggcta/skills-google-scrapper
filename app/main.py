@@ -192,6 +192,11 @@ def cmd_fetch(args):
         print("Standalone Lab fetching is not yet fully supported (requires parent Course).")
         print("Please fetch the course containing this lab to update it.")
 
+def cmd_interactive(args):
+    """Handle interactive command by launching the interactive menu."""
+    import scraper  # lazy import to avoid a circular import
+    scraper.interactive_mode()
+
 def cmd_search(args):
     """Handle search command"""
     from services.database import Database
@@ -355,6 +360,10 @@ def main():
     parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
     
     parser_f.set_defaults(func=cmd_fetch)
+
+    # Interactive command
+    parser_i = subparsers.add_parser('interactive', aliases=['i'], help='Launch the interactive menu')
+    parser_i.set_defaults(func=cmd_interactive)
 
     # Browser command
     parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')

@@ -1,398 +1,286 @@
+#!/usr/bin/env python3
+"""
+Interactive front-end for the CloudSkillsBoost scraper.
+
+This reuses the command handlers defined in ``main.py`` (``cmd_fetch``,
+``cmd_search``, ``cmd_md``, ``cmd_browser``) so an interactive session and a
+direct CLI invocation share the exact same logic: fetching a path cascades
+down to its courses and their labs, the force flag is inherited down the tree,
+markdown/toc/transcript options behave identically, and so on.
+
+Run it directly::
+
+    uv run app/scraper.py
+
+or via the CLI::
+
+    uv run app/main.py interactive
+"""
+import os
 import sys
-from config.settings import BASE_URL_PARTNERS, OUTPUT_FOLDER_NAME, DATA_FOLDER_NAME, WEBDRIVER_PROFILE_FOLDER_NAME
-from models.path import Path
-from models.paths import Paths
-from models.labs import Labs
-from models.course import Course
-from models.courses import Courses
-from services.launch_browser import launch_browser
+from types import SimpleNamespace
+
+# Ensure app modules can be imported when run directly (mirrors main.py).
+sys.path.append(os.path.join(os.getcwd(), 'app'))
+
+# ANSI helpers
+HEADER = "\033[45m"
+CYAN = "\033[36m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
+RESET = "\033[0m"
 
 
-# Main class for the CloudSkillsBoost Automation Script
-class CloudSkillsBoost:
-    def __init__(self):
-        self.paths_collection, self.courses_collection, self.labs_collection = self.load_data()
+# MARK: input helpers
+def _prompt(message: str) -> str:
+    """Prompt the user and return the stripped input."""
+    return input(message).strip()
 
-    @staticmethod
-    def load_data():
-        col_paths = Paths(name='Paths Collection')
-        col_paths.load_json()
 
-        col_courses = Courses(name='Courses Collection')
-        col_courses.load_json()
+def _prompt_ids(message: str) -> list:
+    """
+    Prompt for one or more IDs, separated by spaces and/or commas.
+    Returns a list of ID strings (empty list if nothing entered).
+    """
+    raw = _prompt(message)
+    if not raw:
+        return []
+    # Accept both "53 54" and "53,54"
+    return [part for part in raw.replace(',', ' ').split() if part]
 
-        col_labs = Labs(name='Labs Collection')
-        col_labs.load_json()
 
-        return col_paths, col_courses, col_labs
+def _yes_no(message: str, default: bool = False) -> bool:
+    """
+    Prompt a yes/no question. Enter accepts the default.
+    """
+    suffix = " [Y/n]: " if default else " [y/N]: "
+    answer = _prompt(message + suffix).lower()
+    if not answer:
+        return default
+    return answer in ("y", "yes")
 
-    # Task Coordinator
-    def tasks_coordinator(self, a_path_id=None, a_course_id=None) -> None:
-        """
-        Coordinate the tasks for a given path or course.
 
-        :param a_path_id: Path ID.
-        :param a_course_id: Course ID.
-        """
+def _prompt_fetch_flags() -> dict:
+    """
+    Prompt for the flags shared by the fetch command and return them as a dict
+    matching the attributes cmd_fetch expects.
+    """
+    force = _yes_no("Force re-fetch items that already exist?", default=False)
+    toc = _yes_no("Table of contents only (skip transcripts/details)?", default=False)
+    no_transcript = False
+    if not toc:
+        no_transcript = _yes_no("Skip video transcripts?", default=False)
+    no_md = _yes_no("Skip generating markdown files?", default=False)
+    return {
+        "force": force,
+        "toc": toc,
+        "no_transcript": no_transcript,
+        "no_md": no_md,
+    }
 
-        extract_transcript_task = False
 
-        self.driver = None
-        try:
-            task_selection = True
-            while task_selection:
-                # Ask for what to do with the selected path id or course id.
-                task_to_do = input("WHAT TASK YOU WANT TO GO WITH? (THIS IS A MUST): \n"
-                                   "\t\te. Extract Transcripts\n"
-                                   "\t\tb. Back\n"
-                                   "\t\tq. Quit\n"
-                                   "•PLEASE SELECT: ")
+# MARK: menu actions
+def _action_fetch() -> None:
+    """
+    Gather a fetch request and delegate to cmd_fetch, which cascades a path
+    down to its courses and labs and inherits the flags down the tree.
+    """
+    import main  # lazy import to avoid a circular import with main.py
 
-                # Set variables accordingly for each selection.
-                if task_to_do.lower() == "e":
-                    extract_transcript_task = True
-                    task_selection = False
-                    print("\n\033[35mLaunching browser for transcript extraction...\033[0m")
-                    self.driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-                elif task_to_do.lower() == "b":
-                    return
-                elif task_to_do.lower() == "q":
-                    print("Got it. Bye.")
-                    sys.exit(0)
-                else:
-                    print("Please select a valid choice: e or q to quit the program.")
-                    continue
+    kind = _prompt(
+        f"{CYAN}Fetch what?{RESET}\n"
+        "  p. A PATH   (→ its courses → their labs)\n"
+        "  c. A COURSE (→ its labs)\n"
+        "  l. A LAB\n"
+        "  b. Back\n"
+        "• Select: "
+    ).lower()
 
-        #  =======================================================================
-        # If no path id, extract transcript for a certain course id only.
-        if a_path_id is None and a_course_id:
+    if kind == "b" or kind == "":
+        return
 
-            if a_course_id in self.courses_collection.collection:
-                course_name = self.courses_collection.collection[a_course_id]
-            else:
-                # TODO: Use None for not existing course
-                course_name = '(Unknown Course Yet)'
+    if kind not in ("p", "c", "l"):
+        print(f"{YELLOW}Please select p, c, l, or b.{RESET}")
+        return
 
-            # If the user wants to extract the transcript
-            if extract_transcript_task:
-                heading = f"{a_course_id} - {course_name.upper()}"
-                print(f"\n\033[45m[{heading:^85}]\033[0m")
-                course = Course(id=a_course_id, driver=self.driver)
-                course.extract_transcript()
-                # Save the course name to the collection
-                # TODO: Save only those missing courses.
-                self.courses_collection.collection[course.id] = course.name
-                self.courses_collection.save_json()
+    label = {"p": "path", "c": "course", "l": "lab"}[kind]
+    ids = _prompt_ids(f"• Enter {label} ID(s) (space/comma separated): ")
+    if not ids:
+        print(f"{YELLOW}No IDs provided. Cancelled.{RESET}")
+        return
 
-        #  =======================================================================
-        # A path is submitted, list all the courses in the path and let user select
-        if a_path_id:
-            path_data = Path(id=a_path_id, driver=self.driver)
-            path_data.load_json()
+    flags = _prompt_fetch_flags()
 
-            # If the path has no data yet
-            # Load it from the web, save it
-            # Add its courses to courses collection
-            # Print out its courses to the screen and prompting to user
-            if not path_data.courses:
-                path_data.fetch_data()
+    # Build the same namespace cmd_fetch receives from argparse.
+    args = SimpleNamespace(
+        paths=ids if kind == "p" else None,
+        courses=ids if kind == "c" else None,
+        labs=ids if kind == "l" else None,
+        force=flags["force"],
+        no_md=flags["no_md"],
+        toc=flags["toc"],
+        no_transcript=flags["no_transcript"],
+    )
+    main.cmd_fetch(args)
 
-                # Save the Path's details into files, JSON and MD
-                path_data.save_json()
-                path_data.save_markdown()
 
-                # Add courses from this path to the courses collection
-                for course in path_data.courses.values():
-                    course_id = course['id']
-                    course_name = course['name']
-                    self.courses_collection.collection[course_id] = course_name
+def _action_list() -> None:
+    """List paths, courses, or labs from the local database."""
+    from models.paths import Paths
+    from models.courses import Courses
+    from models.labs import Labs
 
-                # Save the course collection to file.
-                self.courses_collection.save_json()
+    kind = _prompt(
+        f"{CYAN}List what?{RESET}\n"
+        "  p. Paths\n"
+        "  c. Courses\n"
+        "  l. Labs\n"
+        "• Select: "
+    ).lower()
 
-            # List all the courses in the path for the user to select
-            path_data.courses_list()
+    target = {"p": Paths, "c": Courses, "l": Labs}.get(kind)
+    if not target:
+        print(f"{YELLOW}Please select p, c, or l.{RESET}")
+        return
 
-            # TODO: Extract the logic below into a separated method.
-            a_course_id = input("\nPLEASE SELECT A COURSE [id or A(ll) (e to exit back, q to quit)]: ")
+    sort_by = "id" if _yes_no("Sort by ID (instead of name)?", default=False) else "name"
 
-            if a_course_id.lower() == "a" or a_course_id.lower() == "all":
-                if extract_transcript_task:
-                    for course in path_data.courses.values():
-                        current_course_id: str = course['id']
-                        current_course_name: str = course['name']
+    collection = target()
+    collection.load_json()
+    if not collection.collection:
+        print(f"{YELLOW}Nothing found locally.{RESET}")
+        return
+    collection.print_list(sort_by=sort_by)
 
-                        heading = f"{current_course_id} - {current_course_name.upper()}"
-                        print(f"\n\033[45m[{heading:^85}]\033[0m")
 
-                        course_instance = Course(id=current_course_id, name=current_course_name, driver=self.driver)
-                        course_instance.extract_transcript()
+def _action_search() -> None:
+    """Search the local database, delegating to cmd_search."""
+    import main  # lazy import
 
-                        # Save the course name to the collection
-                        self.courses_collection.collection[course_instance.id] = course_instance.name
-                        self.courses_collection.save_json()
+    query = _prompt("• Search query: ")
+    if not query:
+        print(f"{YELLOW}Empty query. Cancelled.{RESET}")
+        return
 
-                        print("(tasks_coordinator) The transcript has been extracted.\n")
+    kind = _prompt(
+        "• Limit to type? [a]ll / [p]ath / [c]ourse / [l]ab (default all): "
+    ).lower()
+    field = _prompt("• Limit to a specific field (blank for any): ") or None
 
-            elif a_course_id.isdigit():
-                if extract_transcript_task:
-                    heading = f"{a_course_id} - {path_data.courses[a_course_id]['name'].upper()}"
-                    print(f"\n\033[45m[{heading:^85}]\033[0m")
+    args = SimpleNamespace(
+        query=query,
+        path=(kind == "p"),
+        course=(kind == "c"),
+        lab=(kind == "l"),
+        field=field,
+    )
+    main.cmd_search(args)
 
-                    course_instance = Course(id=a_course_id, name=path_data.courses[a_course_id]['name'], driver=self.driver)
-                    course_instance.extract_transcript()
-                    # Save the course name to the collection
-                    self.courses_collection.collection[course_instance.id] = course_instance.name
-                    self.courses_collection.save_json()
 
-            elif a_course_id.lower() == "e":
-                print("\t[<< Going Back]\n")
-                return
+def _action_markdown() -> None:
+    """(Re)generate markdown from stored data, delegating to cmd_md."""
+    import main  # lazy import
 
-            elif a_course_id.lower() == "q":
-                print("Got it. Bye.")
-                sys.exit(0)
+    kind = _prompt(
+        f"{CYAN}Generate markdown for?{RESET}\n"
+        "  p. Path(s)\n"
+        "  c. Course(s)\n"
+        "  l. Lab(s)\n"
+        "• Select: "
+    ).lower()
 
-            else:
-                print("You need to choose a course id or A(ll) or q to quit the program.")
-                return
-                
-        finally:
-            if self.driver:
-                print("Closing browser...")
-                self.driver.quit()
+    if kind not in ("p", "c", "l"):
+        print(f"{YELLOW}Please select p, c, or l.{RESET}")
+        return
 
-    # Interactive mode for the CloudSkillsBoost Automation Script
-    # TODO: Command-line interface for the CloudSkillsBoost Automation Script
-    def interactive_mode(self):
-        """
-        Interactive mode for the CloudSkillsBoost Automation Script.
-        """
+    ids = _prompt_ids("• Enter ID(s) (space/comma separated): ")
+    if not ids:
+        print(f"{YELLOW}No IDs provided. Cancelled.{RESET}")
+        return
 
-        running = True
-        while running:
-            #  ===================================================================
-            # Gathers all the courses or path names and prompts the user for selection
-            # Allows working with a path, courses, or both options via a user-friendly interface
-            course_or_path = input("AVAILABLE OPTIONS:\n"
-                                   "\t\t1. c: A COURSE ID\n"
-                                   "\t\t2. p: A PATH ID\n"
-                                   "\t\t3. l: SHOW ME A LIST\n"
-                                   "\t\t5. g: GENERATE PROMPT\n"
-                                   "\t\t6. h: FETCH ALL COURSES\n"
-                                   "\t\t8. w: LAUNCH THE BROWSER\n"
-                                   "\t\t9. d: DEBUG: RELOADING DATA\n"
-                                   "\t\t0. q: QUIT\n"
-                                   "•PLEASE SELECT: "
-                                )
+    toc = _yes_no("Table of contents only?", default=False)
+    no_transcript = False
+    if not toc:
+        no_transcript = _yes_no("Skip video transcripts?", default=False)
 
-            #  ===================================================================
-            if course_or_path.lower() == '0' or course_or_path.lower() == "q":
-                print("Ya. Good day.")
-                running = False
+    # cmd_md expects comma-separated strings, not lists.
+    joined = ",".join(ids)
+    args = SimpleNamespace(
+        path=joined if kind == "p" else None,
+        course=joined if kind == "c" else None,
+        lab=joined if kind == "l" else None,
+        toc=toc,
+        no_transcript=no_transcript,
+    )
+    main.cmd_md(args)
 
-            elif course_or_path.lower() == "1" or course_or_path.lower() == "c":
-                course_id = input(f"•{'COURSE ID: ':>15}")
-                if not course_id.strip().isdigit():
-                    print("[ERROR] INVALID OR MISSING COURSE ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC COURSE ID!")
 
-                if self.courses_collection and course_id in self.courses_collection.collection:
-                    course_title = self.courses_collection.collection[course_id]
-                    print(f"•{'SELECTED: ':>15}\033[45m"
-                          f"{course_id}: {course_title}"
-                          f"\033[0m\n")
+def _action_browser() -> None:
+    """Launch a browser for manual login, delegating to cmd_browser."""
+    import main  # lazy import
+    args = SimpleNamespace(profile_folder=None)
+    main.cmd_browser(args)
 
-                # Proceed with the certain course only
-                self.tasks_coordinator(a_course_id=course_id)
 
-            #  ===================================================================
-            elif course_or_path.lower() == "2" or course_or_path.lower() == "p":
+# MARK: interactive loop
+def interactive_mode() -> None:
+    """Run the interactive menu loop."""
+    actions = {
+        "1": _action_fetch,
+        "f": _action_fetch,
+        "2": _action_list,
+        "l": _action_list,
+        "3": _action_search,
+        "s": _action_search,
+        "4": _action_markdown,
+        "m": _action_markdown,
+        "5": _action_browser,
+        "w": _action_browser,
+    }
 
-                path_id = input(f"•{'PATH ID: ':>15}")
-                if not path_id.strip().isdigit():
-                    print("\n\033[33m[ERROR] INVALID OR MISSING PATH ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!\033[0m\n")
-                    continue
+    while True:
+        choice = _prompt(
+            "\n"
+            f"{CYAN}AVAILABLE OPTIONS:{RESET}\n"
+            "  1. f: FETCH content (path / course / lab)\n"
+            "  2. l: LIST paths / courses / labs\n"
+            "  3. s: SEARCH the database\n"
+            "  4. m: GENERATE markdown\n"
+            "  5. w: LAUNCH browser (manual login)\n"
+            "  0. q: QUIT\n"
+            "• PLEASE SELECT: "
+        ).lower()
 
-                # Proceed with the certain path and course
-                path_title = self.paths_collection.collection.get(path_id)
-                if path_title:
-                    print(f"•{'SELECTED: ':>15}\033[45m"
-                          f"{path_id} - {path_title}"
-                          f"\033[0m\n")
-                else:
-                    self.paths_collection.fetch_paths()
-                    self.paths_collection.save_json()
-                    path_title = self.paths_collection.collection.get(path_id)
-                    if path_title:
-                        print(f"•{'SELECTED: ':>15}\033[45m"
-                              f"{path_id} - {path_title}"
-                              f"\033[0m\n")
-                    else:
-                        print(f"\n"
-                              f"\033[33mYOU PROVIDED A WRONG PATH ID, I BELIEVE: {path_id}\n"
-                              "PLEASE RETRY WITH THE FOLLOWING LIST OF PATH:\033[0m\n")
-                        self.paths_collection.print_list()
-                        continue
+        if choice in ("0", "q"):
+            print("Good day.")
+            return
 
-                self.tasks_coordinator(a_path_id=path_id)
-
-            #  ===================================================================
-            elif course_or_path.lower() == "3" or course_or_path.lower() == "l":
-
-                # If a path list is gathered successfully
-                self.paths_collection.print_list()
-                # Use the hidden menu to fetch path list instead
-                # if paths_collection.collection:
-                #     # Print out all the paths
-                #     paths_collection.print_list()
-                # else:
-                #     paths_collection.fetch_paths()
-                #     # Write the new path list to the file
-                #     paths_collection.save_json()
-
-                #     # Prompt user to select a path
-                #     paths_collection.print_list()
-
-                # Prompt user to select a path to proceed with
-                path_id = input("\033[34m"
-                                "\n"
-                                "SELECT A PATH ID (e to exit back, q to quit): "
-                                "\033[0m")
-
-                if not path_id.strip().isdigit() and path_id.lower() != "q" and path_id.lower() != "e":
-                    # If the user provided a wrong path id
-                    print("\n\033[33m[ERROR] INVALID OR MISSING PATH ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!\033[0m\n")
-                    continue
-
-                # Ensure the user enter a correct path id which is a number
-                if path_id.strip().isdigit() and path_id in self.paths_collection.collection:
-                    path_title = self.paths_collection.collection[path_id]
-                    print(f"Entering... \033[45m"
-                          f"•--{path_id:>{len(path_id) + 1}}: {path_title.upper()}"
-                          f"\033[0m\n")
-
-                    # Proceed with the selected path id
-                    self.tasks_coordinator(a_path_id=path_id)
-
-                # If the user wants to go back
-                elif path_id.lower() == "e":
-                    print("[<< Going Back]\n")
-                    continue
-
-                # User can q at this stage if not wanting to continue
-                elif path_id.lower() == "q":
-                    print("Bye.")
-                    sys.exit(0)
-
-                else:
-                    print("\n\033[33m[ERROR] INVALID OR MISSING PATH ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC PATH ID!\033[0m\n")
-                    continue
-
-            elif course_or_path.lower() == '5' or course_or_path.lower() == 'g':
-                course_id = input(f"•{'COURSE ID: ':>15}")
-                if not course_id.strip().isdigit():
-                    print("ERROR: INVALID OR MISSING COURSE ID. "
-                          "PLEASE PROVIDE A VALID NUMERIC COURSE ID!")
-                    sys.exit(1)
-
-                if self.courses_collection and course_id in self.courses_collection.collection:
-                    course_title = self.courses_collection.collection[course_id]
-                    print(f"•{'SELECTED: ':>15}\033[45m"
-                          f"{course_id}: {course_title}"
-                          f"\033[0m\n")
-                    
-                    course = Course(id=course_id, name=course_title)
-                    course.generate_prompt()
-                    print("Generating prompt completed. Going back...\n")
-
-            elif course_or_path.lower() == '6' or course_or_path.lower() == 'h':
-                # Fetch all courses' data
-                self.courses_collection.fetch_data()
-                self.courses_collection.save_json()
-
-            elif course_or_path.lower() == '9' or course_or_path.lower() == 'd':
-                print(f"\n"
-                      "\033[35mDEBUG: RELOADING THE COURSES LIST... in several minutes\033[0m\n")
-                # Refresh Paths list
-                if self.paths_collection.fetch_paths():
-                    print("Paths List refreshed. Proceed with courses of each path.\n")
-                    self.paths_collection.save_json()
-                    self.paths_collection.write_md()
-                else:
-                    print("Paths List NOT refreshed. Proceed with courses of each path.\n")
-
-                # Get all courses from all the paths
-                for path_id, path_name in self.paths_collection.collection.items():
-                    print(f"+|-• \033[35m[{path_id:>5} - {path_name:<72}]\033[0m")
-                    path_data = Path(id=path_id, name=path_name)
-                    path_data.fetch_data()
-                    # Save the path data to the file: JSON
-                    path_data.save_json()
-                    # Save the path data to the file: MD
-                    path_data.save_markdown()
-                    # Add courses from this path to the courses collection
-                    for course in path_data.courses.values():
-                        course_id = course['id']
-                        course_name = course['name']
-                        self.courses_collection.collection[course_id] = course_name
-                self.courses_collection.save_json()
-                print("\n"
-                      "\033[35mDEBUG: COURSES LIST RELOADED.\033[0m\n")
-
-            elif course_or_path.lower() == '8' or course_or_path.lower() == 'w':
-                # Launch the browser
-                print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
-                webbrowser = launch_browser(profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME,
-                                            headless=False)
-                # Open the URL in the default web browser
-                webbrowser.get(BASE_URL_PARTNERS)
-                print("\n\033[35mDEBUG: BROWSER LAUNCHED.\033[0m\n")
-
-            else:
-                print("\033[31m"
-                      f"[INVALID CHOICE] {course_or_path}\n"
-                      "PLEASE SELECT 1, 2, 3, 9 or q TO QUIT THE PROGRAM."
-                      "\033[0m\n")
-                continue
+        action = actions.get(choice)
+        if action:
+            try:
+                action()
+            except KeyboardInterrupt:
+                print(f"\n{YELLOW}Cancelled.{RESET}")
+            except Exception as error:  # keep the menu alive on any failure
+                print(f"{RED}Error: {error}{RESET}")
+        else:
+            print(f"{RED}[INVALID CHOICE] {choice}{RESET}")
 
 
 if __name__ == "__main__":
+    from config.settings import OUTPUT_FOLDER_NAME, DATA_FOLDER_NAME
 
-    # Create the OUTPUT FOLDERS if they do not exist
-    if not OUTPUT_FOLDER_NAME.exists():
-        OUTPUT_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
-    
-    # Create the DATA FOLDERS if they do not exist
-    if not DATA_FOLDER_NAME.exists():
-        DATA_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
+    # Create the OUTPUT/DATA folders if they do not exist.
+    OUTPUT_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
+    DATA_FOLDER_NAME.mkdir(parents=True, exist_ok=True)
 
-    # STARTING THE PROGRAM
-    # https://talyian.github.io/ansicolors/
-    # https://en.wikipedia.org/wiki/ANSI_escape_code
     app_title = "CloudSkillsBoost Automation Script"
-
     print()
-    print("\033[45m"
-          f"{app_title:^87}"
-          "\033[0m")
-    print()
+    print(f"{HEADER}{app_title:^87}{RESET}")
 
-    # Create an instance of CloudSkillsBoost and start interactive mode
-    cloud_skills_boost = CloudSkillsBoost()
-    cloud_skills_boost.interactive_mode()
+    try:
+        interactive_mode()
+    except (KeyboardInterrupt, EOFError):
+        print("\nGood day.")
 
     sys.exit(0)
-
-# TODO: Check if published_date is newer then update the path data
-# TODO: Separated webdriver in tasks_coordinator()
-# TODO: Check for existing course/lab md files.
-# TODO: Make the collected data persistent, in another words, the application is stateful.
-# TODO: Mark correct quiz(es) answers/options.
-# TODO: Enable async to speed up the tasks
-# TODO: LLM for transcript formatting, split into multiple semantic paragraphs.
-# TODO: Non-login user.
-# TODO: Remove <p> <p> <br/> from the transcript/text/description.
