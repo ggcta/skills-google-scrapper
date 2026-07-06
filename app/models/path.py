@@ -1,6 +1,6 @@
 import json
 from bs4 import BeautifulSoup
-from utils.utils import util_replace_special_chars
+from utils.utils import util_replace_special_chars, util_ensure_authenticated
 from config.settings import *
 from models.base_entity import BaseEntity
 
@@ -43,11 +43,8 @@ class Path(BaseEntity):
             # Navigate to the path URL
             self.driver.get(self.url)
             
-            if "sign_in" in self.driver.current_url:
-                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
-                 input("Press Enter after you have signed in and the page is loaded to continue...")
-                 if "sign_in" in self.driver.current_url:
-                     self.driver.get(self.url)
+            if not util_ensure_authenticated(self.driver, self.url, f"path {self.id}"):
+                return {}
 
             path_html = BeautifulSoup(self.driver.page_source, "html.parser")
 

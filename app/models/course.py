@@ -12,7 +12,7 @@ from config.settings import BASE_URL, QL_IFRAME, OUTPUT_FOLDER_NAME
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
+from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags, util_ensure_authenticated
 
 # TODO: Convert these constants to Enums
 # Constants for the extraction of the course data
@@ -93,8 +93,9 @@ class Course(BaseEntity):
         if not self.extract_course_outline(course_html):
             return
 
-        # Process course modules
-        self.process_modules()
+        # Process course modules if not toc_only
+        if not toc_only:
+            self.process_modules(no_transcript=no_transcript)
 
         # Save the course data
         self.save_json()
@@ -117,13 +118,8 @@ class Course(BaseEntity):
             print(f"(fetch_course_page) Fetching with driver: {self.url}")
             self.driver.get(self.url)
 
-            # Check for sign-in redirect
-            if "sign_in" in self.driver.current_url:
-                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
-                 input("Press Enter after you have signed in and the page is loaded to continue...")
-                 # Reload to ensure we have the page content
-                 if "sign_in" in self.driver.current_url:
-                     self.driver.get(self.url)
+            if not util_ensure_authenticated(self.driver, self.url, f"course {self.id}"):
+                return None
 
             return BeautifulSoup(self.driver.page_source, "html.parser")
         except Exception as error:
@@ -193,7 +189,7 @@ class Course(BaseEntity):
             return False
 
     # MARK: process_modules
-    def process_modules(self) -> None:
+    def process_modules(self, no_transcript: bool = False) -> None:
         """
         Process each module in the course.
         """
@@ -206,10 +202,10 @@ class Course(BaseEntity):
                 module['description'] = self.clean_text(module.get("description", ""))
 
             for step in module['steps']:
-                self.process_step(step)
+                self.process_step(step, no_transcript=no_transcript)
 
     # MARK: process_step
-    def process_step(self, step) -> None:
+    def process_step(self, step, no_transcript: bool = False) -> None:
         """
         Process each step in a module.
         """
@@ -225,7 +221,7 @@ class Course(BaseEntity):
             activity_full_url = f"{BASE_URL}{activity['href']}"
 
             if activity_type == "video":
-                self.process_video(activity, activity_full_url)
+                self.process_video(activity, activity_full_url, no_transcript=no_transcript)
             elif activity_type == "lab":
                 self.process_lab(activity, activity_full_url)
             elif activity_type == "quiz":
@@ -233,12 +229,12 @@ class Course(BaseEntity):
             elif activity_type == "link":
                 self.process_link(activity, activity_full_url)
             elif activity_type == "html_bundle":
-                self.process_html_bundle(activity, activity_full_url)
+                self.process_html_bundle(activity, activity_full_url, no_transcript=no_transcript)
             elif activity_type == "document":
                 self.process_document(activity, activity_full_url)
 
     # MARK: process_video
-    def process_video(self, activity, url) -> None:
+    def process_video(self, activity, url, no_transcript: bool = False) -> None:
         """
         Process a video activity.
         """
@@ -251,11 +247,8 @@ class Course(BaseEntity):
 
             self.driver.get(url)
 
-            if "sign_in" in self.driver.current_url:
-                 print(f"\n\033[93m[!] Authentication required for video {activity['id']}.\033[0m")
-                 print("Please sign in to the browser window if you haven't.")
-                 input("Press Enter after you have signed in and the page is loaded...")
-                 self.driver.get(url) # Retry loading the video page
+            if not util_ensure_authenticated(self.driver, url, f"video {activity['id']}"):
+                return
 
             video_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
@@ -264,10 +257,13 @@ class Course(BaseEntity):
             if video_id:
                 activity['videoId'] = video_id
 
-            transcript_data = video_element.get("transcript", None)
-            if transcript_data:
-                transcript_json = json.loads(transcript_data)
-                activity['transcript'] = " ".join(map(lambda item: item['text'], transcript_json))
+            if not no_transcript:
+                transcript_data = video_element.get("transcript", None)
+                if transcript_data:
+                    transcript_json = json.loads(transcript_data)
+                    activity['transcript'] = " ".join(map(lambda item: item['text'], transcript_json))
+                else:
+                    activity['transcript'] = '(No video transcript.)'
             else:
                 activity['transcript'] = '(No video transcript.)'
 
@@ -298,12 +294,8 @@ class Course(BaseEntity):
 
             self.driver.get(template_url)
 
-            # Check for sign-in redirect
-            if "sign_in" in self.driver.current_url:
-                 print(f"\n\033[93m[!] Authentication required for lab {activity['id']}.\033[0m")
-                 print("Please sign in to the browser window if you haven't.")
-                 input("Press Enter after you have signed in and the page is loaded...")
-                 self.driver.get(template_url) # Retry loading the lab page
+            if not util_ensure_authenticated(self.driver, template_url, f"lab {activity['id']}"):
+                return
 
             lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
@@ -537,14 +529,8 @@ class Course(BaseEntity):
                 return
 
             self.driver.get(url)
-            if "sign_in" in self.driver.current_url:
-                 # Allow silent fail or prompt? For quiz, maybe prompt if important.
-                 # But quizzes are usually less critical than labs/videos?
-                 # Let's align with others: prompt.
-                 print(f"\n\033[93m[!] Authentication required for quiz {activity['id']}.\033[0m")
-                 print("Please sign in to the browser window if you haven't.")
-                 input("Press Enter after you have signed in and the page is loaded...")
-                 self.driver.get(url)
+            if not util_ensure_authenticated(self.driver, url, f"quiz {activity['id']}"):
+                return
 
             # Check for Start Quiz button
             try:
@@ -586,13 +572,8 @@ class Course(BaseEntity):
                 return
 
             self.driver.get(url)
-            # Links usually redirect to external or internal resources.
-            # If internal, might need auth.
-            if "sign_in" in self.driver.current_url:
-                 print(f"\n\033[93m[!] Authentication required for link {activity['id']}.\033[0m")
-                 print("Please sign in to the browser window if you haven't.")
-                 input("Press Enter after you have signed in and the page is loaded...")
-                 self.driver.get(url)
+            if not util_ensure_authenticated(self.driver, url, f"link {activity['id']}"):
+                return
 
             link_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
@@ -629,7 +610,7 @@ class Course(BaseEntity):
             print(f"(process_link) Error: {error}")
 
     # MARK: process_html_bundle
-    def process_html_bundle(self, activity, url) -> None:
+    def process_html_bundle(self, activity, url, no_transcript: bool = False) -> None:
         """
         Process a html_bundle activity.
         """
@@ -641,11 +622,8 @@ class Course(BaseEntity):
                 return
 
             self.driver.get(url)
-            if "sign_in" in self.driver.current_url:
-                 print(f"\n\033[93m[!] Authentication required for html_bundle {activity['id']}.\033[0m")
-                 print("Please sign in to the browser window if you haven't.")
-                 input("Press Enter after you have signed in and the page is loaded...")
-                 self.driver.get(url)
+            if not util_ensure_authenticated(self.driver, url, f"html_bundle {activity['id']}"):
+                return
 
             html_bundle_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
@@ -657,7 +635,7 @@ class Course(BaseEntity):
                 activity['link'] = iframe_tag['src'] if iframe_tag else None
 
             # Special handling for Google Storage HTML5 courses
-            if activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
+            if not no_transcript and activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
                 target_url = activity['link']
                 print(f"(process_html_bundle) Detected external course content: {target_url}")
 
@@ -699,11 +677,8 @@ class Course(BaseEntity):
                 return
 
             self.driver.get(url)
-            if "sign_in" in self.driver.current_url:
-                print(f"\n\033[93m[!] Authentication required for document {activity['id']}.\033[0m")
-                print("Please sign in to the browser window if you haven't.")
-                input("Press Enter after you have signed in and the page is loaded...")
-                self.driver.get(url)
+            if not util_ensure_authenticated(self.driver, url, f"document {activity['id']}"):
+                return
 
             doc_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
@@ -895,7 +870,11 @@ class Course(BaseEntity):
                             markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
 
                         if activity_type == 'video':
-                            markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={activity['videoId']})")
+                            video_id = activity.get('videoId')
+                            if video_id:
+                                markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={video_id})")
+                            elif activity_href:
+                                markdown.append(f"- [Video Link]({BASE_URL}{activity_href})")
                             if not toc_only and not no_transcript:
                                 markdown.append(f"{util_replace_quote_marks(activity.get('transcript', '(No transcript available)'))}")
 
@@ -928,7 +907,8 @@ class Course(BaseEntity):
                                     quiz_number += 1
 
                         elif activity_type in ('link', 'html_bundle'):
-                            markdown.append(f"- [{activity_title}]({activity['link']})")
+                            link_url = activity.get('link') or (f"{BASE_URL}{activity_href}" if activity_href else "")
+                            markdown.append(f"- [{activity_title}]({link_url})")
                             if not toc_only and not no_transcript:
                                 if activity.get('transcript'):
                                     markdown.append("\n" + activity['transcript'] + "\n")

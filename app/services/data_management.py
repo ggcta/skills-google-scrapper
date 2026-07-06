@@ -10,7 +10,7 @@ from models.collection import Collection
 from models.course import Course
 from models.lab import Lab
 from models.path import Path
-from utils.utils import util_replace_quote_marks, util_strip_html_tags
+from utils.utils import util_replace_quote_marks, util_strip_html_tags, util_ensure_authenticated
 
 class DataManagement():
     def __init__(self, driver=None):
@@ -45,11 +45,8 @@ class DataManagement():
             # Navigate to the path URL
             self.driver.get(a_path.url)
             
-            if "sign_in" in self.driver.current_url:
-                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
-                 input("Press Enter after you have signed in and the page is loaded to continue...")
-                 if "sign_in" in self.driver.current_url:
-                     self.driver.get(a_path.url)
+            if not util_ensure_authenticated(self.driver, a_path.url, f"path {path_id}"):
+                return {}
 
             path_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
@@ -105,11 +102,8 @@ class DataManagement():
                 return
 
             self.driver.get(a_course.url)
-            if "sign_in" in self.driver.current_url:
-                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
-                 input("Press Enter after you have signed in and the page is loaded to continue...")
-                 if "sign_in" in self.driver.current_url:
-                     self.driver.get(a_course.url)
+            if not util_ensure_authenticated(self.driver, a_course.url, f"course {course_id}"):
+                return
                      
         except Exception as get_course_url_error:
             print(f"(extract_transcript) Error: Unable to load the course page. {get_course_url_error}")
@@ -186,11 +180,8 @@ class DataManagement():
                 return
 
             self.driver.get(a_lab.url)
-            if "sign_in" in self.driver.current_url:
-                 print("\n\033[93m[!] Authentication required. Please sign in to the opened browser window.\033[0m")
-                 input("Press Enter after you have signed in and the page is loaded to continue...")
-                 if "sign_in" in self.driver.current_url:
-                     self.driver.get(a_lab.url)
+            if not util_ensure_authenticated(self.driver, a_lab.url, f"lab {lab_id}"):
+                return
 
             lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 

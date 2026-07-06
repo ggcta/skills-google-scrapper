@@ -66,3 +66,27 @@ def util_strip_html_tags(text: str) -> str:
     stripper = HTMLStripper()
     stripper.feed(text)
     return stripper.get_data()
+
+
+def util_ensure_authenticated(driver, url: str, entity_desc: str = "") -> bool:
+    """
+    Check if the current webdriver page redirected to sign-in, and prompt user until authenticated.
+    Returns True if authenticated, False if aborted or webdriver missing.
+    """
+    if not driver:
+        return False
+
+    while "sign_in" in driver.current_url:
+        msg = f" for {entity_desc}" if entity_desc else ""
+        print(f"\n\033[93m[!] Authentication required{msg}.\033[0m")
+        print("Please sign in to the browser window if you haven't.")
+        try:
+            input("Press Enter after you have signed in and the page is loaded to continue... ")
+        except (KeyboardInterrupt, EOFError):
+            print("\n\033[91mAborted authentication.\033[0m")
+            return False
+        driver.get(url)
+        
+        if "sign_in" in driver.current_url:
+            print("\n\033[91m[!] Still on sign-in page. Please ensure login is complete before pressing Enter.\033[0m")
+    return True
