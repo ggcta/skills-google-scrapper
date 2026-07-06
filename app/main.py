@@ -128,14 +128,28 @@ def cmd_fetch(args):
                     # This helps populate courses list without fetching all courses
                     courses_collection = Courses()
                     courses_collection.load_json()
-                    
+
                     for course in p.courses.values():
                         c_id = course['id']
                         c_name = course['name']
                         courses_collection.collection[c_id] = c_name
-                    
+
                     courses_collection.save_json()
-                    
+
+                    # Cascade down the tree: fetch every course in the path
+                    # (which in turn fetches each course's labs). Flags are
+                    # inherited from the path-level command. Reuse the driver.
+                    for course in p.courses.values():
+                        c_id = course['id']
+                        c_name = course['name']
+                        try:
+                            print(f"\n--- Path {pid} > Course {c_id} - {c_name} ---")
+                            c = Course(id=c_id, name=c_name, driver=driver)
+                            c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
+                            print(f"Course {c_id} updated.")
+                        except Exception as e:
+                            print(f"Failed to fetch course {c_id} in path {pid}: {e}")
+
                 except Exception as e:
                     print(f"Failed to fetch path {pid}: {e}")
         finally:
