@@ -9,6 +9,7 @@ from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS
 sys.path.append(os.path.join(os.getcwd(), 'app'))
 
 from models.course import Course
+from models.lab import Lab
 from models.path import Path
 from models.paths import Paths
 from models.courses import Courses
@@ -183,14 +184,38 @@ def cmd_fetch(args):
     # --- Labs ---
     if fetch_labs_ids:
         print(f"\n--- Processing Labs: {fetch_labs_ids} ---")
-        # Lab scraping logic is typically embedded in Course scraping (via extract_transcript -> process_lab).
-        # We need to check if we can scrape a Lab directly.
-        # Course.py has `process_lab` but it's part of course processing.
-        # If we have a direct Lab URL or logic, we can implement it.
-        # Currently, the original code didn't have standalone Lab scraping in `cmd_lab` (it didn't exist).
-        # Use simple fallback: "Not supported directly, please fetch the parent course."
-        print("Standalone Lab fetching is not yet fully supported (requires parent Course).")
-        print("Please fetch the course containing this lab to update it.")
+        driver = None
+        try:
+            print("\n\033[35mLaunching browser for lab extraction...\033[0m")
+            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+
+            for lid in fetch_labs_ids:
+                try:
+                    print(f"Processing Lab {lid}...")
+                    lab = Lab(id=lid, driver=driver)
+                    # fetch_data scrapes the lab's catalog page (name, description, steps).
+                    # Honors force: skips if already stored unless force is set.
+                    if not lab.fetch_data(force=force):
+                        continue
+
+                    lab.save_json()  # Backs up to file and syncs to DB
+                    if not no_md:
+                        lab.save_markdown(toc_only=toc_only)
+                        print(f"Lab {lid} markdown updated.")
+
+                    # Keep the labs collection in sync.
+                    labs_collection = Labs()
+                    labs_collection.load_json()
+                    labs_collection.collection[lab.id] = lab.name
+                    labs_collection.save_json()
+
+                    print(f"Lab {lid} updated.")
+                except Exception as e:
+                    print(f"Failed to fetch lab {lid}: {e}")
+        finally:
+            if driver:
+                print("Closing browser...")
+                driver.quit()
 
 def cmd_interactive(args):
     """Handle interactive command by launching the interactive menu."""

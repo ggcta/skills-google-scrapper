@@ -22,11 +22,6 @@ COURSE_OUTLINE = "ql-course-outline"
 COURSE_CONTENTS_MENU = "ql-contents-menu"
 QL_YOUTUBE_VIDEO = "ql-youtube-video"
 LAB_REVIEW_LAB_ID = "#lab_review_lab_id"
-LAB_CONTENT_OUTLINE = "ul.lab-content__outline"
-# The sidebar outline (LAB_CONTENT_OUTLINE) was removed in a site update.
-# Steps are now rendered as <h2 id="stepN">Title</h2> headings inside the
-# lab instructions container.
-LAB_STEP_HEADINGS = ".lab-content__renderable-instructions h2[id^='step']"
 QL_QUIZ = "ql-quiz"
 XPATH_START_BUTTON = "//a[@class='start-button button button--positive']"
 XPATH_QUIZ = "//ql-quiz"
@@ -335,7 +330,7 @@ class Course(BaseEntity):
                 return False
 
             # If the lab.name doesn't exist, the lab is new, continue.
-            lab_steps = self.extract_lab_steps(lab_page_html)
+            lab_steps = Lab.parse_steps(lab_page_html)
 
             # Set the lab's attributes.
             lab.name = activity['title'].strip()
@@ -355,46 +350,6 @@ class Course(BaseEntity):
             print(f"(process_lab) •-• [+]")
         except Exception as error:
             print(f"(process_lab) Error: {error}")
-
-    # MARK: extract_lab_steps
-    def extract_lab_steps(self, lab_page_html) -> dict:
-        """
-        Extract the lab's table of contents (steps) from its page.
-
-        The site historically exposed a sidebar outline
-        (``ul.lab-content__outline``) with ``<a href="#stepN">`` anchors. That
-        element was removed in a site update; the steps are now rendered as
-        ``<h2 id="stepN">Title</h2>`` headings inside the lab instructions
-        container. Try the old outline first, then fall back to the headings.
-
-        :param lab_page_html: Parsed BeautifulSoup of the lab page.
-        :return: Mapping of step number (str) to step title (str).
-        """
-
-        lab_steps = {}
-
-        # Old structure: sidebar outline with anchor links.
-        outline_element = lab_page_html.select_one(LAB_CONTENT_OUTLINE)
-        if outline_element:
-            for a_tag in outline_element.find_all('a'):
-                step = a_tag['href'].strip('#step')
-                lab_steps[step] = a_tag.text
-            if lab_steps:
-                return lab_steps
-
-        # New structure: step headings inside the rendered instructions.
-        step_headings = lab_page_html.select(LAB_STEP_HEADINGS)
-        # Fallback in case the container class changes again.
-        if not step_headings:
-            step_headings = lab_page_html.select("h2[id^='step']")
-
-        for heading in step_headings:
-            # Turn the "stepN" id into just the number, e.g. "step1" -> "1".
-            step = heading.get('id', '').replace('step', '', 1)
-            if step:
-                lab_steps[step] = heading.get_text(strip=True)
-
-        return lab_steps
 
     # MARK: fetch_external_course_content
     def fetch_external_course_content(self, url: str) -> dict:
