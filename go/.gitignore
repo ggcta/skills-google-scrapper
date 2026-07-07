@@ -1,0 +1,7 @@
+# Compiled binary
+/csb
+csb
+
+# Go build/test artifacts
+*.test
+*.out
