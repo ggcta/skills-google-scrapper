@@ -12,7 +12,7 @@ files (e.g. the Obsidian .obsidian config folder in the vault).
 import shutil
 from pathlib import Path
 
-from config.settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, PORTALS
+from config.settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, PORTALS, MATERIALS_DIR
 
 # Entity type folders / collection files that used to sit at the root.
 _TYPE_NAMES = ["paths", "courses", "labs"]
@@ -28,26 +28,30 @@ def _move_if_absent(src: Path, dest: Path, moved: list):
 
 def _consolidate_documents(md_root: Path, moved: list):
     """
-    Move course document folders into a single shared, portal-agnostic
-    csbmdvault/documents/<course_id>/. Course-template ids are global across
-    portals, so the same course shares one binary copy instead of duplicating
-    it per portal. Handles both the legacy root location and any that ended up
-    under a portal folder.
+    Move course document folders into the shared, portal-agnostic
+    csbmdvault/<MATERIALS_DIR>/courses/<course_id>/. Course ids are global
+    across portals, so the same course shares one binary copy instead of
+    duplicating it per portal. Handles every earlier location: the flat
+    documents/ folder, the pre-portal courses/documents/, and any that ended
+    up under a portal folder.
     """
-    new_docs = md_root / "documents"
-    legacy_locations = [md_root / "courses" / "documents"]
+    new_docs = md_root / MATERIALS_DIR / "courses"
+    legacy_locations = [
+        md_root / "documents",              # previous flat shared location
+        md_root / "courses" / "documents",  # pre-portal location
+    ]
     legacy_locations += [md_root / p / "courses" / "documents" for p in PORTALS]
 
     for legacy in legacy_locations:
-        if legacy.resolve() == new_docs.resolve() or not legacy.is_dir():
+        if not legacy.is_dir() or legacy.resolve() == new_docs.resolve():
             continue
         for doc_id_dir in list(legacy.iterdir()):
             _move_if_absent(doc_id_dir, new_docs / doc_id_dir.name, moved)
-        # Remove the now-empty legacy 'documents' (and its 'courses' parent if
-        # it, too, is empty). rmdir is a no-op error if not empty — ignore.
+        # Remove now-empty legacy wrapper folders (never the vault root).
         for stale in (legacy, legacy.parent):
             try:
-                stale.rmdir()
+                if stale.name in ("documents", "courses"):
+                    stale.rmdir()
             except OSError:
                 pass
 

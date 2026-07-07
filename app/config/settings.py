@@ -30,6 +30,11 @@ BASE_URL_PARTNERS: str = "https://partner.skills.google/"
 # its own storage root so the two catalogs can never overwrite each other.
 DEFAULT_PORTAL: str = "public"
 
+# Shared, portal-agnostic folder for downloaded binaries (documents, etc.),
+# organised as materials/<type>/<id>/<files> (type = courses/labs/paths).
+# Entity ids are global across portals, so one copy is kept for all portals.
+MATERIALS_DIR: str = "materials"
+
 PORTALS: dict = {
     "public": {
         "host": "www.skills.google",

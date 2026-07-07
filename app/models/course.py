@@ -8,7 +8,7 @@ from selenium.common import NoSuchElementException
 import json
 import html
 from bs4 import BeautifulSoup
-from config.settings import QL_IFRAME, OUTPUT_FOLDER_NAME
+from config.settings import QL_IFRAME, OUTPUT_FOLDER_NAME, MATERIALS_DIR
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -709,11 +709,11 @@ class Course(BaseEntity):
         print(f"(process_document) •-> Doc: {activity['id']:>6} - {activity['title']}")
 
         try:
-            # Create documents directory if it doesn't exist.
-            # Documents live in a single portal-agnostic folder keyed by the
-            # (global) course id — csbmdvault/documents/<course_id>/ — so the
-            # same course fetched from different portals shares one binary copy.
-            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / "documents" / self.id
+            # Create the materials directory if it doesn't exist.
+            # Binaries live in a single portal-agnostic folder organised by
+            # type and (global) id — csbmdvault/materials/courses/<course_id>/ —
+            # so the same course fetched from different portals shares one copy.
+            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / MATERIALS_DIR / "courses" / self.id
             doc_dir.mkdir(parents=True, exist_ok=True)
 
             if not self.driver:
@@ -775,7 +775,7 @@ class Course(BaseEntity):
 
                 # Prepare save path
                 save_path = doc_dir / filename
-                activity['local_document_path'] = f"documents/{self.id}/{filename}"
+                activity['local_document_path'] = f"{MATERIALS_DIR}/courses/{self.id}/{filename}"
 
                 if save_path.exists():
                      print(f"(process_document) •-• [+] Existed: {filename}")
@@ -799,7 +799,7 @@ class Course(BaseEntity):
                              if match:
                                  filename = match.group(1)
                                  save_path = doc_dir / filename
-                                 activity['local_document_path'] = f"documents/{self.id}/{filename}"
+                                 activity['local_document_path'] = f"{MATERIALS_DIR}/courses/{self.id}/{filename}"
 
                     with open(save_path, 'wb') as f:
                         for chunk in file_response.iter_content(chunk_size=8192):
