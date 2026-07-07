@@ -114,18 +114,21 @@ class Path(BaseEntity):
 
         activities: dict[str, dict] = {}
         for card in path_html.select(PARTNER_ACTIVITY_CARD):
-            href = (card.get('path') or '').split('?')[0].rstrip('/')
-            if not href:
+            raw_path = (card.get('path') or '').strip()
+            if not raw_path:
                 continue
+            clean_href = raw_path.split('?')[0].rstrip('/')
             activity_type = (card.get('type') or 'course').strip()
-            activity_id, canonical_href = self._extract_partner_activity_id(href, activity_type)
+            activity_id, _canonical_href = self._extract_partner_activity_id(clean_href, activity_type)
             if not activity_id:
                 continue
+            # Preserve the full href (including the ?parent=…&path=… query),
+            # since a partner lab's focus page needs that parent reference.
             activities[activity_id] = {
                 "id": activity_id,
                 "type": activity_type,
                 "name": (card.get('name') or '').strip(),
-                "url": f"{self.base_url}{canonical_href}",
+                "url": f"{self.base_url}{raw_path}",
             }
 
         self.courses = activities

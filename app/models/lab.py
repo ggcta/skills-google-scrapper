@@ -78,13 +78,18 @@ class Lab(BaseEntity):
         return lab_steps
 
     # MARK: fetch_data
-    def fetch_data(self, force: bool = False) -> bool:
+    def fetch_data(self, force: bool = False, fetch_url: str = None) -> bool:
         """
-        Fetch this lab's data (name, description, steps) from its own catalog
-        page. Unlike Course.process_lab (which scrapes the lab in the context
-        of a parent course), this works standalone from just the lab ID.
+        Fetch this lab's data (name, description, steps).
+
+        By default it loads the lab's own catalog page (self.url). The partner
+        portal instead serves labs from a focus URL that references the parent
+        path/course (e.g. /focuses/104653?parent=catalog&path=4343); callers
+        with that context pass it via ``fetch_url``. The page structure is the
+        same, so parsing is identical either way.
 
         :param force: If True, re-fetch even if the lab already exists locally.
+        :param fetch_url: Explicit URL to load instead of self.url.
         :return: True if the lab was fetched, False if skipped or failed.
         """
 
@@ -98,11 +103,12 @@ class Lab(BaseEntity):
             print(f"(Lab.fetch_data) •-• [+] Existed: {self.id} - {self.name}")
             return False
 
+        target_url = fetch_url or self.url
         try:
-            print(f"(Lab.fetch_data) Fetching: {self.url}")
-            self.driver.get(self.url)
+            print(f"(Lab.fetch_data) Fetching: {target_url}")
+            self.driver.get(target_url)
 
-            if not util_ensure_authenticated(self.driver, self.url, f"lab {self.id}"):
+            if not util_ensure_authenticated(self.driver, target_url, f"lab {self.id}"):
                 return False
 
             lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
