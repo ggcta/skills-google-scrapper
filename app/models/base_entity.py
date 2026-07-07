@@ -229,7 +229,11 @@ class BaseEntity(Serialize):
         if hasattr(self, 'datePublished'):
             front_matter_lines.append(f"date_published: {self.datePublished}")
         if hasattr(self, 'topics'):
-            front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+            if self.topics:
+                front_matter_lines.append("topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+            else:
+                # No topics: emit a single bare 'topics:' line (no blank line).
+                front_matter_lines.append("topics:")
             
         # Add scraped_date
         scraped_ts = getattr(self, 'scrapedTime', None)
