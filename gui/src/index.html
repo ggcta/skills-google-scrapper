@@ -16,7 +16,8 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <div class="portal-toggle" id="portalToggle">
+        <div class="portal-toggle" id="portalToggle" title="Portal — applies to every tab">
+          <button data-portal="all">All</button>
           <button data-portal="public" class="active">Public</button>
           <button data-portal="partner">Partner</button>
         </div>
@@ -61,11 +62,17 @@
 
       <!-- BROWSE -->
       <section class="panel" data-panel="browse">
-        <div class="row">
+        <div class="row filters">
+          <label>Type</label>
           <div class="segmented" id="browseKind">
             <button data-kind="paths" class="active">Paths</button>
             <button data-kind="courses">Courses</button>
             <button data-kind="labs">Labs</button>
+          </div>
+          <label>Sort</label>
+          <div class="segmented" id="browseSort">
+            <button data-sort="name" class="active">Name</button>
+            <button data-sort="id">ID</button>
           </div>
           <button class="btn" id="browseBtn">List</button>
           <span class="count" id="browseCount"></span>
@@ -81,18 +88,17 @@
           <span class="count" id="searchCount"></span>
         </div>
         <div class="row filters">
-          <label>Portal</label>
-          <div class="segmented" id="searchPortal">
-            <button data-portal="all" class="active">All</button>
-            <button data-portal="public">Public</button>
-            <button data-portal="partner">Partner</button>
-          </div>
           <label>Type</label>
           <div class="segmented" id="searchKind">
             <button data-kind="all" class="active">All</button>
             <button data-kind="paths">Paths</button>
             <button data-kind="courses">Courses</button>
             <button data-kind="labs">Labs</button>
+          </div>
+          <label>Sort</label>
+          <div class="segmented" id="searchSort">
+            <button data-sort="name" class="active">Name</button>
+            <button data-sort="id">ID</button>
           </div>
         </div>
         <div class="table-wrap"><table id="searchTable"><tbody></tbody></table></div>

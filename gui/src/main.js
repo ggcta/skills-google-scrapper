@@ -34,12 +34,34 @@ wireGroup("#tabs", "tab", (tab) => {
 });
 wireGroup("#portalToggle", "portal", (p) => {
   portal = p;
-  setStatus(`Working portal: ${portal}`);
+  setStatus(portal === "all" ? "Portal: All (public + partner)" : `Portal: ${portal}`);
 });
 wireGroup("#fetchKind", "kind", () => {});
 wireGroup("#browseKind", "kind", () => {});
 wireGroup("#searchKind", "kind", () => {});
-wireGroup("#searchPortal", "portal", () => {});
+wireGroup("#browseSort", "sort", () => {});
+wireGroup("#searchSort", "sort", () => {});
+
+// The topbar portal is the single source of truth for every tab.
+// "All" means both portals for the read tabs (Browse/Search); the concrete
+// actions (Fetch/Login) fall back to public while full URLs still infer.
+const portalsFor = () => (portal === "all" ? ["public", "partner"] : [portal]);
+const concretePortal = () => (portal === "all" ? "public" : portal);
+
+// Client-side sort so it works across merged "All" results without a re-fetch.
+function sortItems(items, by) {
+  const arr = items.slice();
+  if (by === "id") {
+    arr.sort((a, b) => {
+      const na = parseInt(a.id, 10), nb = parseInt(b.id, 10);
+      if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+      return String(a.id).localeCompare(String(b.id));
+    });
+  } else {
+    arr.sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }));
+  }
+  return arr;
+}
 
 // --- Fetch ---
 const consoleEl = $("#console");
@@ -60,9 +82,12 @@ $("#fetchBtn").addEventListener("click", async () => {
   consoleEl.textContent = "";
   $("#fetchBtn").disabled = true;
   setStatus("Fetching…", "busy");
+  if (portal === "all") {
+    logLine("Note: portal is 'All' — bare IDs fetch as Public; full URLs use their own portal.");
+  }
   try {
     await invoke("fetch", {
-      portal,
+      portal: concretePortal(),
       kind: selected("#fetchKind", "kind"),
       ids,
       force: $("#optForce").checked,
@@ -97,11 +122,16 @@ function escapeHtml(s) {
 }
 
 $("#browseBtn").addEventListener("click", async () => {
+  const kind = selected("#browseKind", "kind");
   setStatus("Loading…", "busy");
   try {
-    const items = await invoke("list_items", { portal, kind: selected("#browseKind", "kind") });
+    const batches = await Promise.all(
+      portalsFor().map((pk) => invoke("list_items", { portal: pk, kind }))
+    );
+    const items = sortItems(batches.flat(), selected("#browseSort", "sort"));
     renderRows("#browseTable", "#browseCount", items);
-    setStatus(`Listed ${items.length} from ${portal}.`, "ok");
+    const where = portal === "all" ? "both portals" : portal;
+    setStatus(`Listed ${items.length} from ${where}.`, "ok");
   } catch (err) {
     setStatus("List failed: " + err);
   }
@@ -111,18 +141,15 @@ $("#searchBtn").addEventListener("click", async () => {
   const query = $("#searchQuery").value.trim();
   if (!query) { setStatus("Enter a search query."); return; }
   const kind = selected("#searchKind", "kind");
-  // Search scope is chosen here (independent of the global toggle): "all"
-  // queries both portals and merges, so results span the whole library.
-  const scope = selected("#searchPortal", "portal");
-  const portals = scope === "all" ? ["public", "partner"] : [scope];
+  // Portal scope comes from the global topbar control; "All" spans both.
   setStatus("Searching…", "busy");
   try {
     const batches = await Promise.all(
-      portals.map((pk) => invoke("search_items", { portal: pk, query, kind }))
+      portalsFor().map((pk) => invoke("search_items", { portal: pk, query, kind }))
     );
-    const items = batches.flat();
+    const items = sortItems(batches.flat(), selected("#searchSort", "sort"));
     renderRows("#searchTable", "#searchCount", items);
-    const where = scope === "all" ? "both portals" : scope;
+    const where = portal === "all" ? "both portals" : portal;
     setStatus(`${items.length} result(s) for “${query}” in ${where}.`, "ok");
   } catch (err) {
     setStatus("Search failed: " + err);
@@ -135,13 +162,14 @@ $("#loginBtn").addEventListener("click", async () => {
   // Launch the browser first; only reveal the "click Done" modal once csb has
   // actually started, so a launch failure surfaces as a readable status message
   // instead of a modal that flashes open and shut.
+  const lp = concretePortal();
   setStatus("Opening sign-in browser…", "busy");
   $("#loginBtn").disabled = true;
   try {
-    await invoke("login", { portal });
-    $("#loginPortal").textContent = portal;
+    await invoke("login", { portal: lp });
+    $("#loginPortal").textContent = lp;
     $("#loginModal").hidden = false;
-    setStatus(`Browser open for ${portal}. Sign in, then click Done.`, "busy");
+    setStatus(`Browser open for ${lp}. Sign in, then click Done.`, "busy");
   } catch (err) {
     setStatus("Login failed: " + err);
   } finally {
