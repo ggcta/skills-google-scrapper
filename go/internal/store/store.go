@@ -127,3 +127,11 @@ func writeMD(path, content string) (string, error) {
 	}
 	return path, os.WriteFile(path, []byte(content), 0o644)
 }
+
+// writeFile writes bytes to path, creating parent directories.
+func writeFile(path string, b []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, b, 0o644)
+}
