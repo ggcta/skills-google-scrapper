@@ -709,9 +709,11 @@ class Course(BaseEntity):
         print(f"(process_document) •-> Doc: {activity['id']:>6} - {activity['title']}")
 
         try:
-            # Create documents directory if it doesn't exist
-            # csbmdvault/courses/documents/<course_id>/
-            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / "courses" / "documents" / self.id
+            # Create documents directory if it doesn't exist.
+            # Documents live in a single portal-agnostic folder keyed by the
+            # (global) course id — csbmdvault/documents/<course_id>/ — so the
+            # same course fetched from different portals shares one binary copy.
+            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / "documents" / self.id
             doc_dir.mkdir(parents=True, exist_ok=True)
 
             if not self.driver:
@@ -960,7 +962,9 @@ class Course(BaseEntity):
                             local_path = activity.get('local_document_path')
                             if local_path:
                                 filename = PathlibPath(local_path).name
-                                markdown.append(f"- [{filename}]({local_path})")
+                                # Course md lives at <portal>/courses/; the shared
+                                # documents folder is two levels up at the vault root.
+                                markdown.append(f"- [{filename}](../../{local_path})")
 
         return "\n\n".join(markdown) + "\n"
 
