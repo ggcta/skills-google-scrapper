@@ -1,4 +1,5 @@
 import json
+import re
 from bs4 import BeautifulSoup
 from utils.utils import util_replace_special_chars, util_ensure_authenticated
 from config.settings import *
@@ -10,6 +11,11 @@ LD_JSON = "script[type='application/ld+json']"
 # as an <h1> and each course/lab as a <ql-activity-card>.
 PARTNER_TITLE = "h1.learning-plan-title"
 PARTNER_ACTIVITY_CARD = "ql-activity-card"
+# On an authenticated partner page, a started course/lab card links to a
+# session/focus deep-link (e.g. /course_templates/35/course_sessions/585820),
+# whose trailing segment is a session id, NOT the catalog id we need. Extract
+# the canonical id from these URL markers instead, in priority order.
+PARTNER_ID_MARKERS = ("course_templates", "catalog_lab", "focuses", "labs")
 
 # Path entity
 class Path(BaseEntity):
@@ -111,15 +117,43 @@ class Path(BaseEntity):
             href = (card.get('path') or '').split('?')[0].rstrip('/')
             if not href:
                 continue
-            activity_id = href.split('/')[-1]
+            activity_type = (card.get('type') or 'course').strip()
+            activity_id, canonical_href = self._extract_partner_activity_id(href, activity_type)
+            if not activity_id:
+                continue
             activities[activity_id] = {
                 "id": activity_id,
-                "type": (card.get('type') or 'course').strip(),
+                "type": activity_type,
                 "name": (card.get('name') or '').strip(),
-                "url": f"{self.base_url}{href}",
+                "url": f"{self.base_url}{canonical_href}",
             }
 
         self.courses = activities
+
+    # MARK: _extract_partner_activity_id
+    @staticmethod
+    def _extract_partner_activity_id(href: str, activity_type: str):
+        """
+        Resolve a partner activity card's href to its canonical (id, href).
+
+        A course template lives at ``/course_templates/<id>`` and a lab at
+        ``/catalog_lab/<id>`` (or ``/focuses/<id>``). When the user has started
+        an item, the card instead deep-links to a session, e.g.
+        ``/course_templates/35/course_sessions/585820`` — the trailing segment
+        is a session id, not the catalog id. Prefer the id that follows a known
+        marker; fall back to the last path segment.
+
+        :return: (id, canonical_href) where canonical_href is the shortest URL
+            up to and including the marker/id (so downstream links are stable).
+        """
+        for marker in PARTNER_ID_MARKERS:
+            match = re.search(rf'/{re.escape(marker)}/(\d+)', href)
+            if match:
+                canonical_href = href[:match.end()]
+                return match.group(1), canonical_href
+
+        # No known marker; fall back to the last path segment.
+        return href.split('/')[-1], href
 
     # Print out the courses list of a certain Path
     def courses_list(self):
