@@ -1,0 +1,1621 @@
+
+<!-- NOTE FOR CLAUDE: The actual url is https://partner.skills.google/focuses/104653?parent=catalog&path=4343 which means reference to its parent (course/path) -->
+
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<title>Introduction to Migration Center Servers Assessments | Google Skills for Partners</title>
+<link crossorigin href='https://cdn.qwiklabs.com' rel='preconnect'>
+<link crossorigin href='https://fonts.gstatic.com' rel='preconnect'>
+<link crossorigin href='https://fonts.googleapis.com' rel='preconnect'>
+<link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/google-symbols.woff2' rel='preload' type='font/woff2'>
+<link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/material-icons.woff2' rel='preload' type='font/woff2'>
+<link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/google-material-icons.woff2' rel='preload' type='font/woff2'>
+<style>
+  @mixin font_face_props {
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+  }
+  
+  @font-face {
+    @include font_face_props;
+  
+    font-family: 'Google Material Icons';
+    src: url('https://cdn.qwiklabs.com/fonts/google-material-icons.woff2') format('woff2');
+  }
+  
+  @font-face {
+    @include font_face_props;
+  
+    font-family: 'Material Icons';
+    src: url('https://cdn.qwiklabs.com/fonts/material-icons.woff2') format('woff2');
+  }
+  
+  @font-face {
+    @include font_face_props;
+  
+    font-family: 'Google Symbols';
+    src: url('https://cdn.qwiklabs.com/fonts/google-symbols.woff2') format('woff2');
+  }
+  
+  .material-icons {
+    font-family: 'Material Icons';
+  }
+  
+  .google-symbols {
+    font-family: 'Google Symbols';
+  }
+  
+  .google-material-icons {
+    font-family: 'Google Material Icons';
+  }
+  
+  .material-icons,
+  .google-symbols,
+  .google-material-icons {
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+</style>
+
+<meta name="action-cable-url" content="/cable" />
+<script>
+//<![CDATA[
+window.gon={};gon.deployment="googlecourses-run";
+//]]>
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  const properties = JSON.parse(atob('eyJsb2NhbGUiOiJlbiIsInVzZXJfcm9sZXMiOiJzdHVkZW50IiwiZmVhdHVyZV9hdXRvX3VwZ3JhZGVfZ2FtZV9sYWJzIjp0cnVlLCJmZWF0dXJlX29mZmJvYXJkX2d3Z19qdW5lIjpmYWxzZSwiZmVhdHVyZV9kb2NlYm9fdXgiOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfZm9yX3NzbyI6dHJ1ZSwiZmVhdHVyZV9kaWFsb2dfcXVldWUiOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfY3JlZGVudGlhbHMiOmZhbHNlLCJmZWF0dXJlX2xhbmRpbmdfcGFnZSI6dHJ1ZSwiZmVhdHVyZV9pbm5vdmF0b3JfZ2Vhcl9zaWduX2luIjp0cnVlLCJmZWF0dXJlX2RvY2Vib19zeW5jIjp0cnVlLCJmZWF0dXJlX3JlbGF1bmNoX2NvbGxlY3Rpb25fYWkiOnRydWUsImZlYXR1cmVfZW50aXR5X2FwaV9rZXlzIjp0cnVlLCJmZWF0dXJlX2NvdXJzZV9leGFtcyI6dHJ1ZSwiZmVhdHVyZV9zd2l0Y2hfcGF0aF9hbmRfZXhwbG9yZV9oZWFkZXJzIjp0cnVlLCJmZWF0dXJlX25ld19zaWRlbmF2IjpmYWxzZSwiZmVhdHVyZV9jcmVkbHkiOnRydWUsImZlYXR1cmVfZXhwZXJpbWVudGF0aW9uIjp0cnVlLCJmZWF0dXJlX3NlYXJjaF9hc3luYyI6dHJ1ZSwiZmVhdHVyZV9ua19yb2xsYmFja192ZXJzaW9uIjpmYWxzZSwiZmVhdHVyZV9jcmVkbHlfaW50ZWdyYXRpb25fYW5ub3VuY2VtZW50X21vZGFsIjp0cnVlLCJmZWF0dXJlX3NlYXJjaF9zdWdnZXN0aW9ucyI6dHJ1ZSwiZmVhdHVyZV9iYW5uZXJfYnJlYWRjcnVtYnMiOnRydWUsImZlYXR1cmVfb25lX3RhcCI6dHJ1ZSwiZmVhdHVyZV9zZWFyY2hfYXV0b2NvbXBsZXRlIjp0cnVlLCJmZWF0dXJlX2lsdF9jb250ZW50X3Byb2dyYW0iOmZhbHNlLCJmZWF0dXJlX2xhYl9leHBhbmRlZF9oaW50IjpmYWxzZSwiZmVhdHVyZV9mcm9udF9kb29yX2xhbmRpbmdfcGFnZSI6dHJ1ZSwiZmVhdHVyZV9jYWNoZV9leHBsb3JlX3BhZ2VfcmVzdWx0Ijp0cnVlLCJmZWF0dXJlX2FsZXhhbmRyaWFfc3Vic2NyaXB0aW9uc19wYWdpbmF0aW9uIjp0cnVlLCJmZWF0dXJlX2Fibl9zdXJ2ZXlfZmVlZGJhY2siOmZhbHNlLCJmZWF0dXJlX2Nhbm9uaWNhbF9kb21haW5fcmVkaXJlY3QiOnRydWUsImZlYXR1cmVfdXNlX21vc2FpYyI6dHJ1ZSwiZmVhdHVyZV9wYXRoZmluZGVyX29yZ19vbmJvYXJkaW5nIjpmYWxzZSwiZmVhdHVyZV9jaGFsbGVuZ2VfbGFiX2Zhc3RfdHJhY2siOnRydWUsImZlYXR1cmVfcXVvdGFfc2VydmljZV91c2VfbHVhIjp0cnVlLCJmZWF0dXJlX3NlYXJjaF9zb3J0X2J5Ijp0cnVlLCJmZWF0dXJlX25vX2x0aV9zZXNzaW9uX3JlZGlyZWN0IjpmYWxzZSwiZmVhdHVyZV9nb29nbGVfZGV2X3BheW1lbnQiOnRydWUsImZlYXR1cmVfdXNlX2RvY2Vib19mZWF0dXJlcyI6dHJ1ZSwiZmVhdHVyZV9wYXRoZmluZGVyX2pvdXJuZXlfdmlldyI6ZmFsc2UsImZlYXR1cmVfbmV3X3Byb2dyYW1fZGFzaGJvYXJkIjp0cnVlLCJmZWF0dXJlX29yZ19pbnZpdGVfbGluayI6dHJ1ZSwiZmVhdHVyZV9ndWVzdF91c2VyIjpmYWxzZSwiZmVhdHVyZV9oaWRlX3VucG9wdWxhcl9maWx0ZXJzIjp0cnVlLCJmZWF0dXJlX2FnZV9nYXRlX3Jlc2V0IjpmYWxzZSwiZmVhdHVyZV9mZWVkYmFjayI6dHJ1ZSwiZmVhdHVyZV9hdXRvX2NvdXJzZV91cGdyYWRlIjpmYWxzZSwiZmVhdHVyZV9tb3NhaWNfc2tpbGxzX2xhYl9yZWNvbW1lbmRhdGlvbiI6dHJ1ZSwiZmVhdHVyZV9nd2dfcGFpZF9jaGlwIjp0cnVlLCJmZWF0dXJlX2luX2NvbnRleHRfYWxsX2xhYnMiOnRydWUsImZlYXR1cmVfcmVjZXJ0IjpmYWxzZSwiZmVhdHVyZV9nd2dfY2F0YWxvZyI6dHJ1ZSwiZmVhdHVyZV9zaG93X25ld19jb3Vyc2VfZXhhbXMiOnRydWUsImZlYXR1cmVfZ2FtaWZpY2F0aW9uX3N0cmVha3MiOnRydWUsImZlYXR1cmVfZ29sZGVuX2xhYl9hdXRvX2xvY2F0aW9uc19waWxvdCI6ZmFsc2UsImZlYXR1cmVfbmV4dF8yMDI2X2VuYWJsZWQiOmZhbHNlLCJmZWF0dXJlX2NoaW1lX3VzZV9hYnVzZV9kZXRhaWxzIjp0cnVlLCJmZWF0dXJlX2Rpc2NvdmVyeV9sYWJfZHVyYXRpb25fZXN0aW1hdGUiOnRydWUsImZlYXR1cmVfZ2FtaWZpY2F0aW9uIjp0cnVlLCJmZWF0dXJlX2dhbWlmaWNhdGlvbl94cCI6dHJ1ZSwiZmVhdHVyZV9kb2NlYm9fc3luY19vcmdfc3VwcG9ydCI6dHJ1ZSwiZmVhdHVyZV9jZG5fZm9udHMiOnRydWUsImZlYXR1cmVfcGF0aGZpbmRlcl9vbmJvYXJkaW5nIjpmYWxzZSwiZmVhdHVyZV9sYWJfcGFnZV9yZWRlc2lnbiI6dHJ1ZSwiZmVhdHVyZV9sZWFybmluZ19wbGFuX3NlYXJjaCI6dHJ1ZSwiZmVhdHVyZV9zc29faW50ZWdyYXRpb25fYWNjZXNzX2FsbG93bGlzdCI6ZmFsc2UsImZlYXR1cmVfcmVsYXVuY2giOnRydWUsImZlYXR1cmVfbmV3X29yZ19kYXNoYm9hcmQiOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfZXh0cmEiOnRydWUsImZlYXR1cmVfemVuZGVza190b19jYXNlcyI6dHJ1ZSwiZmVhdHVyZV9zaG93X29yZ19jYXRhbG9nX2J1dHRvbiI6dHJ1ZSwiZmVhdHVyZV9haV9zZWFyY2hfc3VtbWFyeSI6ZmFsc2UsImZlYXR1cmVfaW5ub3ZhdG9yX3NpZ25faW4iOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfZW1lcmdlbmN5X2J1dHRvbiI6ZmFsc2UsImZlYXR1cmVfcmVsYXVuY2hfZ3JpZF9saXN0Ijp0cnVlLCJmZWF0dXJlX2NyZWRseV9tYW5hZ2VtZW50IjpmYWxzZSwiZmVhdHVyZV9vbmVfc3RvcF9odWIiOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfc3Vic2NyaXB0aW9ucyI6dHJ1ZSwiZmVhdHVyZV9nYW1pZmljYXRpb25fbGVhZ3VlcyI6dHJ1ZSwiZmVhdHVyZV9sYWJfYWlfaGludHMiOmZhbHNlLCJmZWF0dXJlX25leHRfMjAyNl9jb2xsZWN0aW9ucyI6dHJ1ZSwiZmVhdHVyZV90dXJibyI6ZmFsc2UsImZlYXR1cmVfcmVwb3J0X3BhcmVudHMiOmZhbHNlLCJmZWF0dXJlX2luX2NvbnRleHRfdmlldyI6dHJ1ZSwiZmVhdHVyZV9nYW1pZmljYXRpb25fbGVhZGVyYm9hcmRzIjp0cnVlLCJmZWF0dXJlX2dhbWlmaWNhdGlvbl91aV9kYXRhIjp0cnVlLCJmZWF0dXJlX2Rhc2hib2FyZF9qb2JzIjp0cnVlLCJmZWF0dXJlX3N1YnNjcmlwdGlvbl91eCI6dHJ1ZSwiZmVhdHVyZV9jYXRhbG9nX2ZpbHRlcnNfYnV0dG9uIjp0cnVlLCJmZWF0dXJlX2NhdGFsb2dfZmlsdGVyX2NoaXBzIjp0cnVlLCJmZWF0dXJlX3NpdGVtYXBfcG9jIjp0cnVlLCJmZWF0dXJlX2dhbWlmaWNhdGlvbl91aSI6dHJ1ZSwiZmVhdHVyZV9zc29fcmVkaXJlY3QiOnRydWUsImZlYXR1cmVfb25yYW1wIjp0cnVlLCJmZWF0dXJlX2ludGVydmlld193YXJtdXBfdHVybmRvd24iOnRydWUsImZlYXR1cmVfb2F1dGhfcmlzY19zaHV0b2ZmIjp0cnVlLCJmZWF0dXJlX2dhbWlmaWNhdGlvbl9hY2hpZXZlbWVudHMiOnRydWUsImZlYXR1cmVfbGVhcm5pbmdfcGxhbl9zbHVnIjp0cnVlLCJmZWF0dXJlX3Jlcm91dGVfbmV3X2ludGVydmlld193YXJtdXAiOnRydWUsImZlYXR1cmVfZ2NzYm9fZG9tYWluX3JlZGlyZWN0IjpmYWxzZSwiZmVhdHVyZV9jb3Vyc2VfYnVpbGRlciI6ZmFsc2UsImZlYXR1cmVfYW5hbHl0aWNzX3YyIjp0cnVlLCJmZWF0dXJlX2FsZXhhbmRyaWFfc2hvd19idW5kbGVfZXJyb3JzIjpmYWxzZSwiZmVhdHVyZV93aXBlb3V0X2hhcmRfZGVsZXRlIjp0cnVlLCJmZWF0dXJlX3JlbW92ZV9nZHBfc3Vic2NyaXB0aW9uIjp0cnVlLCJmZWF0dXJlX25ld19vcmdfZGFzaGJvYXJkX2Fubm91bmNlbWVudCI6dHJ1ZSwiZmVhdHVyZV9sZWFybmVyX2dyYWNlX3BlcmlvZF91cGdyYWRlIjp0cnVlLCJncm91cF9zdWFkbWlucyI6ZmFsc2UsImdyb3VwX25vbl9zdWFkbWlucyI6dHJ1ZSwiZ3JvdXBfYWRtaW5zIjpmYWxzZSwiZ3JvdXBfdHJhaW5lcnMiOmZhbHNlLCJncm91cF9jb29yZGluYXRvcnMiOmZhbHNlLCJncm91cF9jcmVhdG9ycyI6ZmFsc2UsImdyb3VwX3N0dWRlbnRzIjp0cnVlLCJncm91cF9ub25fb3JnYW5pemF0aW9uIjp0cnVlLCJncm91cF9vcmdhbml6YXRpb25fbWVtYmVycyI6ZmFsc2UsImdyb3VwX25vbl9wcm9ncmFtIjp0cnVlLCJncm91cF9nb29nbGVycyI6ZmFsc2UsImdyb3VwX0NMUyI6ZmFsc2UsImdyb3VwX2VuZ19wcm9kdWN0IjpmYWxzZSwiZ3JvdXBfZ2FtaWZpY2F0aW9uX2JldGFfdGVzdGVycyI6ZmFsc2V9'));
+  properties.event = 'user_properties';
+  dataLayer.push(properties);
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    if (arguments[0] === 'event') {
+      dataLayer.push({ event: arguments[1], eventParams: arguments[2] }, { eventParams: undefined });
+    } else {
+      dataLayer.push(arguments);
+    }
+  }
+  let gtmLoaded = false;
+  function glueCookieNotificationBarLoaded() {
+    if (!gtmLoaded) {
+      dataLayerInit(
+        true,
+        false,
+        false,
+        false,
+        'googlecourses-run'
+      );
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer',"GTM-MBRHNDG7");
+      pushPageEvent();
+      if (typeof sessEvent !== 'undefined') {
+        pushSessionEvent(sessEvent, sessLoginStatus, sessPreviousPath);
+      }
+      gtmLoaded = true;
+    }
+  }
+</script>
+<script src="https://cdn.qwiklabs.com/assets/hallofmirrors/polyfills/webcomponents-loader-2e147cb1679d97581f981243bfc2d1c03dc34a58.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/head_scripts-78121e337319c81329ed63eb61196ea57f74a57d.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/vendor-1c75122c864db561eb016ef97dbd4eb4a740856f.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/application-dead4bf42fbe04af9d9df4ca8fefdab402381cae.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/hallofmirrors/hallofmirrors-0d9e371f16bc8d60c9fe97f762235a10788b8192.js"></script>
+<script src="https://cdn.qwiklabs.com/nk_components/1.1.42/index.js"></script>
+<script src="https://support.google.com/inapp/api.js"></script>
+
+
+<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="W9Dz-l6jwrjIEQNjIw5RoQE1AyyeY8m4oz1tFShSZC25XdxzWC48y51_A9-X_NwphwMuhu_gYej3Nqk3eTG53w" />
+<meta content='width=device-width, initial-scale=1.0, user-scalable=yes' name='viewport'>
+<meta content='1rRsY0INj8RvwB5EF5pwdxt2A2P9aDgAlsICaJ0d5w0' name='google-site-verification'>
+<meta content='#3681E4' property='msapplication-TileColor'>
+<meta content='/super_G_optimized.png' property='msapplication-TileImage'>
+<meta content='{&quot;userId&quot;:59217135,&quot;experimentIds&quot;:[&quot;auto_upgrade_game_labs&quot;,&quot;docebo_ux&quot;,&quot;relaunch_for_sso&quot;,&quot;dialog_queue&quot;,&quot;landing_page&quot;,&quot;innovator_gear_sign_in&quot;,&quot;docebo_sync&quot;,&quot;relaunch_collection_ai&quot;,&quot;entity_api_keys&quot;,&quot;course_exams&quot;,&quot;switch_path_and_explore_headers&quot;,&quot;credly&quot;,&quot;experimentation&quot;,&quot;search_async&quot;,&quot;credly_integration_announcement_modal&quot;,&quot;search_suggestions&quot;,&quot;banner_breadcrumbs&quot;,&quot;one_tap&quot;,&quot;search_autocomplete&quot;,&quot;front_door_landing_page&quot;,&quot;cache_explore_page_result&quot;,&quot;alexandria_subscriptions_pagination&quot;,&quot;canonical_domain_redirect&quot;,&quot;use_mosaic&quot;,&quot;challenge_lab_fast_track&quot;,&quot;quota_service_use_lua&quot;,&quot;search_sort_by&quot;,&quot;google_dev_payment&quot;,&quot;use_docebo_features&quot;,&quot;new_program_dashboard&quot;,&quot;org_invite_link&quot;,&quot;hide_unpopular_filters&quot;,&quot;feedback&quot;,&quot;mosaic_skills_lab_recommendation&quot;,&quot;gwg_paid_chip&quot;,&quot;in_context_all_labs&quot;,&quot;gwg_catalog&quot;,&quot;show_new_course_exams&quot;,&quot;gamification_streaks&quot;,&quot;chime_use_abuse_details&quot;,&quot;discovery_lab_duration_estimate&quot;,&quot;gamification&quot;,&quot;gamification_xp&quot;,&quot;docebo_sync_org_support&quot;,&quot;cdn_fonts&quot;,&quot;lab_page_redesign&quot;,&quot;learning_plan_search&quot;,&quot;relaunch&quot;,&quot;new_org_dashboard&quot;,&quot;relaunch_extra&quot;,&quot;zendesk_to_cases&quot;,&quot;show_org_catalog_button&quot;,&quot;innovator_sign_in&quot;,&quot;relaunch_grid_list&quot;,&quot;one_stop_hub&quot;,&quot;relaunch_subscriptions&quot;,&quot;gamification_leagues&quot;,&quot;next_2026_collections&quot;,&quot;in_context_view&quot;,&quot;gamification_leaderboards&quot;,&quot;gamification_ui_data&quot;,&quot;dashboard_jobs&quot;,&quot;subscription_ux&quot;,&quot;catalog_filters_button&quot;,&quot;catalog_filter_chips&quot;,&quot;sitemap_poc&quot;,&quot;gamification_ui&quot;,&quot;sso_redirect&quot;,&quot;onramp&quot;,&quot;interview_warmup_turndown&quot;,&quot;oauth_risc_shutoff&quot;,&quot;gamification_achievements&quot;,&quot;learning_plan_slug&quot;,&quot;reroute_new_interview_warmup&quot;,&quot;analytics_v2&quot;,&quot;wipeout_hard_delete&quot;,&quot;remove_gdp_subscription&quot;,&quot;new_org_dashboard_announcement&quot;,&quot;learner_grace_period_upgrade&quot;]}' name='help-api-product-data'>
+<meta content='{&quot;groupIds&quot;:[&quot;non_suadmins&quot;,&quot;students&quot;,&quot;non_organization&quot;,&quot;non_program&quot;]}' name='help-api-custom-data'>
+<meta content='Learn how to assess a customer&#39;s existing environment, and import data collected from Azure/AWS infrastructure. Generate inventory, performance, network dependencies and financial reports such as TCO (total cost analysis) and DPR (detailed pricing) reports.' name='description'>
+<meta content='Google Skills for Partners' name='author'>
+<meta content='https://partner.skills.google/focuses/104653' property='og:url'>
+<meta content='Introduction to Migration Center Servers Assessments | Google Skills for Partners' property='og:title'>
+<meta content='website' property='og:type'>
+<meta content='/super_G_optimized.png' property='og:image'>
+<meta content='1200' property='og:image:width'>
+<meta content='630' property='og:image:height'>
+<meta content='image/png' property='og:image:type'>
+<meta content='Google Skills for Partners' property='og:site_name'>
+<meta content='Learn how to assess a customer&#39;s existing environment, and import data collected from Azure/AWS infrastructure. Generate inventory, performance, network dependencies and financial reports such as TCO (total cost analysis) and DPR (detailed pricing) reports.' property='og:description'>
+
+
+<link href='https://cdn.qwiklabs.com/Vag5GK2J6rS6843Qvg8TQJ1kEbAsEmQoF0%2BdLRfcLRE%3D' rel='icon' type='image/x-icon'>
+<link href='https://partner.skills.google/focuses/104653' rel='canonical'>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald:400|Roboto+Mono:400,700|Roboto:300,400,500,700|Google+Sans:300,400,500,700|Google+Sans+Display:400|Google+Sans+Text:400,500,700" />
+
+<link rel="stylesheet" href="https://cdn.qwiklabs.com/assets/application-769679dafdae6549190c528621de82b2bee355f0.css" media="all" />
+<link rel="stylesheet" href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css" />
+
+
+<style>
+  :root {
+    --primary-text-on-surface-color: #355d9c;
+    --primary-text-on-surface-color-dark: #2f538b;
+    --primary-text-on-surface-color-darker: #29497a;
+    --primary-text-on-surface-color-darkest: #243e69;
+    --primary-surface-color: #586d8d;
+    --primary-surface-color-rgb: 88,109,141;
+    --primary-surface-color-light: #e0e4eb;
+    --primary-surface-color-lightest: #eff2f5;
+    --text-on-primary-color: #ffffff;
+    --accent-text-on-surface-color: #f000e8;
+    --accent-surface-color: #f9ab00;
+    --accent-surface-color-rgb: 249,171,0;
+    --accent-surface-color-light: #ffefcc;
+    --text-on-accent-color: #000000;
+  }
+</style>
+
+
+
+</head>
+<body class='lab-show l-full relaunch lab-page-redesign learner-layout-body relaunch '>
+<ql-drawer-container class='body-container' relaunch>
+<div class='sticky' slot='header'>
+<ql-toolbar class='app-toolbar' jumpEnabled role='banner'>
+<div class='toolbar-navigation' slot='navigation'>
+<ql-toggle-button animatedToggle="true" expandable="true" for="app-nav" onIcon="menu_open" offIcon="menu" label="Menu" class="always-show" data-tooltip-text="Menu"></ql-toggle-button>
+</div>
+<div class='toolbar-title gs-logo' slot='title'>
+<a class="custom-logo" aria-label="Google Skills for Partners" href="/"><div class="custom-logo"><img alt="Google Skills for Partners" height="24" aria-label="Google Skills for Partners" src="https://cdn.qwiklabs.com/lqJbxogu4tSLez1OvjDcIO8rwow6cPLwvrfIdmQLf6U%3D" /></div></a>
+
+<div class='header-tag'>
+Partner
+</div>
+</div>
+<div class='search-bar tablet-hide' slot='search'></div>
+<div class='toolbar-actions' slot='action'>
+<ql-icon-button class='mobile-hide' data-tooltip-text='Share' icon='share' id='share_31644' label='Share on social media'></ql-icon-button>
+<ql-menu class='social-share-menu' for='share_31644'>
+<ql-menu-item data-analytics-action='Shared to LinkedIn Feed.' data-analytics-category='Lab' data-analytics-label='Introduction to Migration Center Servers Assessments' href='https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fpartner.skills.google%2Fcatalog_lab%2F31644%3Futm_medium%3Dsocial%26utm_source%3Dlinkedin%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_linkedin-a277effb6f261f5d3b8ad0fc692fb0025ff82eaf.png' label='Share on LinkedIn Feed' role='link' target='_blank'>
+<span class='label'>Share on LinkedIn Feed</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to X.' data-analytics-category='Lab' data-analytics-label='Introduction to Migration Center Servers Assessments' href='https://x.com/intent/tweet?text=Learn%20cloud%20tech%20through%20hands-on%20training%20on%20%23GoogleSkills%21&amp;url=https%3A%2F%2Fpartner.skills.google%2Fcatalog_lab%2F31644%3Futm_medium%3Dsocial%26utm_source%3Dx%26utm_campaign%3Dql-social-share&amp;hashtags=' iconSrc='https://cdn.qwiklabs.com/assets/logo_x-2abcf45e0673a8f244a6b686ea7f0189457d4fe3.png' label='X' role='link' target='_blank'>
+<span class='label'>X</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to Facebook.' data-analytics-category='Lab' data-analytics-label='Introduction to Migration Center Servers Assessments' href='https://facebook.com/sharer.php?display=popup&amp;u=https%3A%2F%2Fpartner.skills.google%2Fcatalog_lab%2F31644%3Futm_medium%3Dsocial%26utm_source%3Dfacebook%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_facebook-5ccdec05e255be16449f837fff607b6d33ae9b87.png' label='Facebook' role='link' target='_blank'>
+<span class='label'>Facebook</span>
+</ql-menu-item>
+
+<ql-copyable-input label='Share Link' value='https://partner.skills.google/catalog_lab/31644'></ql-copyable-input>
+
+</ql-menu>
+
+<ql-icon-button id='control-panel-target' style='display: none;'>
+dashboard
+</ql-icon-button>
+<ql-menu for='control-panel-target' id='control-panel-menu'></ql-menu>
+
+
+<div class='toolbar-actions__points mobile-hide'>
+<ql-user-points data-tooltip-text='Experience points' points='8407'></ql-user-points>
+</div>
+<div class='toolbar-actions__streak-count mobile-hide' data-tooltip-text='Current streak count'>
+<img alt="Current streak count" src="https://cdn.qwiklabs.com/assets/gamification/streak_icon-21476b37c13f49828a5aaa2d86c4d3378cca4117.svg" />
+<div class='ql-body-large count-label'>1</div>
+</div>
+<ql-icon-button class='mobile-hide' data-tooltip-text='Help' icon='help_outline' id='help-menu-button' label='Help options'></ql-icon-button>
+<ql-menu for='help-menu-button' id='help-menu'>
+<ql-menu-item data-analytics-action='opened_help' data-analytics-label='lab' label='Help Center' onclick='hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:59217135},&quot;context&quot;:&quot;lab&quot;})'></ql-menu-item>
+<ql-menu-item href='https://support.google.com/qwiklabs/contact/Google_Skills_Partner' label='Contact Us' target='_blank'></ql-menu-item>
+<ql-menu-item href='https://reportingwidget.google.com/widget/54?cid=1&amp;url=https://partner.skills.google/focuses/104653?' label='Report Illegal Content'></ql-menu-item>
+</ql-menu>
+
+<ql-icon-button class='mobile-hide' data-tooltip-text='Language' icon='language' id='language' label='Language options'></ql-icon-button>
+<ql-menu for='language'>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ar' href='/focuses/104653?locale=ar&amp;parent=catalog&amp;path=4343' label='العربية‬‎' lang='ar'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='de' href='/focuses/104653?locale=de&amp;parent=catalog&amp;path=4343' label='Deutsch' lang='de'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='en' href='/focuses/104653?locale=en&amp;parent=catalog&amp;path=4343' label='English' lang='en'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='es' href='/focuses/104653?locale=es&amp;parent=catalog&amp;path=4343' label='español (Latinoamérica)' lang='es'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr' href='/focuses/104653?locale=fr&amp;parent=catalog&amp;path=4343' label='français' lang='fr'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr_CA' href='/focuses/104653?locale=fr_CA&amp;parent=catalog&amp;path=4343' label='français (Canada)' lang='fr-CA'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='he' href='/focuses/104653?locale=he&amp;parent=catalog&amp;path=4343' label='עברית' lang='he'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='id' href='/focuses/104653?locale=id&amp;parent=catalog&amp;path=4343' label='bahasa Indonesia' lang='id'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='it' href='/focuses/104653?locale=it&amp;parent=catalog&amp;path=4343' label='italiano' lang='it'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ja' href='/focuses/104653?locale=ja&amp;parent=catalog&amp;path=4343' label='日本語' lang='ja'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ko' href='/focuses/104653?locale=ko&amp;parent=catalog&amp;path=4343' label='한국어' lang='ko'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pl' href='/focuses/104653?locale=pl&amp;parent=catalog&amp;path=4343' label='polski' lang='pl'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_BR' href='/focuses/104653?locale=pt_BR&amp;parent=catalog&amp;path=4343' label='português (Brasil)' lang='pt-BR'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_PT' href='/focuses/104653?locale=pt_PT&amp;parent=catalog&amp;path=4343' label='português (Portugal)' lang='pt-PT'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ru' href='/focuses/104653?locale=ru&amp;parent=catalog&amp;path=4343' label='русский' lang='ru'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='tr' href='/focuses/104653?locale=tr&amp;parent=catalog&amp;path=4343' label='Türkçe' lang='tr'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='uk' href='/focuses/104653?locale=uk&amp;parent=catalog&amp;path=4343' label='українська' lang='uk'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh' href='/focuses/104653?locale=zh&amp;parent=catalog&amp;path=4343' label='简体中文' lang='zh'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh_TW' href='/focuses/104653?locale=zh_TW&amp;parent=catalog&amp;path=4343' label='繁體中文' lang='zh-TW'></ql-menu-item>
+</ql-menu>
+
+<ql-icon-button aria-expanded='false' aria-haspopup aria-label='More options' class='mobile-show' data-toggle='tooltip' icon='more_vert' id='mobile-more-menu-button' title='More options'></ql-icon-button>
+<ql-menu for='mobile-more-menu-button' id='mobile-more-menu'>
+<ql-menu-item aria-controls='share-submenu' aria-expanded='false' aria-haspopup='true' id='share_mobile_31644' label='Share' role='button' tabindex='0'></ql-menu-item>
+
+
+<ql-menu-item aria-controls='help-submenu' aria-expanded='false' aria-haspopup='true' id='help-submenu-button' label='Help' role='button' tabindex='0'></ql-menu-item>
+<ql-menu-item aria-controls='language-submenu' aria-expanded='false' aria-haspopup='true' id='language-submenu-button' label='Language' role='button' tabindex='0'></ql-menu-item>
+</ql-menu>
+<ql-menu class='submenu' for='share_mobile_31644' id='share-submenu'>
+<ql-menu-item data-analytics-action='Shared to LinkedIn Feed.' data-analytics-category='Lab' data-analytics-label='Introduction to Migration Center Servers Assessments' href='https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fpartner.skills.google%2Fcatalog_lab%2F31644%3Futm_medium%3Dsocial%26utm_source%3Dlinkedin%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_linkedin-a277effb6f261f5d3b8ad0fc692fb0025ff82eaf.png' label='Share on LinkedIn Feed' role='link' target='_blank'>
+<span class='label'>Share on LinkedIn Feed</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to X.' data-analytics-category='Lab' data-analytics-label='Introduction to Migration Center Servers Assessments' href='https://x.com/intent/tweet?text=Learn%20cloud%20tech%20through%20hands-on%20training%20on%20%23GoogleSkills%21&amp;url=https%3A%2F%2Fpartner.skills.google%2Fcatalog_lab%2F31644%3Futm_medium%3Dsocial%26utm_source%3Dx%26utm_campaign%3Dql-social-share&amp;hashtags=' iconSrc='https://cdn.qwiklabs.com/assets/logo_x-2abcf45e0673a8f244a6b686ea7f0189457d4fe3.png' label='X' role='link' target='_blank'>
+<span class='label'>X</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to Facebook.' data-analytics-category='Lab' data-analytics-label='Introduction to Migration Center Servers Assessments' href='https://facebook.com/sharer.php?display=popup&amp;u=https%3A%2F%2Fpartner.skills.google%2Fcatalog_lab%2F31644%3Futm_medium%3Dsocial%26utm_source%3Dfacebook%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_facebook-5ccdec05e255be16449f837fff607b6d33ae9b87.png' label='Facebook' role='link' target='_blank'>
+<span class='label'>Facebook</span>
+</ql-menu-item>
+
+<ql-copyable-input label='Share Link' value='https://partner.skills.google/catalog_lab/31644'></ql-copyable-input>
+
+</ql-menu>
+
+<ql-menu class='submenu' for='help-submenu-button' id='help-submenu'>
+<ql-menu-item data-analytics-action='opened_help' data-analytics-label='lab' label='Help Center' onclick='hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:59217135},&quot;context&quot;:&quot;lab&quot;})'></ql-menu-item>
+<ql-menu-item href='https://support.google.com/qwiklabs/contact/Google_Skills_Partner' label='Contact Us' target='_blank'></ql-menu-item>
+<ql-menu-item href='https://reportingwidget.google.com/widget/54?cid=1&amp;url=https%3A%2F%2Fpartner.skills.google%2Ffocuses%2F104653%3F' label='Report Illegal Content'></ql-menu-item>
+</ql-menu>
+<ql-menu class='submenu' for='language-submenu-button' id='language-submenu'>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ar' href='/focuses/104653?locale=ar&amp;parent=catalog&amp;path=4343' label='العربية‬‎' lang='ar' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='de' href='/focuses/104653?locale=de&amp;parent=catalog&amp;path=4343' label='Deutsch' lang='de' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='en' href='/focuses/104653?locale=en&amp;parent=catalog&amp;path=4343' label='English' lang='en' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='es' href='/focuses/104653?locale=es&amp;parent=catalog&amp;path=4343' label='español (Latinoamérica)' lang='es' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr' href='/focuses/104653?locale=fr&amp;parent=catalog&amp;path=4343' label='français' lang='fr' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr_CA' href='/focuses/104653?locale=fr_CA&amp;parent=catalog&amp;path=4343' label='français (Canada)' lang='fr-CA' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='he' href='/focuses/104653?locale=he&amp;parent=catalog&amp;path=4343' label='עברית' lang='he' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='id' href='/focuses/104653?locale=id&amp;parent=catalog&amp;path=4343' label='bahasa Indonesia' lang='id' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='it' href='/focuses/104653?locale=it&amp;parent=catalog&amp;path=4343' label='italiano' lang='it' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ja' href='/focuses/104653?locale=ja&amp;parent=catalog&amp;path=4343' label='日本語' lang='ja' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ko' href='/focuses/104653?locale=ko&amp;parent=catalog&amp;path=4343' label='한국어' lang='ko' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pl' href='/focuses/104653?locale=pl&amp;parent=catalog&amp;path=4343' label='polski' lang='pl' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_BR' href='/focuses/104653?locale=pt_BR&amp;parent=catalog&amp;path=4343' label='português (Brasil)' lang='pt-BR' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_PT' href='/focuses/104653?locale=pt_PT&amp;parent=catalog&amp;path=4343' label='português (Portugal)' lang='pt-PT' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ru' href='/focuses/104653?locale=ru&amp;parent=catalog&amp;path=4343' label='русский' lang='ru' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='tr' href='/focuses/104653?locale=tr&amp;parent=catalog&amp;path=4343' label='Türkçe' lang='tr' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='uk' href='/focuses/104653?locale=uk&amp;parent=catalog&amp;path=4343' label='українська' lang='uk' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh' href='/focuses/104653?locale=zh&amp;parent=catalog&amp;path=4343' label='简体中文' lang='zh' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh_TW' href='/focuses/104653?locale=zh_TW&amp;parent=catalog&amp;path=4343' label='繁體中文' lang='zh-TW' role='menuitem'></ql-menu-item>
+</ql-menu>
+
+<ql-icon-button data-tooltip-text='My account' id='my_account' label='My account'>
+<ql-avatar></ql-avatar>
+</ql-icon-button>
+<ql-menu for='my_account' id='my_account_menu'>
+<div class='learner-profile-account-menu my-account-menu'>
+<div class='learner-profile-account-menu__notifications'>
+</div>
+<div class='learner-profile-account-menu__profile'>
+<ql-avatar size='88'></ql-avatar>
+<div class='learner-profile-account-menu__metadata'>
+<h4 class='ql-title-large'>Sam Dinh</h4>
+<p class='ql-body-medium text--light'>
+</p>
+<div class='ql-body-medium l-mbs'>Member since 2024</div>
+</div>
+</div>
+<div class='learner-profile-account-menu__options'>
+<ql-button href='/' icon='dashboard' label='Dashboard' text></ql-button>
+<ql-button href='/profile/activity' icon='lists' label='Progress' text></ql-button>
+<ql-button href='/my_account/profile' icon='settings' label='Settings' text></ql-button>
+<ql-button data-analytics-action='clicked_sign_out' href='/users/sign_out' icon='logout' label='Sign Out' method='delete' text></ql-button>
+</div>
+<div class='learner-profile-account-menu__footer'>
+<ql-button href='/privacy_policy' label='Privacy' target='_blank' text></ql-button>
+<ql-button href='/terms_of_service' label='Terms' text></ql-button>
+</div>
+</div>
+</ql-menu>
+
+
+
+</div>
+</ql-toolbar>
+</div>
+<ql-drawer aria-label='Application Navigation' id='app-nav' openWidth='15' relaunch responsive='768' slot='drawer' width='6' widthUnit='rem'>
+<nav class='ql-sidenav relaunch'>
+<ql-fab class='navrail-search-button' data-analytics-action='click_button' data-analytics-button-text='Search' data-analytics-label='Search' data-analytics-position='application_sidenav' data-analytics-type='eventParams' expandable icon='search' label='Search'></ql-fab>
+<ql-sidenav-item href='/' icon='dashboard' label='Dashboard' onclick='ql.track(&#39;navigation&#39;, {&quot;legacyEventName&quot;:&quot;click_sidenav_item&quot;,&quot;position&quot;:&quot;application_sidenav&quot;,&quot;linkUrl&quot;:&quot;/&quot;,&quot;buttonText&quot;:&quot;Dashboard&quot;,&quot;label&quot;:&quot;Dashboard&quot;})' relaunch>
+
+</ql-sidenav-item>
+
+<ql-sidenav-item active href='/catalog' icon='book_2' iconFill label='Catalog' onclick='ql.track(&#39;navigation&#39;, {&quot;legacyEventName&quot;:&quot;click_sidenav_item&quot;,&quot;position&quot;:&quot;application_sidenav&quot;,&quot;linkUrl&quot;:&quot;/catalog&quot;,&quot;buttonText&quot;:&quot;Catalog&quot;,&quot;label&quot;:&quot;Catalog&quot;})' relaunch>
+
+</ql-sidenav-item>
+
+<ql-sidenav-item href='/paths' icon='conversion_path' label='Paths' onclick='ql.track(&#39;navigation&#39;, {&quot;legacyEventName&quot;:&quot;click_sidenav_item&quot;,&quot;position&quot;:&quot;application_sidenav&quot;,&quot;linkUrl&quot;:&quot;/paths&quot;,&quot;buttonText&quot;:&quot;Paths&quot;,&quot;label&quot;:&quot;Paths&quot;})' relaunch>
+
+</ql-sidenav-item>
+
+</nav>
+
+</ql-drawer>
+<ql-drawer-content class='body-content' slot='drawer-content'>
+<div class='banner'>
+<div id='callout-container'>
+</div>
+
+</div>
+<div class='page-header'>
+<div class='page-main-banner'>
+<div class='page-main-banner-breadcrumbs'>
+<nav aria-label='Breadcrumb' class='breadcrumbs-container' role='navigation'>
+<ol>
+<li class='breadcrumb-item ql-label-medium'>
+<ql-icon-button href='/' icon='home_filled' iconFill></ql-icon-button>
+
+<ql-icon class='breadcrumb-arrow'>navigate_next</ql-icon>
+</li>
+<li class='breadcrumb-item ql-label-medium'>
+<a href="/paths/4343">[DABE] Migrate virtual machines from on-premises environments to Google Cloud</a>
+<ql-icon class='breadcrumb-arrow'>navigate_next</ql-icon>
+</li>
+<li class='breadcrumb-item ql-label-medium' tabindex='0'>
+Introduction to Migration Center Servers Assessments
+</li>
+</ol>
+</nav>
+
+</div>
+</div>
+
+</div>
+<main id='jump-content' tabindex='-1'>
+
+
+
+
+
+<div class='lab-assessment__tab js-open-lab-assessment-panel'>
+<button class='js-lab-assessment-total-score'>
+—/100
+</button>
+</div>
+<div aria-labelledby='lab-assessment-checkpoint' class='lab-assessment__panel js-lab-assessment-panel' role='dialog'>
+<div class='lab-assessment__panel__header'>
+<h4 id='lab-assessment-checkpoint'>Checkpoints</h4>
+<ql-icon-button class='js-close-lab-assessment-panel' icon='arrow_forward' label='Close dialog'></ql-icon-button>
+</div>
+<div class='lab-assessment__step'>
+<p class='lab-assessment__step__title ql-title-small' id='lab-assessment-step-title'>
+Verify MC discovery client was created and activated.
+</p>
+<div class='lab-assessment__step__action'>
+<ql-button aria-label='Check my progress for Verify MC discovery client was created and activated.' class='js-show-run-step-button' data-analytics-action='check_progress_results' data-analytics-position='lab_assessment_panel' description='Verify MC discovery client was created and activated.' step_no='1'>
+Check my progress
+</ql-button>
+<p class='lab-assessment__step__score ql-title-small'>
+<span class='js-assessment-step-score-1'>
+</span>
+/ 40
+</p>
+</div>
+</div>
+
+<div class='lab-assessment__step'>
+<p class='lab-assessment__step__title ql-title-small' id='lab-assessment-step-title'>
+Verify collection is configured and data is transmitted to Migration Center.
+</p>
+<div class='lab-assessment__step__action'>
+<ql-button aria-label='Check my progress for Verify collection is configured and data is transmitted to Migration Center.' class='js-show-run-step-button' data-analytics-action='check_progress_results' data-analytics-position='lab_assessment_panel' description='Verify collection is configured and data is transmitted to Migration Center.' step_no='2'>
+Check my progress
+</ql-button>
+<p class='lab-assessment__step__score ql-title-small'>
+<span class='js-assessment-step-score-2'>
+</span>
+/ 30
+</p>
+</div>
+</div>
+
+<div class='lab-assessment__step'>
+<p class='lab-assessment__step__title ql-title-small' id='lab-assessment-step-title'>
+Verify AWS file was imported successfully.
+</p>
+<div class='lab-assessment__step__action'>
+<ql-button aria-label='Check my progress for Verify AWS file was imported successfully.' class='js-show-run-step-button' data-analytics-action='check_progress_results' data-analytics-position='lab_assessment_panel' description='Verify AWS file was imported successfully.' step_no='3'>
+Check my progress
+</ql-button>
+<p class='lab-assessment__step__score ql-title-small'>
+<span class='js-assessment-step-score-3'>
+</span>
+/ 30
+</p>
+</div>
+</div>
+
+</div>
+<ql-drawer-container class='js-lab-state' data-analytics-payload='{&quot;label&quot;:&quot;Introduction to Migration Center Servers Assessments&quot;,&quot;lab_name&quot;:&quot;Introduction to Migration Center Servers Assessments&quot;,&quot;classroom_name&quot;:null,&quot;deployment&quot;:&quot;googlecourses-run&quot;}' data-credits='0.0' data-focus-id='104653' data-lab-duration='5400' data-learning-plan-id='4343' data-parent='catalog' data-recaptcha-enabled id='lab-container'>
+<script src="https://www.recaptcha.net/recaptcha/api.js?render=6LeVI8IUAAAAAJNdox5eTkYrw9SbvhZ1TFyv3iHr"   ></script>
+        <script>
+          // Define function so that we can call it again later if we need to reset it
+          // This executes reCAPTCHA and then calls our callback.
+          function executeRecaptchaForStartLab() {
+            grecaptcha.ready(function() {
+              grecaptcha.execute('6LeVI8IUAAAAAJNdox5eTkYrw9SbvhZ1TFyv3iHr', {action: 'start_lab'}).then(function(token) {
+                setInputWithRecaptchaResponseTokenForStartLab('g-recaptcha-response-data-start-lab', token)
+              });
+            });
+          };
+          // Invoke immediately
+          executeRecaptchaForStartLab()
+
+          // Async variant so you can await this function from another async function (no need for
+          // an explicit callback function then!)
+          // Returns a Promise that resolves with the response token.
+          async function executeRecaptchaForStartLabAsync() {
+            return new Promise((resolve, reject) => {
+             grecaptcha.ready(async function() {
+                resolve(await grecaptcha.execute('6LeVI8IUAAAAAJNdox5eTkYrw9SbvhZ1TFyv3iHr', {action: 'start_lab'}))
+              });
+            })
+          };
+
+                  var setInputWithRecaptchaResponseTokenForStartLab = function(id, token) {
+          var element = document.getElementById(id);
+          if (element !== null) element.value = token;
+        }
+
+        </script>
+<input type="hidden" name="g-recaptcha-response-data[start_lab]" id="g-recaptcha-response-data-start-lab" data-sitekey="6LeVI8IUAAAAAJNdox5eTkYrw9SbvhZ1TFyv3iHr" class="g-recaptcha g-recaptcha-response "/>
+
+<ql-drawer id='terminal-drawer' slot='drawer'>
+<iframe allow='clipboard-read' class='terminal' id='embedded-resource'></iframe>
+</ql-drawer>
+<ql-drawer-content class='js-lab-wrapper' id='lab-content' slot='drawer-content'>
+<ql-drawer-container id='lab-content-container'>
+<ql-drawer-content id='lab-instructions' slot='drawer-content'>
+<div class='lab-content-container'>
+<div class='alert alert--fake js-alert'>
+<p class='alert__message js-alert-message' role='alert'></p>
+<ql-icon-button class='alert__close js-alert-close' icon='clear'></ql-icon-button>
+<iframe class='l-ie-iframe-fix' tabindex='-1'></iframe>
+</div>
+<div class='lab-content__renderable-instructions js-lab-content'>
+<ql-lab-header chips='[&quot;No cost&quot;,&quot;1 hour 10 minutes&quot;,&quot;Intermediate&quot;,&quot;Updated 5 days ago&quot;,&quot;ID: GSP1255&quot;]' class='js-lab-control-panel' connectionFiles='[]' currentPoints='0' labContentItems='[{&quot;id&quot;:&quot;step1&quot;,&quot;title&quot;:&quot;GSP1255&quot;},{&quot;id&quot;:&quot;step2&quot;,&quot;title&quot;:&quot;Overview&quot;},{&quot;id&quot;:&quot;step3&quot;,&quot;title&quot;:&quot;Setup and requirements&quot;},{&quot;id&quot;:&quot;step4&quot;,&quot;title&quot;:&quot;Task 1. Download the Migration Center Discovery Client (MCDCv6)&quot;},{&quot;id&quot;:&quot;step5&quot;,&quot;title&quot;:&quot;Task 2. Install MC Discovery Client&quot;},{&quot;id&quot;:&quot;step6&quot;,&quot;title&quot;:&quot;Task 3. Login to Migration Center&quot;},{&quot;id&quot;:&quot;step7&quot;,&quot;title&quot;:&quot;Task 4. Configure asset collection&quot;},{&quot;id&quot;:&quot;step8&quot;,&quot;title&quot;:&quot;Task 5. Import AWS data&quot;},{&quot;id&quot;:&quot;step9&quot;,&quot;title&quot;:&quot;Task 6. Review data in Migration Center&quot;},{&quot;id&quot;:&quot;step10&quot;,&quot;title&quot;:&quot;Task 7. Generate Inventory and Performance data report&quot;},{&quot;id&quot;:&quot;step11&quot;,&quot;title&quot;:&quot;Task 8. Generate TCO Report (Optional)&quot;},{&quot;id&quot;:&quot;step12&quot;,&quot;title&quot;:&quot;Task 9. Generate Network Dependencies report (Optional)&quot;},{&quot;id&quot;:&quot;step13&quot;,&quot;title&quot;:&quot;Congratulations!&quot;}]' labControlButton='{&quot;disabled&quot;:false,&quot;pending&quot;:false,&quot;running&quot;:false}' labDetails='[]' labTimer='{&quot;ticking&quot;:false,&quot;secondsRemaining&quot;:5400,&quot;totalDurationSeconds&quot;:5400}' labTitle='Introduction to Migration Center Servers Assessments' provisioning='false' provisioningSecondsRemaining='null' studentResources='[]' totalPoints='100'>
+<div slot='checkpoints'>
+<div class='lab-assessment__step'>
+<p class='lab-assessment__step__title ql-title-small' id='lab-assessment-step-title'>
+Verify MC discovery client was created and activated.
+</p>
+<div class='lab-assessment__step__action'>
+<ql-button aria-label='Check my progress for Verify MC discovery client was created and activated.' class='js-show-run-step-button' data-analytics-action='check_progress_results' data-analytics-position='lab_assessment_panel' description='Verify MC discovery client was created and activated.' step_no='1'>
+Check my progress
+</ql-button>
+<p class='lab-assessment__step__score ql-title-small'>
+<span class='js-assessment-step-score-1'>
+</span>
+/ 40
+</p>
+</div>
+</div>
+
+</div>
+<div slot='checkpoints'>
+<div class='lab-assessment__step'>
+<p class='lab-assessment__step__title ql-title-small' id='lab-assessment-step-title'>
+Verify collection is configured and data is transmitted to Migration Center.
+</p>
+<div class='lab-assessment__step__action'>
+<ql-button aria-label='Check my progress for Verify collection is configured and data is transmitted to Migration Center.' class='js-show-run-step-button' data-analytics-action='check_progress_results' data-analytics-position='lab_assessment_panel' description='Verify collection is configured and data is transmitted to Migration Center.' step_no='2'>
+Check my progress
+</ql-button>
+<p class='lab-assessment__step__score ql-title-small'>
+<span class='js-assessment-step-score-2'>
+</span>
+/ 30
+</p>
+</div>
+</div>
+
+</div>
+<div slot='checkpoints'>
+<div class='lab-assessment__step'>
+<p class='lab-assessment__step__title ql-title-small' id='lab-assessment-step-title'>
+Verify AWS file was imported successfully.
+</p>
+<div class='lab-assessment__step__action'>
+<ql-button aria-label='Check my progress for Verify AWS file was imported successfully.' class='js-show-run-step-button' data-analytics-action='check_progress_results' data-analytics-position='lab_assessment_panel' description='Verify AWS file was imported successfully.' step_no='3'>
+Check my progress
+</ql-button>
+<p class='lab-assessment__step__score ql-title-small'>
+<span class='js-assessment-step-score-3'>
+</span>
+/ 30
+</p>
+</div>
+</div>
+
+</div>
+</ql-lab-header>
+
+<div class='lab-preamble__ai_notice'>
+<ql-callout icon='spark' id='ai-notice-31644' severity='info'>
+<div slot='content'>
+This lab may incorporate AI tools to support your learning.
+</div>
+</ql-callout>
+</div>
+<div class='markdown-lab-instructions js-markdown-instructions' id='markdown-lab-instructions'>
+
+<h2 id="step1">GSP1255</h2>
+<img alt="Google Cloud self-paced labs" src="https://cdn.qwiklabs.com/dW94pPHsWo4RxbyHDUVE7oyXDZS3QNm40RnYsQ9Mf2o%3D" width="600">
+
+<h2 id="step2">Overview</h2>
+<p>In this hands-on lab you'll learn how to assess a customer's existing environment and import data collected from Azure/AWS infrastructure.
+You'll generate inventory, Performance and Network Dependencies reports as well as financial reports such as TCO and Licenses reports.</p>
+<p><img alt="Migration center diagram" src="https://cdn.qwiklabs.com/XF42zAxYziqD7gszbl21clxn97%2B0VhNSCy4XdJ0pODs%3D"></p>
+<h3>What you'll do</h3>
+<ul>
+<li>Collect data automatically from an existing environment</li>
+<li>Review data in Migration Center</li>
+<li>Generate various reports</li>
+</ul>
+<ql-infobox><strong>Note: </strong>If you're using a Chromebook or Mac, you will need to use a third-party RDP tool, like <a href="https://www.remotespark.com/view/rdp.html" target="_blank"> Spark View</a>, rather than the RDP button in the Cloud Console.</ql-infobox>
+<h2 id="step3">Setup and requirements</h2>
+<h3>Before you click the Start Lab button</h3>
+<p>Read these instructions. Labs are timed and you cannot pause them. The timer, which starts when you click <strong>Start Lab</strong>, shows how long Google Cloud resources are made available to you.</p>
+<p>This hands-on lab lets you do the lab activities in a real cloud environment, not in a simulation or demo environment. It does so by giving you new, temporary credentials you use to sign in and access Google Cloud for the duration of the lab.</p>
+<p>To complete this lab, you need:</p>
+<ul>
+<li>Access to a standard internet browser (Chrome browser recommended).</li>
+</ul>
+<ql-warningbox>
+<strong>Note:</strong> Use an Incognito (recommended) or private browser window to run this lab. This prevents conflicts between your personal account and the student account, which may cause extra charges incurred to your personal account.
+</ql-warningbox>
+<ul>
+<li>Time to complete the lab—remember, once you start, you cannot pause a lab.</li>
+</ul>
+<ql-warningbox>
+<strong>Note:</strong> Use only the student account for this lab. If you use a different Google Cloud account, you may incur charges to that account.
+</ql-warningbox>
+
+<h3>How to start your lab and sign in to the Google Cloud console</h3>
+<ol>
+<li>
+<p>Click the <strong>Start Lab</strong> button. If you need to pay for the lab, a dialog opens for you to select your payment method.
+On the right is the <strong>Lab setup and access</strong> panel with the following:</p>
+<ul>
+<li>The <strong>Open Google Cloud console</strong> button</li>
+<li>The temporary credentials (username and password) that you must use for this lab</li>
+<li>Other information, if needed, to step through this lab</li>
+</ul>
+<p>Note that the lab timer is located near the top of the page, showing the remaining time.</p>
+</li>
+<li>
+<p>Click <strong>Open Google Cloud console</strong> (or right-click and select <strong>Open Link in Incognito Window</strong> if you are running the Chrome browser).</p>
+<p>The lab spins up resources, and then opens another tab that shows the Sign in page.</p>
+<p><strong><em>Tip:</em></strong> Arrange the tabs in separate windows, side-by-side.</p>
+<ql-infobox>
+<strong>Note: </strong>If you see the <strong>Choose an account</strong> dialog, click <strong>Use Another Account</strong>.        
+ </ql-infobox>
+</li>
+<li>
+<p>If necessary, copy the <strong>Username</strong> below and paste it into the <strong>Sign in</strong> dialog.</p>
+<ql-code-block nowrap templated="">
+ {{{user_0.username | "Username"}}}
+ </ql-code-block>
+<p>You can also find the Username in the <strong>Lab setup and access</strong> panel.</p>
+</li>
+<li>
+<p>Click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>Copy the <strong>Password</strong> below and paste it into the <strong>Welcome</strong> dialog.</p>
+<ql-code-block nowrap templated="">
+ {{{user_0.password | "Password"}}}
+ </ql-code-block>
+<p>You can also find the Password in the <strong>Lab setup and access</strong> panel.</p>
+</li>
+<li>
+<p>Click <strong>Next</strong>.</p>
+<ql-infobox>
+<strong>Important: </strong>You must use the credentials the lab provides you. Do not use your Google Cloud account credentials. 
+ </ql-infobox>
+<ql-warningbox>
+<strong>Note: </strong>Using your own Google Cloud account for this lab may incur extra charges.
+ </ql-warningbox>
+</li>
+<li>
+<p>Click through the subsequent pages:</p>
+<ul>
+<li>Accept the terms and conditions.</li>
+<li>Do not add recovery options or two-factor authentication (because this is a temporary account).</li>
+<li>Do not sign up for free trials.</li>
+</ul>
+</li>
+</ol>
+<p>After a few moments, the Google Cloud console opens in this tab.</p>
+<ql-infobox>
+<strong>Note:</strong> To access Google Cloud products and services, click the <strong>Navigation menu</strong> or type the service or product name in the <strong>Search</strong> field.
+<img alt="Navigation menu icon and Search field" src="https://cdn.qwiklabs.com/9Fk8NYFp3quE9mF%2FilWF6%2FlXY9OUBi3UWtb2Ne4uXNU%3D">
+</ql-infobox>
+
+<p>To begin, you will download and deploy the MC (Migration Center) discovery client in a simulated customer environment created for this purpose in Google Cloud.</p>
+<ol start="8">
+<li>In the Console, from the <strong>Navigation menu (<img alt="Navigation menu icon" src="https://cdn.qwiklabs.com/tkgw1TDgj4Q%2BYKQUW4jUFd0O5OEKlUMBRYbhlCrF0WY%3D">)</strong>, select <strong>Compute Engine</strong> &gt; <strong>VM instances</strong>.</li>
+</ol>
+<p><img alt="The navigation path to the option VM instances." src="https://cdn.qwiklabs.com/foO7d71PDpR44NX1TjLCpezBepu3lr742hCG3YEl7pQ%3D"></p>
+<p>If prompted, select the Google Cloud project assigned to your lab.</p>
+<ol start="9">
+<li>Click the <strong>RDP</strong> button next to the <strong>lab-winvm01</strong> instance.</li>
+</ol>
+<p><img alt="The Instances tabbed page, which includes the highlighted RDP button" src="https://cdn.qwiklabs.com/sk9nWMpHiNPNBbiZzIxl%2FH1f9G6AtgjzmRmQOUKKDFU%3D"></p>
+<ql-infobox><strong>Note: </strong>If you're using a Chromebook or Mac, you will need to use a third-party RDP tool, like <a href="https://www.remotespark.com/view/rdp.html" target="_blank"> Spark View</a>, rather than the RDP button in the Cloud Console.</ql-infobox>
+<ol start="10">
+<li>Use the following credentials to complete the RDP login:</li>
+</ol>
+<table>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>User name</strong></p></td>
+<td colspan="1" rowspan="1"><p>migrationcenter</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Password</strong></p></td>
+<td colspan="1" rowspan="1"><p>m1grat10nc#nt#r</p></td>
+</tr>
+</table>
+<ql-warningbox><strong>Note: </strong>If you have any issues logging in, wait a minute and retry.
+</ql-warningbox>
+<h2 id="step4">Task 1. Download the Migration Center Discovery Client (MCDCv6)</h2>
+<p>In this section, you will access Migration Center Assessments. <strong>Perform all the following steps from the RDP session</strong>.</p>
+<ol>
+<li>
+<p>Open Chrome browser installed on the Windows system you connected to.</p>
+</li>
+<li>
+<p>Browse to the following url to login to Google Cloud:</p>
+</li>
+</ol>
+<ql-code-block language="bash">
+http://console.cloud.google.com
+</ql-code-block>
+<ol start="3">
+<li>
+<p>Authorize with the same lab user that was used in the previous section. User details can be found in the overview, steps 3 to 5 or in the left panel of the Qwiklab.</p>
+</li>
+<li>
+<p>After login is done and GCP console opened, from the <strong>Navigation menu</strong>, click <strong>View All Products</strong> at the bottom of the panel, to open a list of all products.</p>
+</li>
+<li>
+<p>Scroll down to the <strong>Tools</strong> section and click on the <strong>Star</strong> icon next to <strong>Migration Center</strong> to add it to the Favorite products section for quick access.</p>
+</li>
+<li>
+<p>Click the <strong>Migration Center</strong> menu option.</p>
+</li>
+</ol>
+<p><img alt="The highlighted Pin icon within the Tools section of the Migration Center." src="https://cdn.qwiklabs.com/bdY3Hkv3Fi08TGNkgGaQuwAPzDMUJBRlYii2PfoaoQk%3D"></p>
+<ol start="7">
+<li>
+<p>When prompted, select <strong><ql-variable key="project_0.default_region" placeholder=""></ql-variable></strong> from the <strong>Geographical region</strong> dropdown and click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Skip</strong> on the Enter an Expert Request number prompt.</p>
+</li>
+</ol>
+<p><img alt="Skip Expert Request number." src="https://cdn.qwiklabs.com/42qMPVnxRabvuM3%2BaXOxjmoi%2B8smAwyGtHWOKWszxVU%3D"></p>
+<ol start="9">
+<li>Scroll down to the bottom of the screen and click <strong>Next</strong> on the Set Migration preferences prompt.</li>
+</ol>
+<p><img alt="Set Migration preferences defaults." src="https://cdn.qwiklabs.com/a95nbttlN6bWTRCb2qYWjWFjPMQfWNq7me%2Bu7srspTs%3D"></p>
+<p><img alt="Set Migration preferences defaults." src="https://cdn.qwiklabs.com/PX1xSK4oFnncClqW0hfBbQxzXQW8bXshsUxQVCPZCSU%3D"></p>
+<ol start="10">
+<li>
+<p>Click <strong>Continue</strong>.</p>
+</li>
+<li>
+<p>From the <strong>Migration Center</strong> overview dashboard click <strong>Discover Assets</strong>.</p>
+</li>
+</ol>
+<p><img alt="The highlighted Discover assets tile." src="https://cdn.qwiklabs.com/68PN%2B747sZEAk9NAeLvPf52xR262p4GbIYGEyHanAc4%3D"></p>
+<ol start="12">
+<li>Click <strong>Add Data</strong> button.</li>
+</ol>
+<p><img alt="Add Data button." src="https://cdn.qwiklabs.com/loq0mvJNj8QHiyi%2Bz8hejPSOj679RSclySAKB1eVN9E%3D"></p>
+<ol start="13">
+<li>Click <strong>Download discovery client</strong>.</li>
+</ol>
+<p><img alt="Setup Discovery Client V6 button." src="https://cdn.qwiklabs.com/W8tILNDw7Qk8fVobmqX87R1Ocb7nYPrOWryeLE62UzA%3D"></p>
+<ol start="14">
+<li>Download the Discovery Client using a download link from the documentation or by using the direct link below:</li>
+</ol>
+<ql-code-block language="bash">
+https://storage.googleapis.com/mcdc-release/current/windows/mcdc.msi
+</ql-code-block>
+<p>Wait for the download to complete.</p>
+<h2 id="step5">Task 2. Install MC Discovery Client</h2>
+<ol>
+<li>
+<p>Run the Migration Center Discovery Client installer (<strong>mcdc.msi</strong>).</p>
+</li>
+<li>
+<p>Click Next.</p>
+</li>
+<li>
+<p>Select the checkbox to accept the terms in the license agreement, and then click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>Uncheck the <strong>Send diagnostics and usage metrics to Google</strong> and click <strong>Next</strong>.</p>
+</li>
+</ol>
+<p><img alt="Uncheck diagnostics checkbox." src="https://cdn.qwiklabs.com/a8iIDQtuP%2FNlfDT68Io1hv3Ysnu6qbM1ofCIzIIOHp0%3D"></p>
+<ol start="5">
+<li>
+<p>Follow the instructions on the screen using default settings to complete the installation.</p>
+</li>
+<li>
+<p>Click <strong>Yes</strong> when prompted to confirm permitting changes to the system.</p>
+</li>
+</ol>
+<ql-infobox><strong>Note: </strong>Installation takes few minutes to complete.</ql-infobox>
+<p>Once the installation has completed, you will get a popup for restart confirmation. Confirm OS restart and login again using steps 8,9 and 10 from the <strong>Setup and requirements</strong> section. After login you will see a new application shortcut on your desktop.</p>
+<ol start="7">
+<li>
+<p>Use the Google Chrome browser to run the <strong>Migration Center Discovery Client</strong> application. Click the shortcut that was just created.</p>
+</li>
+<li>
+<p>When prompted to confirm user access control click <strong>Yes</strong>.</p>
+</li>
+</ol>
+<p><img alt="The Migration Center Collector highlighted in the Start menu." src="https://cdn.qwiklabs.com/zQokVcwc3fxDV8q%2Br4VXOLOQGT%2BEv%2BxkcRQy4Ivnw7I%3D"></p>
+<h2 id="step6">Task 3. Login to Migration Center</h2>
+<ol>
+<li>
+<p>To start the login process, click <strong>Log in to Migration Center</strong>.</p>
+</li>
+<li>
+<p>Connectivity check should be auto-completed and next step enabled.</p>
+</li>
+<li>
+<p>Under Log in with Google, click <strong>Login with Google</strong>.</p>
+</li>
+<li>
+<p>Follow the instructions on the screen, select the Google account assigned to the lab, then click <strong>Sign In</strong> on the next screen.</p>
+</li>
+</ol>
+<p><img alt="Google login screen." src="https://cdn.qwiklabs.com/E460bUgwOEvKOBfRwkGJDcSjDF3W4wRhq%2B65eQxnbwI%3D"></p>
+<ol start="5">
+<li>Under Choose a Google Cloud Project, click on the project field (<strong>Project *</strong>) and choose your Google Qwiklabs Project from the dropdown list (name starts with <strong>qwiklabs-gcp</strong> ).</li>
+</ol>
+<p><img alt="Choose a Google Cloud Project." src="https://cdn.qwiklabs.com/aU1oQXFCArmmEZv%2BDji%2F2AesExFcC0MvvZltlv0fbKY%3D"></p>
+<ol start="6">
+<li>
+<p>To proceed to the next step, click <strong>Continue</strong>.</p>
+</li>
+<li>
+<p>Click  <strong>Continue</strong> under Add an access key .</p>
+</li>
+<li>
+<p>Under Add a discovery client name, populate a name <strong>mc-discovery-client</strong> to your discovery client.</p>
+</li>
+</ol>
+<ql-infobox><strong>Note:</strong> The Migration Center Discovery client name can be any unique name, but for the sake of this lab, we want to use the fixed name mentioned above.</ql-infobox>
+<ol start="9">
+<li>Click the <strong>Finish</strong> button to complete the login to Migration Center process.</li>
+</ol>
+<p><img alt="Finish login to MC process." src="https://cdn.qwiklabs.com/dVeOUYfZ0mHUiYmRxnwfYcsN9lKbjvQxB9VLKnPeBRA%3D"></p>
+<p>Click <strong>Check my progress</strong> to verify the objective.</p>
+<ql-activity-tracking step="1">
+    Verify MC discovery client has been activated.
+</ql-activity-tracking>
+<h2 id="step7">Task 4. Configure asset collection</h2>
+<p>Once activation completes, the MC Discovery Client overview page will open.</p>
+<ol>
+<li>Click the <strong>Add OS credentials</strong> button at the bottom left corner.</li>
+</ol>
+<p>Multiple credentials can be stored within MC Discovery Client to allow the collector to access systems belonging to different Active Directory domains, or having local accounts, or SSH keys.</p>
+<p><img alt="Add OS credentials button at the overview page." src="https://cdn.qwiklabs.com/1%2F2f95o%2BwfUpAWhonE5jg66HuyVb%2B3s8EZ15M%2FEQGUY%3D"></p>
+<ol start="2">
+<li>Populate the following values to add OS credential:</li>
+</ol>
+<table>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Name for the credentials</strong></p></td>
+<td colspan="1" rowspan="1"><p>Lab</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Select the credential type</strong></p></td>
+<td colspan="1" rowspan="1"><p>Username and Password</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Username</strong></p></td>
+<td colspan="1" rowspan="1"><p>migrationcenter</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Password</strong></p></td>
+<td colspan="1" rowspan="1"><p>m1grat10nc#nt#r</p></td>
+</tr>
+</table>
+<ol start="3">
+<li>Click the <strong>Save</strong> button.</li>
+</ol>
+<p>You will also use user/key authentication to collect on some linux VMs.</p>
+<ol start="4">
+<li>Follow the steps below to securely download your <strong>private key</strong> from Cloud Storage:</li>
+</ol>
+<ul>
+<li>
+<p>Browse to the following url to login to Google Cloud console:</p>
+<ql-code-block language="bash">
+http://console.cloud.google.com
+</ql-code-block>
+</li>
+<li>
+<p>In the top-left corner, click the <strong>☰ Navigation menu</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Cloud Storage</strong> -&gt; <strong>Buckets</strong>.</p>
+</li>
+<li>
+<p>Locate and click the bucket named <strong><ql-variable key="project_0.project_id" placeholder=""></ql-variable></strong></p>
+</li>
+<li>
+<p>Inside the bucket, find the file that ends with <code>.pem</code>.</p>
+</li>
+<li>
+<p>Then click <code>download</code> icon.</p>
+<p><img alt="Pem file download button." src="https://cdn.qwiklabs.com/ESWGs5q3htiUF4nhGTW6%2BKw%2BwpPolMB3tYKJBAuF6qc%3D"></p>
+</li>
+<li>
+<p>The <code>.pem</code> file will download automatically to your computer.</p>
+</li>
+</ul>
+<ol start="5">
+<li>
+<p>After downloading the <code>.pem</code> file, go to the <strong>MC Discovery Client overview</strong> page.</p>
+</li>
+<li>
+<p>Click <strong>Add Credentials</strong> button.</p>
+</li>
+<li>
+<p>Choose <strong>Add OS Credentials</strong> from the available types.</p>
+</li>
+</ol>
+<p><img alt="Add OS Credentials button." src="https://cdn.qwiklabs.com/HxneCz42dB3kHfkGYUuXYo4unAQjIu7lzwTN74Xms6E%3D"></p>
+<ol start="8">
+<li>Use the following values to set up a credential:</li>
+</ol>
+<table>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Name for the credentials</strong></p></td>
+<td colspan="1" rowspan="1"><p>Lab-key</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Select the credential type</strong></p></td>
+<td colspan="1" rowspan="1"><p>SSH Key / Certificate (Linux Only)</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p><strong>Username for this key</strong></p></td>
+<td colspan="1" rowspan="1"><p>Value from "SSH Key User" field in lab instructions (see top left panel)</p></td>
+</tr>
+<tr>
+<td colspan="1" rowspan="1"><p>Click <b>Browse key and certificate</b> button and select the PEM file downloaded in step 4</p></td>
+</tr>
+</table>
+<ol start="9">
+<li>
+<p>Click the <strong>Save</strong> button.</p>
+</li>
+<li>
+<p>From the <strong>Discovery</strong> tab, click <strong>IP addresses</strong>, then click <strong>Add IP addresses</strong> and select <strong>Add ranges manually</strong> from the dropdown.</p>
+</li>
+</ol>
+<p>IP address range scan allows for discovery of assets across the network.</p>
+<p><img alt="The highlighted option Add IP ranges manually." src="https://cdn.qwiklabs.com/41MEyXPek2Ev5JA7nFgFbAcE8qMWBAB01NX%2FpkOuW3I%3D"></p>
+<ol start="11">
+<li>On the scan warning screen checking the <strong>I agree</strong> box and clicking <strong>Accept</strong>.</li>
+</ol>
+<ql-warningbox><strong>Important:</strong> Make a note of the Internal IP address configured for the lab VM Instances (e.g. 10.128.0.2). You will use the first three octets in the bulk scan.</ql-warningbox>
+<p><img alt="The highlighted IP addresses, which includes 10.128.0.2, 10.128.0.3, and 10.128.4." src="https://cdn.qwiklabs.com/C%2FbobUfE9bS6zLbYPbUhCpJPcwD4czJfuBImZcW7uXc%3D"></p>
+<ol start="12">
+<li>
+<p>For the beginning IP address, use the first three octets plus <strong>.1</strong> (10.128.0.1 in this example). For the ending IP address, use the first three octets plus <strong>.8</strong> (10.128.0.8 in this example).</p>
+</li>
+<li>
+<p>Click the <strong>Save</strong> button.</p>
+</li>
+</ol>
+<ql-infobox><strong>Note:</strong> The scan will start immediately. It may take up to 2 minutes for the scan to start and complete. Once completed the scan status will change from "In Progress" to "Completed".</ql-infobox>
+<p><img alt="The IP range scan completed." src="https://cdn.qwiklabs.com/8xsC8jpo0DUlRpJ3rb72vvM4UP3UqlKa5ezUVSnZzOA%3D"></p>
+<ol start="14">
+<li>Go to the <strong>Servers</strong> tab and click the name of the first server available in the list.</li>
+</ol>
+<p><img alt="Servers tab." src="https://cdn.qwiklabs.com/nt%2FbTscO2AsNplJRk7MavPp7HSVF%2BBE3gBYkpDa%2FY5k%3D"></p>
+<ol start="15">
+<li>In the server <strong>Scans</strong> tab look for an Upload Status, it should be <strong>Sent</strong>. If it is still <strong>Pending</strong>, wait for a few minutes until it switches to <strong>Sent</strong>.</li>
+</ol>
+<ql-infobox><strong>Note:</strong> The "Sent" status indicated that assets were successfully exported to the Migration Center.</ql-infobox>
+<p><img alt="Servers tab." src="https://cdn.qwiklabs.com/0z0GoVlMfv1rpyGzBPk78V97oz0KOLmFRWbIG%2BntW1M%3D"></p>
+<ql-activity-tracking step="2">
+    Verify collection is configured and data is transmitted to the Migration Center.
+</ql-activity-tracking>
+<h2 id="step8">Task 5. Import AWS data</h2>
+<ol>
+<li>In the windows-vm, using Chrome navigate to the following URL:</li>
+</ol>
+<ql-code-block language="bash">
+https://storage.googleapis.com/spls/gsp1095/vm-aws-import-files.zip
+</ql-code-block>
+<p>This will start downloading of the file generated from the AWS account.</p>
+<ol start="2">
+<li>
+<p>Decompress the downloaded zip file by right-clicking on it and selecting <strong>Extract ALL...</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Extract</strong>.</p>
+</li>
+<li>
+<p>In Google Cloud, from the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Add Data</strong> button.</p>
+</li>
+<li>
+<p>Select <strong>Manual upload</strong> option.</p>
+</li>
+</ol>
+<p><img alt="Add Data button." src="https://cdn.qwiklabs.com/8g4CVW71Sb2XatRcgLIedFWr21Q%2BAPyMhmfvyQPE1FY%3D"></p>
+<ol start="6">
+<li>
+<p>Enter <strong>aws-account-import</strong> into File import job name field.</p>
+</li>
+<li>
+<p>From File format dropdown select <strong>AWS (CSV)</strong>.</p>
+</li>
+</ol>
+<p><img alt="File upload options." src="https://cdn.qwiklabs.com/rNhSj%2Foi0oWQeKk7LkdEnxmhap5p6dzKJQBoJY6itx4%3D"></p>
+<ol start="8">
+<li>
+<p>Click <strong>Select files to upload</strong> button.</p>
+</li>
+<li>
+<p>Navigate to the directory where the zip file was downloaded to (Default location: C:\Users\migrationcenter\Downloads\vm-aws-import-files).</p>
+</li>
+<li>
+<p>Select all 4 files in the directory, click <strong>Open</strong> button. This will bring all selected files to the import page.</p>
+</li>
+</ol>
+<p><img alt="Select files to import." src="https://cdn.qwiklabs.com/A%2B4mE24z7gfJOY6f29AecTYETwj9lMgutpr6e6VK2ZM%3D"></p>
+<ol start="11">
+<li>
+<p>Click <strong>Upload Files</strong>.</p>
+</li>
+<li>
+<p>Once upload completes there should be a green check next to every file.</p>
+</li>
+</ol>
+<p><img alt="View uploaded files." src="https://cdn.qwiklabs.com/l%2FkJrK5LCZ8C9AglZaKnP%2FdDlPfrqrms5UKB5RjzZoI%3D"></p>
+<ol start="13">
+<li>Click the <strong>Import Data</strong> button to finish the import.</li>
+</ol>
+<p><img alt="Finish import button." src="https://cdn.qwiklabs.com/ot21%2F1QBmlbw47DvrKzBRWnoN3WoySAv4a2fvjG%2FdHc%3D"></p>
+<ol start="14">
+<li>Click <strong>Confirm</strong> on the confirmation popup.</li>
+</ol>
+<ql-activity-tracking step="3">
+    Verify AWS file was imported successfully.
+</ql-activity-tracking>
+<h2 id="step9">Task 6. Review data in Migration Center</h2>
+<ol>
+<li>In Google Cloud console, from the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Assets</strong> sub-menu.</li>
+</ol>
+<p><img alt="The navigation path to the option Assets." src="https://cdn.qwiklabs.com/0I1Wlp%2B%2Fcfkt%2BwmTFUFTkGFmcN38R9leAjqdAHawfPs%3D"></p>
+<ol start="2">
+<li>
+<p>View list of collected assets.</p>
+</li>
+<li>
+<p>Click on the <strong>VM Name</strong> link of one of the assets  in the list to view asset details.</p>
+</li>
+<li>
+<p>Switch between different tabs inside the asset details page to view more assets details such as <strong>Insights</strong>, Source VM <strong>Details</strong>, <strong>Metadata</strong> and <strong>Performance</strong> data.</p>
+</li>
+</ol>
+<p><img alt="Assets details page." src="https://cdn.qwiklabs.com/8fZN4Ge2gACL5dLt5n4nUSejxXciRBoLwMlRi9sBTzU%3D"></p>
+<ql-infobox><strong>Note: </strong>Performance data is not available for assets created using the provided AWS import data file. </ql-infobox>
+<ol start="5">
+<li>
+<p>Click the <strong>Back</strong> button to get back to the Assets list view.</p>
+</li>
+<li>
+<p>Select one or more assets to bring up the additional options  like <strong>Select all</strong> button, for all available assets selection, based on applied filter.</p>
+</li>
+</ol>
+<p><img alt="Select all assets option." src="https://cdn.qwiklabs.com/zfFzrUl54CLf6uobkBMr5HGA6jFPYv0TYYzkpJKjzlw%3D"></p>
+<ol start="7">
+<li>Deselect previously selected assets and select only few assets. Bring them out of scope by clicking the <strong>Out of scope</strong> button.</li>
+</ol>
+<p><img alt="Put assets Out of scope." src="https://cdn.qwiklabs.com/9q%2FiNaFphy1qJwbq%2F2Bw9vJhWZc409B8%2FNZ3Eqy%2FAZE%3D"></p>
+<ol start="8">
+<li>Provide any relevant reason, like "Old Servers" and click on <strong>Confirm</strong> button.</li>
+</ol>
+<p><img alt="Populate Out of Scope reason." src="https://cdn.qwiklabs.com/LynTnOeRYyCM%2BifcC7i48t96YIzp0iuuSUlM9rifMPk%3D"></p>
+<ol start="9">
+<li>View Out Of Scope assets in the dedicated <strong>Out of Scope</strong> assets tab.</li>
+</ol>
+<p><img alt="View Out of Scope assets." src="https://cdn.qwiklabs.com/OUOd50ygDS%2Fwu1YHbHl%2FWTnoD1raw1omBiqAvw2friE%3D"></p>
+<ol start="10">
+<li>Select the Out of Scope assets and bring them back in scope by clicking on <strong>Put back in scope</strong> button.</li>
+</ol>
+<ql-infobox><strong>Note: </strong>Out of scope assets will be excluded from the TCO report and will only be available for viewing in the dedicated tab</ql-infobox>
+<h2 id="step10">Task 7. Generate Inventory and Performance data report</h2>
+<ol>
+<li>In Google Cloud console, from the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Create reports</strong> menu.</li>
+</ol>
+<p><img alt="Create reports menu." src="https://cdn.qwiklabs.com/PmWGEscvkz6mvq%2BxncNYyDM%2B6J5eRHKHyHfDT2L1%2BSA%3D"></p>
+<ol start="2">
+<li>Select <strong>Assets Details Export</strong> tile.</li>
+</ol>
+<p><img alt="Export Assets Details tile." src="https://cdn.qwiklabs.com/9f8QQQRpeRwo9OcEx78dLP%2FSTiOzmcqQjRECNTdEJFc%3D"></p>
+<ol start="3">
+<li>
+<p>In the opened page, you have several ways to export assets details, by using a group with several servers or by exporting all Servers that were previously collected using MC Discovery Client or
+imported using file import option.</p>
+</li>
+<li>
+<p>Click the <strong>Servers</strong> tab and select all servers, then click the <strong>Export to CSV/Google Sheets</strong> button above the filter field.</p>
+</li>
+</ol>
+<p><img alt="Export servers details." src="https://cdn.qwiklabs.com/HlCo6YI6nIOnsbv%2FalCpXUL%2FGvRzyC8wrHlTjU97aO0%3D"></p>
+<ol start="5">
+<li>
+<p>At the popup window, click <strong>Export to Google Sheets</strong> to confirm and wait for the export to complete.</p>
+</li>
+<li>
+<p>When export completed the <strong>Open</strong> spreadsheet link will become available, click it in order to view the exported report in Google Sheets.</p>
+</li>
+<li>
+<p>In order to generate a Performance Data report, at the <strong>Create Reports</strong> window, select <strong>Performance data export</strong> tile.</p>
+</li>
+</ol>
+<p><img alt="Performance data export." src="https://cdn.qwiklabs.com/X9Min0ORe4Lk1%2BK963bVk95UIiGelj9N0csz8oGGX3U%3D"></p>
+<ol start="8">
+<li>
+<p>Similar to <strong>Assets Details Export</strong>, click the <strong>Export servers</strong> tab and select all servers, then click the <strong>Export to CSV/Google Sheets</strong> button above the filter field.</p>
+</li>
+<li>
+<p>At the opened popup window, keep the same number of <strong>Days per assets</strong> and click on the <strong>Export</strong> button again. Wait for report generation.</p>
+</li>
+</ol>
+<p><img alt="Change the number of last days for Network Dependencies Report." src="https://cdn.qwiklabs.com/rL3Zsf6lPF47EKvlsDRAx1Ow7tNfQIPYcUNnk7IMlhM%3D"></p>
+<ol start="10">
+<li>
+<p>At the popup window, click <strong>Export to Google Sheets</strong> to confirm.</p>
+</li>
+<li>
+<p>Wait for export to complete. Once export is completed the <strong>Open</strong> spreadsheet link will become available. Click it to view the exported report in Google Sheets.</p>
+</li>
+</ol>
+<ql-infobox><strong>Note: </strong>In this lab, performance data will be only available for assets collected using MC Discovery client. </ql-infobox>
+<h2 id="step11">Task 8. Generate TCO Report (Optional)</h2>
+<p>To generate a TCO report in the Migration Center, groups and migration preferences will have to be set.</p>
+<ol>
+<li>
+<p>In Google Cloud, from the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Groups</strong> sub-menu.</p>
+</li>
+<li>
+<p>Click <strong>+ Create Group</strong>.</p>
+</li>
+</ol>
+<p><img alt="Create group button." src="https://cdn.qwiklabs.com/G57a0bo4YKu0ZD3hXYaPp5i89p4jTOi%2B5m%2BwJScvBcg%3D"></p>
+<ol start="3">
+<li>
+<p>Enter <strong>All Assets</strong> in the Group name field, Click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>From the list select all assets by clicking the check box next to <strong>VM name</strong> label.</p>
+</li>
+<li>
+<p>Click the <strong>Create</strong> button.</p>
+</li>
+<li>
+<p>Repeat the steps above to create two more groups. Use filters to help selecting VMs.</p>
+<table>
+<tr>
+<th>Group Name</th>
+<th>Select criteria</th>
+</tr>
+<tr>
+<td>windows-only</td>
+<td>All VMs running Windows OS</td>
+</tr>
+<tr>
+<td colspan="2"><img alt="Windows filter." src="https://cdn.qwiklabs.com/xyqBgcFLUuG%2FpgmWMPRhSyiEhpkXDkbLXEMXfnbq7rU%3D"></td>
+</tr>
+<tr>
+<td>linux-only</td>
+<td>All VMs running Linux OS</td>
+</tr>
+<tr>
+<td colspan="2"><img alt="Linux filter." src="https://cdn.qwiklabs.com/iD7x%2B2fo0QOOVV5Kx1E8GfewGrFz%2Fmo0IBbV7N1EtP0%3D"></td>
+</tr>
+</table>
+</li>
+<li>
+<p>From the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Migration preferences</strong> sub-menu.</p>
+</li>
+<li>
+<p>Click <strong>+ Create migration preferences</strong> button.</p>
+</li>
+<li>
+<p>Populate <strong>aggressive-optimization-3-year-commit</strong> preference name at the dedicated field.</p>
+</li>
+<li>
+<p>Expand <strong>Google Compute Engine</strong> section by clicking on it.</p>
+</li>
+</ol>
+<p><img alt="Expand Google Compute Engine." src="https://cdn.qwiklabs.com/C2bc2JKag%2BhYnuXrw1BaOPQC0PuiJaFPA%2BSAjPIa9%2Fo%3D"></p>
+<ol start="11">
+<li>Update <strong>Machine series</strong> with <strong>N2, N2D</strong> types.</li>
+</ol>
+<p><img alt="Select machine series." src="https://cdn.qwiklabs.com/Nd6C0i38lcAHgwBr5a5nJiZb0b7SEkKRrRZDxyxjt0Q%3D"></p>
+<ol start="12">
+<li>Expand <strong>Target Sizing Strategy</strong> section under <strong>Sizing and Network</strong> and choose Sizing Method <strong>Aggressive</strong> from the dropdown.</li>
+</ol>
+<p><img alt="Select sizing option." src="https://cdn.qwiklabs.com/MZmk5vQgwDssA7TjQWuBTfqS0oNCtSD6QC9bXJDj9W8%3D"></p>
+<ol start="13">
+<li>
+<p>Repeat the above steps to create one more preference set using following values:</p>
+<table>
+<tr>
+<td><b>Preferences name</b></td>
+<td>moderate-optimization-1-year-commit</td>
+</tr>
+<tr>
+<td><b>Machine series</b></td>
+<td>C2, C2D</td>
+</tr>
+<tr>
+<td><b>Disk type</b></td>
+<td>SSD persistent disk</td>
+</tr>
+<tr>
+<td><b>Sizing method</b></td>
+<td>Moderate</td>
+</tr>
+<tr>
+<td><b>Product pricing track</b></td>
+<td>1-year resource-based committed use discount (USD)</td>
+</tr>
+</table>
+</li>
+<li>
+<p>From the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Create Reports</strong> sub-menu. Select <strong>TCO and detailed pricing report</strong> tile.</p>
+</li>
+</ol>
+<p><img alt="TCO report tile." src="https://cdn.qwiklabs.com/EaXnCJn3GWrT6Fxgi317PtmC7oC1BGpDKiSzAG5WRkI%3D"></p>
+<ol start="15">
+<li>
+<p>Enter <strong>lab-tco-report</strong> for report name, click <strong>Next</strong>.</p>
+</li>
+<li>
+<p>Select All-assets, windows-only and linux-only groups, click <strong>Next</strong>.</p>
+</li>
+</ol>
+<p><img alt="Select groups." src="https://cdn.qwiklabs.com/rsONmLyZP2tdZZIrIC2f3RMwShiFnQ%2FbwXKyU4mNAAc%3D"></p>
+<ol start="17">
+<li>
+<p>Click the down arrow on the all-assets group to show assigned preferences.</p>
+</li>
+<li>
+<p>Select aggressive-optimization-3-year-commit from dropdown for preference 2.</p>
+</li>
+<li>
+<p>Select moderate-optimization-1-year-commit from dropdown for preference 3.</p>
+</li>
+</ol>
+<p><img alt="Set preferences." src="https://cdn.qwiklabs.com/BJd6%2BI8En1nTcasr2J9tc4dQRhd979%2B1qlb%2Fcgn%2FEUY%3D"></p>
+<ol start="20">
+<li>
+<p>Click <strong>Assign to all groups</strong>.</p>
+</li>
+<li>
+<p>Click <strong>Generate report</strong>.</p>
+</li>
+</ol>
+<p><img alt="Green checkbox when report is ready." src="https://cdn.qwiklabs.com/bQClefOMkdWMg65KnKv%2BM%2FyN1RKrftx%2FbQQyUd8xhck%3D"></p>
+<ol start="22">
+<li>
+<p>Report can take up to 5 min to generate. Green checkbox indicates that the report is ready to view.</p>
+</li>
+<li>
+<p>Click the report name to view details.</p>
+</li>
+<li>
+<p>To export a <strong>Detailed Pricing Report</strong> go to <strong>Export report</strong> option and select <strong>Export detailed pricing report to CSV/Google Sheets</strong> option.</p>
+</li>
+</ol>
+<p><img alt="Export DPR." src="https://cdn.qwiklabs.com/o9pojuvYcavTki%2Fa02cj5FEiTMnrH42hDyq7J7LXpi0%3D"></p>
+<ol start="25">
+<li>Once clicked, the report generation will start and after it's done, it will be possible to download generated CSV files to explore them locally and to export generated report to Google Sheets, by clicking on the <strong>Export to Google Sheets</strong> button.</li>
+</ol>
+<ql-infobox><strong>NOTE:</strong> Both TCO and Detailed Pricing Report have an export to Google Slides and Google Sheets options correspondingly, however export to Google Slides feature is not available in the lab.</ql-infobox>
+
+<h2 id="step12">Task 9. Generate Network Dependencies report (Optional)</h2>
+<ol>
+<li>In Google Cloud, from the <strong>Navigation menu</strong>, select <strong>Migration Center</strong> and click on <strong>Create Reports</strong> menu.</li>
+</ol>
+<p><img alt="Create reports menu." src="https://cdn.qwiklabs.com/PmWGEscvkz6mvq%2BxncNYyDM%2B6J5eRHKHyHfDT2L1%2BSA%3D"></p>
+<ol start="2">
+<li>
+<p>Select <strong>Network Dependencies Export</strong> tile.</p>
+</li>
+<li>
+<p>Similar to Inventory and Performance data reports, you have an option to export a report for a group of assets.</p>
+</li>
+<li>
+<p>In the opened <strong>Groups</strong> tab, select all groups that were previously created at Task 8.</p>
+</li>
+<li>
+<p>Click on the <strong>Export to CSV</strong> button at the bottom of the screen.</p>
+</li>
+<li>
+<p>At the opened popup window, click <strong>Export</strong> button and wait for report generation.</p>
+</li>
+<li>
+<p>Click the <strong>Download</strong> button in order to download the generated Network Dependencies Report in CSV format.</p>
+</li>
+</ol>
+<p><img alt="Download Network Dependencies Report in CSV format." src="https://cdn.qwiklabs.com/wkus0Qb6UOD2dmksl%2B%2Fz86ht3q%2Bn%2B5gQ7cyMZtbMPuM%3D"></p>
+<ol start="8">
+<li>After the report file was downloaded to your local machine you can review the file by opening it using any text or csv file editor.</li>
+</ol>
+<h2 id="step13">Congratulations!</h2>
+<p>You've successfully collected and analyzed the deployed infrastructure using the Migration Center.</p>
+<h3>Next steps/Learn more</h3>
+<p>To learn more about Migration Center, refer to the <a href="https://cloud.google.com/migration-center/docs" target="_blank">Migration Center Documentation</a>.</p>
+<h3>Google Cloud training and certification</h3>
+<p>...helps you make the most of Google Cloud technologies. <a href="https://cloud.google.com/training" target="_blank">Our classes</a> include technical skills and best practices to help you get up to speed quickly and continue your learning journey. We offer fundamental to advanced level training, with on-demand, live, and virtual options to suit your busy schedule. <a href="https://cloud.google.com/certification/" target="_blank">Certifications</a> help you validate and prove your skill and expertise in Google Cloud technologies.</p>
+
+<p><strong>Manual Last Updated April 24, 2026</strong></p>
+<p><strong>Lab Last Tested April 24, 2026</strong></p>
+<p>Copyright 2026 Google LLC. All rights reserved. Google and the Google logo are trademarks of Google LLC. All other company and product names may be trademarks of the respective companies with which they are associated.</p>
+
+
+
+
+
+</div>
+</div>
+
+
+<div class='lab-content__end-lab-button js-end-lab-button-container hidden'>
+<ql-lab-control-button class='js-end-lab-button' running></ql-lab-control-button>
+</div>
+<div class='lab-content__renderable-instructions'>
+<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="ImxhYl9yZWNvbW1lbmRhdGlvbnNfMzE2NDRfdXNlcl81OTIxNzEzNSI=--e2aafe7b397e65cd106f28171d9273574d8bee46d0576d792ba3d1a5be952e55"></turbo-cable-stream-source>
+<div id='lab_recommendations_31644_user_59217135'>
+</div>
+
+</div>
+</div>
+</ql-drawer-content>
+</ql-drawer-container>
+</ql-drawer-content>
+</ql-drawer-container>
+
+
+
+</main>
+
+</ql-drawer-content>
+<footer slot='drawer-content'>
+<nav ariaLabel='Footer navigation' class='application-footer relaunch-extra'>
+
+<div class='footer-container'>
+<div class='footer-logo'>
+<a class="custom-logo" aria-label="Google Skills for Partners" href="/"><div class="custom-logo"><img alt="Google Skills for Partners" height="24" aria-label="Google Skills for Partners" src="https://cdn.qwiklabs.com/lqJbxogu4tSLez1OvjDcIO8rwow6cPLwvrfIdmQLf6U%3D" /></div></a>
+</div>
+<div class='footer-row'>
+<a href="/">Dashboard</a>
+<a href="/catalog">Catalog</a>
+<a href="/paths">Paths</a>
+<a href="/subscriptions">Subscriptions</a>
+<a href="/profile/stay_on_track">Activities</a>
+<a href="/profile/badges">Achievements</a>
+<a href="/my_account/profile">Settings</a>
+<a rel="nofollow" data-method="delete" href="/users/sign_out">Sign out</a>
+</div>
+<div class='footer-row'>
+<a class="g-cloud-youtube" target="_blank" rel="noopener" href="https://www.youtube.com/@googlecloud"><ql-icon icon='video_youtube'></ql-icon>
+Youtube
+</a><a rel="noopener" onclick="hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:59217135},&quot;context&quot;:&quot;lab&quot;}); return false;" href="/help">Help Center</a>
+<a href="/terms_of_service">Terms</a>
+<a target="_blank" href="/privacy_policy">Privacy</a>
+<a aria-hidden='true' class='glue-cookie-notification-bar-control'>
+Manage cookies
+</a>
+</div>
+</div>
+
+</nav>
+</footer>
+</ql-drawer-container>
+
+
+<span class='hidden' id='flash-sibling-before'></span>
+<ql-snackbar></ql-snackbar>
+
+<script data-glue-cookie-notification-bar-category='2A' src='https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js'></script>
+
+
+
+<ql-dialog id='connect-certmetrics-modal' noCloseIcon noDefaultAction noDefaultDismiss>
+<div class='certmetrics-modal' id='sso-modal-body'>
+<div id='sso-header-image'>
+<img alt="Authorize Header" src="https://cdn.qwiklabs.com/assets/certmetrics_modal_connect-41dccb0f7c320144dca93f8f89ac18758cec5014.svg" />
+</div>
+<h2 class='ql-headline-4' id='sso-modal-title'>
+Recertify in 3 simple steps:
+</h2>
+<ql-card class='info-card' elevation='0' padded>
+<div class='recertify-step'>
+<ql-icon icon='counter_1' size='24'></ql-icon>
+<span>Link your Google Skills and certification account profiles using the same email to get started.</span>
+</div>
+<div class='recertify-step'>
+<ql-icon icon='counter_2' size='24'></ql-icon>
+<span>Instantly see which certifications are eligible for renewal.</span>
+</div>
+<div class='recertify-step'>
+<ql-icon icon='counter_3' size='24'></ql-icon>
+<span>Complete courses and skill badges to renew your certifications automatically.</span>
+</div>
+<p class='ql-body-medium'>
+By clicking &quot;Accept&quot;, I consent to share my name, email, and course completion data with Google Skills&#39; certification partner, CM Connect, to receive continuing education credit for certification renewal.
+</p>
+</ql-card>
+</div>
+<ql-button id='sso-cancel-btn' label='Close' onclick='document.querySelector(&quot;#connect-certmetrics-modal&quot;).close();' slot='action' text></ql-button>
+<ql-button id='sso-approve-btn' label='Accept' onclick='this.loading = true; document.querySelector(&#39;#sso-cancel-btn&#39;).disabled = true; document.querySelector(&#39;#sso-consent-form&#39;).requestSubmit();' raised slot='action'></ql-button>
+<form id="sso-consent-form" data-turbo="true" action="/oidc/connect_certmetrics_account" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="2ZcnyvEO9bKUDf39mviM3fMAZlI-bB57y33lIIJeKpk_KpVRc0xtuNjKyCHE5OUtjOh0LuG-5AasyyriVzvHCw" autocomplete="off" /></form>
+</ql-dialog>
+
+<ql-dialog carousel id='private-mode-modal' noDefaultDismiss showPaginationProgress>
+<div class='page' slot='page'>
+<div class='page-content'>
+<img src="https://cdn.qwiklabs.com/assets/labs/start_lab-f45aca49782d4033c3ff688160387ac98c66941d.png" />
+<div class='page-text'>
+<h1 class='ql-headline-small'>
+Before you begin
+</h1>
+<div class='ql-body-large'>
+<ol>
+  <li>Labs create a Google Cloud project and resources for a fixed time</li>
+  <li>Labs have a time limit and no pause feature. If you end the lab, you'll have to restart from the beginning.</li>
+  <li>On the top left of your screen, click <strong>Start lab</strong> to begin</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class='page' slot='page'>
+<div class='page-content'>
+<img src="https://cdn.qwiklabs.com/assets/labs/open_incognito_window-3ab2004605e88542dd7732361c3fc0e010c7fb6e.png" />
+<div class='page-text'>
+<h1 class='ql-headline-small'>
+Use private browsing
+</h1>
+<div class='ql-body-large'>
+<ol>
+  <li>Copy the provided <strong>Username</strong> and <strong>Password</strong> for the lab</li>
+  <li>Click <strong>Open console</strong> in private mode</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class='page' slot='page'>
+<div class='page-content'>
+<img src="https://cdn.qwiklabs.com/assets/labs/google_sign_in-f9eb84339d08f7db8c5fdfa7ce7726d3531dae80.png" />
+<div class='page-text'>
+<h1 class='ql-headline-small'>
+Sign in to the Console
+</h1>
+<div class='ql-body-large'>
+<ol>
+  <li><strong>Sign in</strong> using your lab credentials. Using other credentials might cause errors or incur charges.</li>
+  <li><strong>Accept</strong> the terms, and skip the recovery resource page</li>
+  <li>Don't click <strong>End lab</strong> unless you've finished the lab or want to restart it, as it will clear your work and remove the project</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+</ql-dialog>
+
+<ql-dialog headline='Score Details' icon='task_alt' id='jupyter-feedback-modal'>
+<iframe id='jupyter-feedback-frame' srcdoc='' title='Jupyter Feedback'></iframe>
+</ql-dialog>
+
+<ql-dialog id='lab-notification-dialog' noDefaultAction noDefaultDismiss>
+<img src="https://cdn.qwiklabs.com/assets/lab_enablement_notification/disable_lab-47cff1f6bc3610f58767251ff93c2f99cf4f9040.png" />
+<p class='title ql-headline-4'>This content is not currently available</p>
+<p class='description ql-body-1'>We will notify you via email when it becomes available</p>
+<ql-button href='/focuses/104653/set_up_lab_forward_url?parent=catalog&amp;path=4343' id='lab-notification-close-button' label='No, thanks' slot='action' text></ql-button>
+<ql-button fill id='lab-notification-submit' label='Yes, notify me' slot='action' text></ql-button>
+</ql-dialog>
+<ql-dialog id='lab-notification-subscribed-dialog' noDefaultAction noDefaultDismiss>
+<img src="https://cdn.qwiklabs.com/assets/lab_enablement_notification/notifcation_subscribed-2b4f9e51439e1a107488ab58a6e13c3c62ef8855.png" />
+<p class='title ql-headline-4'>Great!</p>
+<p class='description ql-body-1'>We will contact you via email if it becomes available</p>
+<ql-button href='/focuses/104653/set_up_lab_forward_url?parent=catalog&amp;path=4343' id='lab-notification-subscribed-close-button' label='Back to screen' slot='action' text></ql-button>
+</ql-dialog>
+
+<ql-dialog forInnovator id='lab-quota-modal' noDefaultAction>
+<img id="quota-image" class="lab-image-small" src="https://cdn.qwiklabs.com/assets/quota_management/quota_empty-2ba3ec879dea3091828ec9cfa060947292e2c554.png" />
+<p class='title quota-header'>
+<p class='description quota-body'></p>
+<ql-button id='close_button' label='Got it' primary slot='action' text></ql-button>
+</p>
+</ql-dialog>
+<ql-dialog forInnovator id='lab-quota-one-lab-modal' noDefaultAction>
+<img id="quota-image" class="lab-image-medium" src="https://cdn.qwiklabs.com/assets/quota_management/one_lab_quota-77010e9a83e0a6c7543477868b8b808d70222adb.png" />
+<p class='title quota-header'>One lab at a time</p>
+<p class='description quota-body'>Confirm to end all existing labs and start this one</p>
+<ql-button id='cancel_button' label='Cancel' onclick='ql.quotaManagementAlert.closeOneLabModal();' primary slot='action' text></ql-button>
+<ql-button id='confirm_button' label='Confirm' primary slot='action' text></ql-button>
+<script>
+  var quotaEmptyPath = "https://cdn.qwiklabs.com/assets/quota_management/quota_empty-2ba3ec879dea3091828ec9cfa060947292e2c554.png";
+  var quotaWarningOneLeftPath = "https://cdn.qwiklabs.com/assets/quota_management/quota_1_warning-d4669345281d01d38c7a13eed888f72469860ed8.png";
+  var quotaWarningFiveLeftPath = "https://cdn.qwiklabs.com/assets/quota_management/quota_5_warning-4f647be02bcbb65e2bbf18ea19d5493032524116.png";
+</script>
+</ql-dialog>
+
+<ql-dialog id='incorrect-start-lab-modal' noDefaultAction noDefaultDismiss>
+<div class='body'>
+<img src="https://cdn.qwiklabs.com/assets/labs/open_incognito_window-3ab2004605e88542dd7732361c3fc0e010c7fb6e.png" />
+<div class='page-text'>
+<h1 class='ql-headline-small'>
+Use private browsing to run the lab
+</h1>
+<div class='ql-body-large'>
+Using an Incognito or private browser window is the best way to run
+this lab. This prevents any conflicts between your personal account
+and the Student account, which may cause extra charges incurred to
+your personal account.
+</div>
+</div>
+</div>
+<div class='actions'>
+<ql-button id='incorrect-start-lab-modal-cancel' label='Cancel' onclick='document.getElementById(&#39;incorrect-start-lab-modal&#39;).close()' slot='action'></ql-button>
+</div>
+</ql-dialog>
+
+<div class='modal fade' id='lab-details-modal'>
+<div class='modal-container'>
+<div class='modal-content mdl-shadow--24dp'>
+<div class='modal-body'>
+<p class='l-mbm'>
+Learn how to assess a customer's existing environment, and import data collected from Azure/AWS infrastructure. Generate inventory, performance, network dependencies and financial reports such as TCO (total cost analysis) and DPR (detailed pricing) reports.
+</p>
+<p class='small-label l-mbs'>
+<strong>
+Duration:
+</strong>
+3m setup
+&middot;
+90m access
+&middot;
+70m completion
+</p>
+<p class='small-label l-mbs'>
+<strong>AWS Region:</strong>
+[] <strong></strong>
+</p>
+<p class='small-label l-mbs'>
+<span><strong>Levels: </strong>intermediate</span>
+</p>
+<p class='small-label'>
+<strong>
+Permalink:
+</strong>
+<a href="https://partner.skills.google/catalog_lab/31644">https://partner.skills.google/catalog_lab/31644</a>
+</p>
+</div>
+<div class='modal-actions'>
+<a class='button button--text' data-dismiss='modal'>
+Got It
+</a>
+</div>
+
+
+</div>
+</div>
+<iframe class='l-ie-iframe-fix' tabindex='-1' title='modal'></iframe>
+</div>
+<ql-dialog headline='How satisfied are you with this lab?&lt;span aria-hidden=&quot;true&quot;&gt;*&lt;/span&gt;' id='lab-review-dialog'>
+<form class="simple_form js-lab-review-form" id="new_lab_review" action="/lab_reviews" accept-charset="UTF-8" data-remote="true" method="post"><div aria-labelledby='lab-review-dialog' aria-required='true' aria-valuemax='5' aria-valuemin='0' aria-valuenow='0' class='rateit js-rateit' data-rateit-max='5' data-rateit-min='0' data-rateit-resetable='false' data-rateit-step='1' data-rateit-value='0' id='lab-review-rateit' role='slider' tabindex='0'></div>
+<div class='l-mtm'>
+
+<div class="control-group hidden lab_review_user_id"><div class="controls"><input class="hidden" autocomplete="off" type="hidden" value="59217135" name="lab_review[user_id]" id="lab_review_user_id" /></div></div>
+<div class="control-group hidden lab_review_classroom_id"><div class="controls"><input class="hidden" autocomplete="off" type="hidden" name="lab_review[classroom_id]" id="lab_review_classroom_id" /></div></div>
+<div class="control-group hidden lab_review_lab_id"><div class="controls"><input class="hidden" autocomplete="off" type="hidden" value="31644" name="lab_review[lab_id]" id="lab_review_lab_id" /></div></div>
+<div class="control-group hidden lab_review_focus_id"><div class="controls"><input class="hidden" autocomplete="off" type="hidden" name="lab_review[focus_id]" id="lab_review_focus_id" /></div></div>
+<div class="control-group hidden lab_review_rating"><div class="controls"><input class="hidden js-rating-input" autocomplete="off" type="hidden" name="lab_review[rating]" id="lab_review_rating" /></div></div>
+<div class="control-group text optional lab_review_comment lab-review-comment"><label class="text optional control-label" for="lab_review_comment">Additional Comments</label><div class="controls"><textarea no_monkey_patch="true" class="text optional" label="Additional Comments" name="lab_review[comment]" id="lab_review_comment">
+</textarea></div></div>
+</div>
+</form><ql-button disabled id='submit' label='Submit' slot='action' text></ql-button>
+</ql-dialog>
+
+<ql-dialog headline='Are you sure? You may not be able to restart the lab, and you&#39;ll need to start from the beginning if you do.' icon='error_outline' id='js-lab-are-you-sure-dialog'>
+<ql-button id='js-are-you-sure-button' label='End Lab' slot='action' text></ql-button>
+</ql-dialog>
+<ql-dialog headline='Verify you&#39;re human' id='recaptcha-v2-dialog' noDefaultAction noDefaultDismiss>
+<p>Complete this quick step to start your lab.</p>
+<div class='recaptcha-v2-container'>
+<div data-sitekey='6LeOI8IUAAAAAPkHlMAE9NReCD_1WD81iYlBlCnV' id='recaptcha-v2-widget'></div>
+</div>
+</ql-dialog>
+
+
+<script>
+  document.addEventListener("turbo:load", function () {
+    ql.initMaterialInputs();
+    ql.tomSelect.init();
+    initTabs();
+    ql.list.init();
+    ql.favoriting.init();
+    ql.header.myAccount.init();
+    initTooltips();
+    ql.autocomplete.init();
+    ql.modals.init();
+    ql.toggleButtons.init();
+    Turbo.session.drive = false;
+    ql.favoriting.init();
+  ql.jumpContent.init();
+  ql.labControlPanel.addRecaptchaErrorHandler();
+  initLabContent();
+  ql.labRedesign.setupRedesignStickyHeader();
+  ql.labRedesign.initRedesignToc();
+  ql.incorrectStartLabModal.init();
+  initLabReviewModal();
+  initLabReviewTranslations( {"star_amount_1":"1 of 5 stars","star_amount_2":"2 of 5 stars","star_amount_3":"3 of 5 stars","star_amount_4":"4 of 5 stars","star_amount_5":"5 of 5 stars"} )
+  ql.labAssessment.init({ openPanelAutomatically: true });
+  ql.labData.init();
+  initLabTranslations( {"are_you_sure":"Are you sure? You may not be able to restart the lab, and you'll need to start from the beginning if you do.","in_progress":"*In Progress*","ending":"*Ending*","starting":"*Starting, please wait*","end_concurrent_labs":"Sorry, you can only run one lab at a time. To start this lab, please confirm that you want all of your existing labs to end.","copied":"Copied","no_resource":"Error retrieving resource.","no_support":"No Support","mac_press":"Press ⌘-C to copy","thanks_review":"Thanks for reviewing this lab.","windows_press":"Press Ctrl-C to copy","days":"days"} );
+  ql.labRun.init();
+  ql.messages.init();
+  ql.jumpContent.init();
+  
+  }, {once: true});
+</script>
+<script>
+  document.addEventListener("turbo:load", () => ql.analyticsV2.init());
+  document.addEventListener("turbo:frame-load", () => ql.analyticsV2.init());
+</script>
+<script>
+  document.addEventListener("turbo:load", function () {
+    ql.celebrations.init({"course_complete":"COURSE COMPLETED","document_complete":"DOCUMENT COMPLETED","experience_label":"Experience points","lab_complete":"LAB COMPLETED","learning_plan_complete":"PATH COMPLETED","lesson_complete":"LESSON COMPLETED","quiz_complete":"QUIZ COMPLETED","video_complete":"VIDEO COMPLETED"});
+    ql.achievements.init();
+  }, {once: true});
+</script>
+
+</body>
+</html>
+
+

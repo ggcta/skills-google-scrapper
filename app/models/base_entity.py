@@ -1,6 +1,6 @@
 import html
 import json
-from config.settings import BASE_URL_COURSES, BASE_URL_LAB, BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
+from config.settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from pathlib import Path as PathlibPath
 from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 from models.serialize import Serialize
@@ -15,10 +15,14 @@ class BaseEntity(Serialize):
                  id: str,
                  name: str = None,
                  description: str = None,
-                 title: str = None):
+                 title: str = None,
+                 portal: str = DEFAULT_PORTAL):
         self.id = id
         self.title = title or name
         self.description = description
+        # Which portal this entity belongs to (public / partner). Part of the
+        # entity's identity: the same id means different content per portal.
+        self.portal = portal or DEFAULT_PORTAL
 
     @property
     def name(self):
@@ -38,21 +42,27 @@ class BaseEntity(Serialize):
         return self.__class__.__name__
 
     @property
+    def base_url(self):
+        """The root URL of this entity's portal (e.g. https://partner.skills.google)."""
+        return portal_config(self.portal)["base"]
+
+    @property
     def url(self):
         """
-        Dynamically generate the URL based on the type.
+        Dynamically generate the URL based on the type and portal.
         """
 
-        base_url = {
-            "Path": BASE_URL_PATHS,
-            "Course": BASE_URL_COURSES,
-            "Lab": BASE_URL_LAB
+        cfg = portal_config(self.portal)
+        url_key = {
+            "Path": "paths",
+            "Course": "courses",
+            "Lab": "lab"
         }.get(self.type, None)
 
-        if not base_url:
+        if not url_key:
             raise ValueError(f"Invalid entity type: {self.type}")
 
-        return f"{base_url}/{self.id}"
+        return f"{cfg[url_key]}/{self.id}"
 
     # Properties to get the JSON and Markdown file names and paths
     @property
@@ -78,19 +88,19 @@ class BaseEntity(Serialize):
     @property
     def _json_path(self):
         """
-        Get the JSON file path based on the entity type.
+        Get the JSON file path based on the entity type, scoped by portal.
         """
 
-        return PathlibPath(DATA_FOLDER_NAME) / f'{self.type.lower()}s' / self._json_name
+        return PathlibPath(DATA_FOLDER_NAME) / self.portal / f'{self.type.lower()}s' / self._json_name
 
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _md_path(self):
         """
-        Get the Markdown file path based on the entity type.
+        Get the Markdown file path based on the entity type, scoped by portal.
         """
 
-        return PathlibPath(OUTPUT_FOLDER_NAME) / f'{self.type.lower()}s' / self._md_name
+        return PathlibPath(OUTPUT_FOLDER_NAME) / self.portal / f'{self.type.lower()}s' / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
     def to_dict(self):
@@ -119,20 +129,24 @@ class BaseEntity(Serialize):
         """
         from services.database import Database
         import logging
-        
-        db = Database()
+
+        db = Database(self.portal)
         # Use plural table name
         table_name = f"{self.type.lower()}s"
         if self.type.lower().endswith('s'):
             table_name = self.type.lower()
-            
+
         data = db.get(table_name, self.id)
-        
+
         if data:
+            current_portal = self.portal
             self.__dict__.update(data)
             # Backward compatibility: migrate 'name' to 'title' on load
             if 'name' in self.__dict__:
                 self.title = self.__dict__.pop('name')
+            # Never let stored data change which portal we're operating in
+            # (legacy records may not carry a portal at all).
+            self.portal = data.get('portal', current_portal)
         else:
             # If not found in DB, we could try file system as fallback?
             # For now, let's assume DB is source of truth.
@@ -152,12 +166,12 @@ class BaseEntity(Serialize):
         # 1. UPSERT to Database
         try:
             from services.database import Database
-            db = Database()
+            db = Database(self.portal)
             # Use plural table name (e.g. 'Course' -> 'courses')
             table_name = f"{self.type.lower()}s"
             if self.type.lower().endswith('s'):
                 table_name = self.type.lower()
-                
+
             db.upsert(table_name, entity_data)
         except Exception as e:
             print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
@@ -208,12 +222,18 @@ class BaseEntity(Serialize):
             front_matter_lines.append(f"title: '{self.title}'")
         if hasattr(self, 'type'):
             front_matter_lines.append(f"type: {self.type}")
+        if getattr(self, 'portal', None):
+            front_matter_lines.append(f"portal: {self.portal}")
         if hasattr(self, 'url'):
             front_matter_lines.append(f"url: {self.url}")
         if hasattr(self, 'datePublished'):
             front_matter_lines.append(f"date_published: {self.datePublished}")
         if hasattr(self, 'topics'):
-            front_matter_lines.append(f"topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+            if self.topics:
+                front_matter_lines.append("topics:\n" + "\n".join([f"  - {topic}" for topic in self.topics]))
+            else:
+                # No topics: emit a single bare 'topics:' line (no blank line).
+                front_matter_lines.append("topics:")
             
         # Add scraped_date
         scraped_ts = getattr(self, 'scrapedTime', None)

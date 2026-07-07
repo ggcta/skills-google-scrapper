@@ -2,22 +2,83 @@
 import sys
 import os
 import argparse
-from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS
+from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS, portal_config
 
 # Ensure app modules can be imported
 # Add 'app' directory to sys.path so we can import 'models' directly
 sys.path.append(os.path.join(os.getcwd(), 'app'))
 
 from models.course import Course
+from models.lab import Lab
 from models.path import Path
 from models.paths import Paths
 from models.courses import Courses
 from models.labs import Labs
 from services.launch_browser import launch_browser
+from utils.utils import util_portal_and_id
+
+
+def _resolve_portal(raw, default_portal):
+    """
+    Resolve a raw fetch target (bare id or full URL) into (portal, id).
+    A URL's host determines the portal and overrides the default.
+    """
+    inferred_portal, ident = util_portal_and_id(raw)
+    return (inferred_portal or default_portal), ident
+
+
+def add_portal_flags(parser):
+    """
+    Add shorthand portal-selection flags to a subparser, so callers can avoid
+    the verbose ``--portal <name>`` form:
+
+        -A / -a / --public   -> public portal (default)
+        -B / -b / --partner  -> partner portal
+
+    ``--portal/-P <name>`` is kept for scripting/explicitness. All are mutually
+    exclusive and resolve to ``args.portal``.
+    """
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-A', '-a', '--public', dest='portal', action='store_const', const='public',
+                       help='Use the public portal (default)')
+    group.add_argument('-B', '-b', '--partner', dest='portal', action='store_const', const='partner',
+                       help='Use the partner portal')
+    group.add_argument('--portal', '-P', dest='portal', choices=list(PORTALS.keys()),
+                       help='Explicit portal name (advanced)')
+    parser.set_defaults(portal=DEFAULT_PORTAL)
+
+
+def _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only, fetch_url=None):
+    """
+    Fetch a single lab and persist it (JSON, markdown, and the labs collection).
+    Returns the Lab if fetched, or None if it was skipped (already stored).
+
+    fetch_url, when given, overrides the lab's default catalog URL — used for
+    partner labs, which are served from a parent-referencing focus URL.
+    """
+    lab = Lab(id=lid, driver=driver, portal=portal)
+    # fetch_data scrapes the lab's page (name, description, steps).
+    # Honors force: skips if already stored unless force is set.
+    if not lab.fetch_data(force=force, fetch_url=fetch_url):
+        return None
+
+    lab.save_json()  # Backs up to file and syncs to DB
+    if not no_md:
+        lab.save_markdown(toc_only=toc_only)
+
+    # Keep the labs collection in sync (same portal).
+    labs_collection = Labs(portal=portal)
+    labs_collection.load_json()
+    labs_collection.collection[lab.id] = lab.name
+    labs_collection.save_json()
+    return lab
 
 def cmd_list(args):
     """Handle list command"""
-    
+
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    headless = getattr(args, 'headless', False)
+
     # Determine type
     if args.courses:
         target_class = Courses
@@ -30,32 +91,28 @@ def cmd_list(args):
         target_class = Paths
         label = "paths"
 
-    # Reload if requested
+    # Reload from remote first, if requested.
+    if args.reload:
         driver = None
         try:
             print("\n\033[35mLaunching browser for list extraction...\033[0m")
-            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
 
-            print(f"Reloading {label} list from remote...")
-            collection = target_class(driver=driver)
+            print(f"Reloading {label} list from remote [{portal}]...")
+            collection = target_class(driver=driver, portal=portal)
             collection.load_json()
-            
-            # Ensure URL is up to date (specifically for Paths)
-            if label == "paths":
-                from config.settings import BASE_URL_PATHS
-                collection.url = BASE_URL_PATHS
-                
-            # Fetch list (Supports Path and Courses as they have fetch implemented)
+
+            # Fetch list (each collection exposes a fetch_<label> method)
             try:
-                 method_name = f"fetch_{label}"
-                 fetch_method = getattr(collection, method_name, None)
-                 if fetch_method:
-                     if fetch_method(force=True): # reload implies force
-                         print(f"{label.capitalize()} list updated.")
-                     else:
-                         print(f"Failed to update {label} list.")
-                 else:
-                     print(f"Reload not supported for {label}.")
+                method_name = f"fetch_{label}"
+                fetch_method = getattr(collection, method_name, None)
+                if fetch_method:
+                    if fetch_method(force=True):  # reload implies force
+                        print(f"{label.capitalize()} list updated.")
+                    else:
+                        print(f"Failed to update {label} list.")
+                else:
+                    print(f"Reload not supported for {label}.")
             except Exception as e:
                 print(f"Error reloading {label}: {e}")
         finally:
@@ -63,12 +120,12 @@ def cmd_list(args):
                 print("Closing browser...")
                 driver.quit()
 
-    print(f"Listing all {label}...")
-    
+    print(f"Listing all {label} [{portal}]...")
+
     # Instantiate and load (reload might have updated DB)
-    collection = target_class()
+    collection = target_class(portal=portal)
     collection.load_json()
-    
+
     # Check if empty (only for Paths/Courses mostly)
     if not collection.collection:
         print(f"No {label} found locally.")
@@ -81,7 +138,7 @@ def cmd_list(args):
 
     # Determine sort
     sort_by = 'id' if args.id else 'name'
-    
+
     collection.print_list(sort_by=sort_by)
 
 def cmd_fetch(args):
@@ -90,6 +147,8 @@ def cmd_fetch(args):
     no_md = args.no_md
     toc_only = args.toc
     no_transcript = args.no_transcript
+    default_portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    headless = getattr(args, 'headless', False)
 
     fetch_paths_ids = args.paths
     fetch_courses_ids = args.courses
@@ -106,49 +165,55 @@ def cmd_fetch(args):
         driver = None
         try:
             print("\n\033[35mLaunching browser for path extraction...\033[0m")
-            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
             
-            for pid in fetch_paths_ids:
+            for raw_pid in fetch_paths_ids:
+                portal, pid = _resolve_portal(raw_pid, default_portal)
                 try:
-                    print(f"Processing Path {pid}...")
-                    p = Path(id=pid, driver=driver)
-                    # Load existing to see if we need to fetch? 
+                    print(f"Processing Path {pid} [{portal}]...")
+                    p = Path(id=pid, driver=driver, portal=portal)
+                    # Load existing to see if we need to fetch?
                     # Fetch command implies scraping/updating.
-                    
+
                     # Fetch data (scrapes remote)
                     p.fetch_data()
                     p.save_json() # Backs up to file and syncs to DB
-                    
+
                     if not no_md:
                         p.save_markdown(toc_only=toc_only)
                         print(f"Path {pid} markdown updated.")
                     print(f"Path {pid} updated.")
-                    
-                    # Original logic: update courses collection with courses found in path
-                    # This helps populate courses list without fetching all courses
-                    courses_collection = Courses()
+
+                    # Cascade down the tree and fetch every activity in the path.
+                    # Partner plans list both courses and standalone labs, so
+                    # dispatch by type: courses go through Course.extract_transcript
+                    # (which fetches their own labs), labs through the lab helper.
+                    # Flags AND the portal are inherited from the path.
+                    courses_collection = Courses(portal=portal)
                     courses_collection.load_json()
 
-                    for course in p.courses.values():
-                        c_id = course['id']
-                        c_name = course['name']
-                        courses_collection.collection[c_id] = c_name
-
-                    courses_collection.save_json()
-
-                    # Cascade down the tree: fetch every course in the path
-                    # (which in turn fetches each course's labs). Flags are
-                    # inherited from the path-level command. Reuse the driver.
-                    for course in p.courses.values():
-                        c_id = course['id']
-                        c_name = course['name']
+                    for activity in p.courses.values():
+                        a_id = activity['id']
+                        a_name = activity['name']
+                        a_type = (activity.get('type') or 'course').lower()
                         try:
-                            print(f"\n--- Path {pid} > Course {c_id} - {c_name} ---")
-                            c = Course(id=c_id, name=c_name, driver=driver)
-                            c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
-                            print(f"Course {c_id} updated.")
+                            if 'lab' in a_type:
+                                print(f"\n--- Path {pid} > Lab {a_id} - {a_name} [{portal}] ---")
+                                # Partner labs live at a parent-referencing focus URL.
+                                if _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only,
+                                                       fetch_url=activity.get('url')):
+                                    print(f"Lab {a_id} updated.")
+                            else:
+                                print(f"\n--- Path {pid} > Course {a_id} - {a_name} [{portal}] ---")
+                                courses_collection.collection[a_id] = a_name
+                                c = Course(id=a_id, name=a_name, driver=driver, portal=portal)
+                                c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
+                                print(f"Course {a_id} updated.")
                         except Exception as e:
-                            print(f"Failed to fetch course {c_id} in path {pid}: {e}")
+                            print(f"Failed to fetch {a_type} {a_id} in path {pid}: {e}")
+
+                    # Persist the course names discovered in this path.
+                    courses_collection.save_json()
 
                 except Exception as e:
                     print(f"Failed to fetch path {pid}: {e}")
@@ -164,12 +229,13 @@ def cmd_fetch(args):
         try:
              # Launch browser for authenticated access
              print("\n\033[35mLaunching browser for course extraction...\033[0m")
-             driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+             driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
              
-             for cid in fetch_courses_ids:
+             for raw_cid in fetch_courses_ids:
+                portal, cid = _resolve_portal(raw_cid, default_portal)
                 try:
-                    print(f"Processing Course {cid}...")
-                    c = Course(id=cid, driver=driver)
+                    print(f"Processing Course {cid} [{portal}]...")
+                    c = Course(id=cid, driver=driver, portal=portal)
                     # extract_transcript fetches page, extracts metadata, outline, modules, saves json/md.
                     c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
                     print(f"Course {cid} updated.")
@@ -183,14 +249,23 @@ def cmd_fetch(args):
     # --- Labs ---
     if fetch_labs_ids:
         print(f"\n--- Processing Labs: {fetch_labs_ids} ---")
-        # Lab scraping logic is typically embedded in Course scraping (via extract_transcript -> process_lab).
-        # We need to check if we can scrape a Lab directly.
-        # Course.py has `process_lab` but it's part of course processing.
-        # If we have a direct Lab URL or logic, we can implement it.
-        # Currently, the original code didn't have standalone Lab scraping in `cmd_lab` (it didn't exist).
-        # Use simple fallback: "Not supported directly, please fetch the parent course."
-        print("Standalone Lab fetching is not yet fully supported (requires parent Course).")
-        print("Please fetch the course containing this lab to update it.")
+        driver = None
+        try:
+            print("\n\033[35mLaunching browser for lab extraction...\033[0m")
+            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+
+            for raw_lid in fetch_labs_ids:
+                portal, lid = _resolve_portal(raw_lid, default_portal)
+                try:
+                    print(f"Processing Lab {lid} [{portal}]...")
+                    if _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only):
+                        print(f"Lab {lid} updated.")
+                except Exception as e:
+                    print(f"Failed to fetch lab {lid}: {e}")
+        finally:
+            if driver:
+                print("Closing browser...")
+                driver.quit()
 
 def cmd_interactive(args):
     """Handle interactive command by launching the interactive menu."""
@@ -212,9 +287,10 @@ def cmd_search(args):
         search_type = 'lab'
         
     field = args.field
-    
-    db = Database()
-    
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+
+    db = Database(portal)
+
     # Determine tables to search
     tables = []
     
@@ -242,14 +318,44 @@ def cmd_search(args):
         if results:
             print(f"\n--- {table} ({len(results)}) ---")
             for res in results:
-                # Highlight ID and Name
+                # Highlight ID and Name (entities store 'title', lists 'name')
                 res_id = res.get('id', 'N/A')
-                res_name = res.get('name', 'N/A')
+                res_name = res.get('name') or res.get('title') or 'N/A'
                 print(f"+|-• \033[35m[{res_id:>5} - {res_name:<72}]\033[0m")
             total_results += len(results)
             
     if total_results == 0:
         print("No results found.")
+
+def cmd_login(args):
+    """
+    Handle the (hidden) login command.
+
+    Opens a browser at the selected portal's home page so the user can sign in
+    manually, then closes it. The webdriver profile persists the session, so
+    subsequent fetches for that portal are already authenticated. No scraping
+    happens here — it is purely a user-space sign-in step.
+    """
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    url = portal_config(portal)["base"]
+
+    print(f"\n\033[35mLaunching browser to sign in to the '{portal}' portal...\033[0m")
+    print(f"Opening: {url}")
+
+    # Login is always visible so the user can interact with the sign-in flow.
+    driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+    try:
+        driver.get(url)
+        print("Sign in to the portal in the browser window.")
+        try:
+            input("Press Enter when you are done to close the browser...")
+        except (KeyboardInterrupt, EOFError):
+            pass
+    finally:
+        print("Closing browser...")
+        driver.quit()
+
+    print(f"Done. Your '{portal}' session is saved to the browser profile.")
 
 def cmd_browser(args):
     """Handle browser command"""
@@ -278,7 +384,8 @@ def cmd_md(args):
     """Handle md command"""
     toc_only = args.toc
     no_transcript = args.no_transcript
-    
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+
     # Check if at least one type is provided
     if not (args.course or args.path or args.lab):
         print("Please specify at least one item type: --course, --path, or --lab.")
@@ -288,8 +395,8 @@ def cmd_md(args):
     if args.course:
         course_ids = [cid.strip() for cid in args.course.split(',') if cid.strip()]
         for cid in course_ids:
-            print(f"Generating markdown for Course {cid}...")
-            course = Course(id=cid)
+            print(f"Generating markdown for Course {cid} [{portal}]...")
+            course = Course(id=cid, portal=portal)
             course.load_json()
             if not course.name: # basic check if loaded
                  print(f"Course {cid} data not found. Please fetch/extract first.")
@@ -301,8 +408,8 @@ def cmd_md(args):
     if args.path:
         path_ids = [pid.strip() for pid in args.path.split(',') if pid.strip()]
         for pid in path_ids:
-            print(f"Generating markdown for Path {pid}...")
-            path = Path(id=pid)
+            print(f"Generating markdown for Path {pid} [{portal}]...")
+            path = Path(id=pid, portal=portal)
             path.load_json()
             if not path.name:
                  print(f"Path {pid} data not found. Please fetch first.")
@@ -314,8 +421,8 @@ def cmd_md(args):
     if args.lab:
         lab_ids = [lid.strip() for lid in args.lab.split(',') if lid.strip()]
         for lid in lab_ids:
-            print(f"Generating markdown for Lab {lid}...")
-            lab = Lab(id=lid)
+            print(f"Generating markdown for Lab {lid} [{portal}]...")
+            lab = Lab(id=lid, portal=portal)
             lab.load_json()
              # Lab might not be fully implemented yet, but we support the structure
             if not lab.name:
@@ -326,7 +433,12 @@ def cmd_md(args):
 
 def main():
     parser = argparse.ArgumentParser(description="CloudSkillsBoost Scraper CLI")
-    subparsers = parser.add_subparsers(dest='command', help='Command to execute')
+    # A fixed metavar keeps the visible command list stable and omits the
+    # hidden 'login' command from the usage line.
+    subparsers = parser.add_subparsers(
+        dest='command',
+        metavar='{list,l,fetch,f,interactive,i,browser,b,w,md,search,s}',
+        help='Command to execute')
 
     # List command
     parser_l = subparsers.add_parser('list', aliases=['l'], help='List all paths, courses, or labs')
@@ -339,6 +451,8 @@ def main():
     
     # Reload flag
     parser_l.add_argument('--reload', '-r', action='store_true', help='Reload list from remote before listing')
+    parser_l.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
+    add_portal_flags(parser_l)
 
     # Mutually exclusive group for sorting
     group_sort = parser_l.add_mutually_exclusive_group()
@@ -358,12 +472,20 @@ def main():
     parser_f.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
     parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
-    
+    parser_f.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
+    add_portal_flags(parser_f)
+
     parser_f.set_defaults(func=cmd_fetch)
 
     # Interactive command
     parser_i = subparsers.add_parser('interactive', aliases=['i'], help='Launch the interactive menu')
     parser_i.set_defaults(func=cmd_interactive)
+
+    # Login command (hidden): open the browser at a portal to sign in.
+    # Omitting `help` keeps it out of the subcommand help listing.
+    parser_login = subparsers.add_parser('login')
+    add_portal_flags(parser_login)
+    parser_login.set_defaults(func=cmd_login)
 
     # Browser command
     parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')
@@ -377,6 +499,7 @@ def main():
     parser_m.add_argument('--path', '-p', help='List of path IDs (comma-separated)', default=None)
     parser_m.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_m.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
+    add_portal_flags(parser_m)
     parser_m.set_defaults(func=cmd_md)
 
     # Search command
@@ -386,6 +509,7 @@ def main():
     parser_s.add_argument('--path', '-p', action='store_true', help='Search in paths')
     parser_s.add_argument('--lab', '-l', action='store_true', help='Search in labs')
     parser_s.add_argument('--field', '-f', help='Limit search to specific field', default=None)
+    add_portal_flags(parser_s)
     parser_s.set_defaults(func=cmd_search)
 
     # Parse arguments
@@ -394,6 +518,10 @@ def main():
     if not args.command:
         parser.print_help()
         sys.exit(1)
+
+    # Migrate any legacy (pre-portal) data into the public scope before running.
+    from services.migration import migrate_to_portal_layout
+    migrate_to_portal_layout()
 
     # Execute the selected command
     args.func(args)

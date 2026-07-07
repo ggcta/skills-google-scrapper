@@ -1,5 +1,5 @@
 from models.collection import Collection
-from config.settings import BASE_URL_COURSES
+from config.settings import DEFAULT_PORTAL, portal_config
 from models.course import Course
 
 
@@ -10,10 +10,11 @@ class Courses(Collection):
 
     def __init__(self,
                  name: str = None,
-                 url: str = BASE_URL_COURSES,
+                 url: str = None,
                  collection: dict = None,
-                 driver=None):
-        super().__init__(name, url, collection)
+                 driver=None,
+                 portal: str = DEFAULT_PORTAL):
+        super().__init__(name, url or portal_config(portal)["courses"], collection, portal=portal)
         self.driver = driver
 
     def fetch_courses(self, force: bool = False) -> bool:
@@ -29,10 +30,10 @@ class Courses(Collection):
             print("(Courses.fetch_courses) Collection not empty. Skipping fetch.")
             return True
 
-        from config.settings import API_URL_COURSES
         import json
 
-        print(f"Fetching courses from API: {API_URL_COURSES}")
+        api_url_courses = portal_config(self.portal)["api_courses"]
+        print(f"Fetching courses from API: {api_url_courses}")
         
         all_courses = {}
         page = 1
@@ -45,7 +46,7 @@ class Courses(Collection):
 
         try:
             while has_more:
-                url = f"{API_URL_COURSES}&page={page}"
+                url = f"{api_url_courses}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
                 self.driver.get(url)
@@ -116,6 +117,6 @@ class Courses(Collection):
             heading = f"{course_id} - {course_name.upper()}"
             print(f"\n\033[45m[{heading:<85}]\033[0m")
 
-            # Start to fetch the course data
-            a_course = Course(id=course_id)
+            # Start to fetch the course data (same portal as this collection)
+            a_course = Course(id=course_id, portal=self.portal)
             a_course.extract_transcript()

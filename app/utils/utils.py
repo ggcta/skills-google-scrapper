@@ -1,5 +1,35 @@
 import re
 from html.parser import HTMLParser
+from urllib.parse import urlparse
+
+
+def util_portal_and_id(value: str):
+    """
+    Resolve a fetch target into a (portal, id) pair.
+
+    Accepts either a bare id ("53") or a full URL
+    ("https://partner.skills.google/paths/85"). For a URL, the portal is
+    inferred from the host and the id is the last path segment. For a bare id,
+    the portal is returned as None so the caller can apply its own default.
+
+    :return: (portal_or_None, id_str)
+    """
+    from config.settings import portal_from_host
+
+    if not value:
+        return None, value
+
+    # Treat anything with a scheme or a skills.google host as a URL.
+    looks_like_url = "://" in value or "skills.google" in value.lower()
+    if looks_like_url:
+        parsed = urlparse(value if "://" in value else f"https://{value}")
+        portal = portal_from_host(parsed.netloc)
+        # Last non-empty path segment is the id.
+        segments = [seg for seg in parsed.path.split('/') if seg]
+        entity_id = segments[-1] if segments else ""
+        return portal, entity_id
+
+    return None, value.strip()
 
 class HTMLStripper(HTMLParser):
     def __init__(self):

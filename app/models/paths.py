@@ -1,5 +1,5 @@
 from models.collection import Collection
-from config.settings import BASE_URL_PATHS, API_URL_PATHS
+from config.settings import DEFAULT_PORTAL, portal_config
 import json
 
 class Paths(Collection):
@@ -9,13 +9,14 @@ class Paths(Collection):
 
     def __init__(self,
                  name: str = None,
-                 url: str = BASE_URL_PATHS,
+                 url: str = None,
                  collection: dict = None,
-                 driver=None):
-        super().__init__(name, url, collection)
+                 driver=None,
+                 portal: str = DEFAULT_PORTAL):
+        super().__init__(name, url or portal_config(portal)["paths"], collection, portal=portal)
         self.driver = driver
 
-    def fetch_paths(self, base_url: str = BASE_URL_PATHS, force: bool = False) -> bool:
+    def fetch_paths(self, base_url: str = None, force: bool = False) -> bool:
         """
         Gather all paths from the CloudSkillsBoost Paths page using the API.\n
         Returns a Boolean to check status.
@@ -31,7 +32,8 @@ class Paths(Collection):
             print("(Collection.fetch_paths) Collection not empty. Skipping fetch.")
             return True
 
-        print(f"Fetching paths from API: {API_URL_PATHS}")
+        api_url_paths = portal_config(self.portal)["api_paths"]
+        print(f"Fetching paths from API: {api_url_paths}")
         
         all_paths = {}
         page = 1
@@ -44,7 +46,7 @@ class Paths(Collection):
 
         try:
             while has_more:
-                url = f"{API_URL_PATHS}&page={page}"
+                url = f"{api_url_paths}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
                 self.driver.get(url)

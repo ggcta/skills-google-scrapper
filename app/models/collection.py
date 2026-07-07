@@ -3,7 +3,7 @@ import json
 
 from bs4 import BeautifulSoup
 import requests
-from config.settings import BASE_URL, BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME
+from config.settings import BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from models.serialize import Serialize
 from pathlib import Path as PathlibPath
 
@@ -16,10 +16,13 @@ class Collection(Serialize):
 
     def __init__(self,
                  name: str = None,
-                 url: str = BASE_URL,
-                 collection: dict = None):
+                 url: str = None,
+                 collection: dict = None,
+                 portal: str = DEFAULT_PORTAL):
         self.name = name
-        self.url = url
+        # Which portal this collection belongs to (public / partner).
+        self.portal = portal or DEFAULT_PORTAL
+        self.url = url or portal_config(self.portal)["base"]
         self.date = str(datetime.today().date())
         self.collection = collection or {}
 
@@ -38,7 +41,7 @@ class Collection(Serialize):
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _json_path(self):
-        return PathlibPath(DATA_FOLDER_NAME) / self._json_name
+        return PathlibPath(DATA_FOLDER_NAME) / self.portal / self._json_name
 
     # Properties to get the JSON and Markdown file names and paths
     @property
@@ -48,7 +51,7 @@ class Collection(Serialize):
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _md_path(self):
-        return PathlibPath(OUTPUT_FOLDER_NAME) / self._md_name
+        return PathlibPath(OUTPUT_FOLDER_NAME) / self.portal / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
     def to_dict(self):
@@ -68,8 +71,8 @@ class Collection(Serialize):
         Load the collection from the Database (TinyDB).
         """
         from services.database import Database
-        
-        db = Database()
+
+        db = Database(self.portal)
         # Use plural table name
         table_name = f"{self.type.lower()}"
         if self.type.lower() == 'path': table_name = 'paths' # just in case
@@ -82,7 +85,9 @@ class Collection(Serialize):
         self.collection = {}
         for doc in docs:
             doc_id = doc.get('id')
-            doc_name = doc.get('name')
+            # Entities are stored with 'title'; collection listings with 'name'.
+            # Accept either so both sources render.
+            doc_name = doc.get('name') or doc.get('title') or ''
             if doc_id:
                 self.collection[doc_id] = doc_name
 
@@ -99,29 +104,30 @@ class Collection(Serialize):
         # Sync items to TinyDB
         try:
             from services.database import Database
-            db = Database()
-            
+            db = Database(self.portal)
+
             # Determine table name (Plural: Paths, Courses, Labs)
             # self.type is usually plural e.g. 'Paths'
             table_name = self.type.lower()
-            
+
             if self.collection:
                 for item_id, item_val in self.collection.items():
                     # item_val is usually name (str) or dict?
                     name = item_val
                     if isinstance(item_val, dict):
                         name = item_val.get('name', 'Unknown')
-                    
+
                     # We need to fetch existing doc to preserve other fields if any?
                     # Or just upsert id/name/type?
                     # If we only have ID and Name in collection, we might overwrite other details if we are not careful
                     # But Collection.save_json is usually called after fetching a list of items (id, name).
                     # If we upsert {id, name, type}, it matches TinyDB upsert logic which updates fields.
-                    
+
                     doc = {
                         'id': item_id,
                         'name': name,
-                        'type': table_name
+                        'type': table_name,
+                        'portal': self.portal
                     }
                     db.upsert(table_name, doc)
                     
@@ -169,7 +175,7 @@ class Collection(Serialize):
         # Print the sorted list
         for an_item in a_sorted_list:
             item_id = an_item[0]
-            item_name = an_item[1]
+            item_name = an_item[1] if an_item[1] is not None else ''
             print(f"+|-• \033[35m[{item_id:>5} - {item_name:<72}]\033[0m")
 
     def write_md(self):
@@ -187,7 +193,8 @@ class Collection(Serialize):
         else:
             print(f"(Collection.write_md) Warning: Mixed value types in collection or empty collection. Skipping sorting for {self.name}.")
 
-        # Create the Markdown file
+        # Create the Markdown file (ensure the portal folder exists)
+        self._md_path.parent.mkdir(parents=True, exist_ok=True)
         markdown_list = self.md_helper()
         with open(self._md_path, 'w', encoding='utf-8', newline='\n') as md_file:
             md_file.write(markdown_list)

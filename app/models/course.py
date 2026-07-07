@@ -8,7 +8,7 @@ from selenium.common import NoSuchElementException
 import json
 import html
 from bs4 import BeautifulSoup
-from config.settings import BASE_URL, QL_IFRAME, OUTPUT_FOLDER_NAME
+from config.settings import QL_IFRAME, OUTPUT_FOLDER_NAME, MATERIALS_DIR
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -22,11 +22,6 @@ COURSE_OUTLINE = "ql-course-outline"
 COURSE_CONTENTS_MENU = "ql-contents-menu"
 QL_YOUTUBE_VIDEO = "ql-youtube-video"
 LAB_REVIEW_LAB_ID = "#lab_review_lab_id"
-LAB_CONTENT_OUTLINE = "ul.lab-content__outline"
-# The sidebar outline (LAB_CONTENT_OUTLINE) was removed in a site update.
-# Steps are now rendered as <h2 id="stepN">Title</h2> headings inside the
-# lab instructions container.
-LAB_STEP_HEADINGS = ".lab-content__renderable-instructions h2[id^='step']"
 QL_QUIZ = "ql-quiz"
 XPATH_START_BUTTON = "//a[@class='start-button button button--positive']"
 XPATH_QUIZ = "//ql-quiz"
@@ -51,11 +46,13 @@ class Course(BaseEntity):
                  topics: list = None,
                  modules: list = None,
                  driver=None,
-                 title: str = None):
+                 title: str = None,
+                 portal: str = None):
         super().__init__(id=id,
                          name=name,
                          description=description,
-                         title=title)
+                         title=title,
+                         portal=portal)
         self.datePublished = datePublished or ""
         self.objectives = objectives or []
         self.topics = topics or []
@@ -140,7 +137,13 @@ class Course(BaseEntity):
             course_ld_json_element = course_html.select_one(COURSE_LD_JSON)
             meta_element = course_html.select_one(COURSE_META_DESCRIPTION)
 
-            if not course_ld_json_element or not meta_element:
+            # Partner portal course pages carry no ld+json blob; fall back to
+            # the og:title + meta description (the outline still comes from the
+            # ql-contents-menu, handled in extract_course_outline).
+            if not course_ld_json_element or not course_ld_json_element.string:
+                return self._extract_course_metadata_partner(course_html)
+
+            if not meta_element:
                 raise NoSuchElementException("(extract_course_metadata) meta_element not found.")
 
             course_ld_json_text = course_ld_json_element.string
@@ -167,6 +170,36 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(extract_course_metadata) Error: {error}")
             return False
+
+    # MARK: _extract_course_metadata_partner
+    def _extract_course_metadata_partner(self, course_html) -> bool:
+        """
+        Extract course metadata from a partner portal course page, which has no
+        ld+json blob. Name comes from og:title (site suffix stripped) and the
+        description from the meta description tag. Partner pages expose no
+        machine-readable publish date, objectives, or topics.
+        """
+        og_title = course_html.select_one("meta[property='og:title']")
+        meta_element = course_html.select_one(COURSE_META_DESCRIPTION)
+
+        name = None
+        if og_title and og_title.get('content'):
+            name = re.sub(r'\s*\|\s*Google.*$', '', og_title['content']).strip()
+        if not name:
+            print("(extract_course_metadata) Partner course name not found.")
+            return False
+
+        description = ''
+        if meta_element and meta_element.get('content'):
+            description = self.clean_text(meta_element['content'])
+            description = re.sub(r'\s{2,}', '\n\n', description).strip()
+
+        self.name = name
+        self.description = description
+        self.datePublished = self.datePublished or ""
+        self.topics = self.topics or []
+        self.objectives = self.objectives or []
+        return True
 
     # MARK: extract_course_outline
     def extract_course_outline(self, course_html) -> bool:
@@ -228,7 +261,7 @@ class Course(BaseEntity):
             activity_type = activity['type']
             activity_id = activity['id']
             activity_title = activity['title'].strip()
-            activity_full_url = f"{BASE_URL}{activity['href']}"
+            activity_full_url = f"{self.base_url}{activity['href']}"
 
             if activity_type == "video":
                 self.process_video(activity, activity_full_url, no_transcript=no_transcript)
@@ -297,7 +330,7 @@ class Course(BaseEntity):
         # Template URL (Catalog view) usually exposes the outline.
         # Format: /course_templates/<course_id>/labs/<lab_id>
         # We need to construct absolute URL.
-        template_url = f"{BASE_URL}/course_templates/{self.id}/labs/{activity['id']}"
+        template_url = f"{self.base_url}/course_templates/{self.id}/labs/{activity['id']}"
         # print(f"(process_lab) Using template URL: {template_url}")
 
         try:
@@ -321,9 +354,10 @@ class Course(BaseEntity):
                 # print(f"(process_lab) [Warning] lab_review_lab_id not found. Using activity ID {activity['id']}")
                 lab_id = activity['id']
 
-            # Create a Lab instance for the lab_id
+            # Create a Lab instance for the lab_id (same portal as the course)
             lab = Lab(
-                id=lab_id
+                id=lab_id,
+                portal=self.portal
             )
             # Load the lab data from JSON even it's empty
             lab.load_json()
@@ -335,7 +369,7 @@ class Course(BaseEntity):
                 return False
 
             # If the lab.name doesn't exist, the lab is new, continue.
-            lab_steps = self.extract_lab_steps(lab_page_html)
+            lab_steps = Lab.parse_steps(lab_page_html)
 
             # Set the lab's attributes.
             lab.name = activity['title'].strip()
@@ -347,7 +381,7 @@ class Course(BaseEntity):
             lab.save_markdown()
 
             # Add the lab to the Labs Collection
-            labs_collection = Labs(name='Labs Collection')
+            labs_collection = Labs(name='Labs Collection', portal=self.portal)
             labs_collection.load_json()
             labs_collection.collection[lab_id] = lab.name
             labs_collection.save_json()
@@ -355,46 +389,6 @@ class Course(BaseEntity):
             print(f"(process_lab) •-• [+]")
         except Exception as error:
             print(f"(process_lab) Error: {error}")
-
-    # MARK: extract_lab_steps
-    def extract_lab_steps(self, lab_page_html) -> dict:
-        """
-        Extract the lab's table of contents (steps) from its page.
-
-        The site historically exposed a sidebar outline
-        (``ul.lab-content__outline``) with ``<a href="#stepN">`` anchors. That
-        element was removed in a site update; the steps are now rendered as
-        ``<h2 id="stepN">Title</h2>`` headings inside the lab instructions
-        container. Try the old outline first, then fall back to the headings.
-
-        :param lab_page_html: Parsed BeautifulSoup of the lab page.
-        :return: Mapping of step number (str) to step title (str).
-        """
-
-        lab_steps = {}
-
-        # Old structure: sidebar outline with anchor links.
-        outline_element = lab_page_html.select_one(LAB_CONTENT_OUTLINE)
-        if outline_element:
-            for a_tag in outline_element.find_all('a'):
-                step = a_tag['href'].strip('#step')
-                lab_steps[step] = a_tag.text
-            if lab_steps:
-                return lab_steps
-
-        # New structure: step headings inside the rendered instructions.
-        step_headings = lab_page_html.select(LAB_STEP_HEADINGS)
-        # Fallback in case the container class changes again.
-        if not step_headings:
-            step_headings = lab_page_html.select("h2[id^='step']")
-
-        for heading in step_headings:
-            # Turn the "stepN" id into just the number, e.g. "step1" -> "1".
-            step = heading.get('id', '').replace('step', '', 1)
-            if step:
-                lab_steps[step] = heading.get_text(strip=True)
-
-        return lab_steps
 
     # MARK: fetch_external_course_content
     def fetch_external_course_content(self, url: str) -> dict:
@@ -715,9 +709,11 @@ class Course(BaseEntity):
         print(f"(process_document) •-> Doc: {activity['id']:>6} - {activity['title']}")
 
         try:
-            # Create documents directory if it doesn't exist
-            # csbmdvault/courses/documents/<course_id>/
-            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / "courses" / "documents" / self.id
+            # Create the materials directory if it doesn't exist.
+            # Binaries live in a single portal-agnostic folder organised by
+            # type and (global) id — csbmdvault/materials/courses/<course_id>/ —
+            # so the same course fetched from different portals shares one copy.
+            doc_dir = getattr(self, '_output_path', PathlibPath(OUTPUT_FOLDER_NAME)) / MATERIALS_DIR / "courses" / self.id
             doc_dir.mkdir(parents=True, exist_ok=True)
 
             if not self.driver:
@@ -749,7 +745,7 @@ class Course(BaseEntity):
                 if not file_url.startswith('http'):
                      # It's likely an absolute path from root or relative
                      if file_url.startswith('/'):
-                         file_url = f"{BASE_URL.rstrip('/')}{file_url}"
+                         file_url = f"{self.base_url.rstrip('/')}{file_url}"
 
                 # Add remote URL to activity
                 activity['document_url'] = file_url
@@ -779,7 +775,7 @@ class Course(BaseEntity):
 
                 # Prepare save path
                 save_path = doc_dir / filename
-                activity['local_document_path'] = f"documents/{self.id}/{filename}"
+                activity['local_document_path'] = f"{MATERIALS_DIR}/courses/{self.id}/{filename}"
 
                 if save_path.exists():
                      print(f"(process_document) •-• [+] Existed: {filename}")
@@ -803,7 +799,7 @@ class Course(BaseEntity):
                              if match:
                                  filename = match.group(1)
                                  save_path = doc_dir / filename
-                                 activity['local_document_path'] = f"documents/{self.id}/{filename}"
+                                 activity['local_document_path'] = f"{MATERIALS_DIR}/courses/{self.id}/{filename}"
 
                     with open(save_path, 'wb') as f:
                         for chunk in file_response.iter_content(chunk_size=8192):
@@ -913,16 +909,16 @@ class Course(BaseEntity):
                         activity_href = activity['href']
 
                         if activity_type == 'html_bundle':
-                            markdown.append(f"### HTML - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+                            markdown.append(f"### HTML - [{activity_title}]({self.base_url}{activity_href if activity_href else ''})")
                         else:
-                            markdown.append(f"### {activity_type.title()} - [{activity_title}]({BASE_URL}{activity_href if activity_href else ''})")
+                            markdown.append(f"### {activity_type.title()} - [{activity_title}]({self.base_url}{activity_href if activity_href else ''})")
 
                         if activity_type == 'video':
                             video_id = activity.get('videoId')
                             if video_id:
                                 markdown.append(f"- [YouTube: {activity_title}](https://www.youtube.com/watch?v={video_id})")
                             elif activity_href:
-                                markdown.append(f"- [Video Link]({BASE_URL}{activity_href})")
+                                markdown.append(f"- [Video Link]({self.base_url}{activity_href})")
                             if not toc_only and not no_transcript:
                                 markdown.append(f"{util_replace_quote_marks(activity.get('transcript', '(No transcript available)'))}")
 
@@ -955,7 +951,7 @@ class Course(BaseEntity):
                                     quiz_number += 1
 
                         elif activity_type in ('link', 'html_bundle'):
-                            link_url = activity.get('link') or (f"{BASE_URL}{activity_href}" if activity_href else "")
+                            link_url = activity.get('link') or (f"{self.base_url}{activity_href}" if activity_href else "")
                             markdown.append(f"- [{activity_title}]({link_url})")
                             if not toc_only and not no_transcript:
                                 if activity.get('transcript'):
@@ -966,7 +962,9 @@ class Course(BaseEntity):
                             local_path = activity.get('local_document_path')
                             if local_path:
                                 filename = PathlibPath(local_path).name
-                                markdown.append(f"- [{filename}]({local_path})")
+                                # Course md lives at <portal>/courses/; the shared
+                                # documents folder is two levels up at the vault root.
+                                markdown.append(f"- [{filename}](../../{local_path})")
 
         return "\n\n".join(markdown) + "\n"
 

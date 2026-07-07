@@ -1,22 +1,28 @@
 import os
 import datetime
 from tinydb import TinyDB, Query
-from config.settings import DATA_FOLDER_NAME
+from config.settings import DATA_FOLDER_NAME, DEFAULT_PORTAL
 
 class Database:
-    _instance = None
+    # One cached instance (and one database file) per portal, so the public
+    # and partner catalogs are physically isolated and cannot overwrite each
+    # other. Keying stays id-only *within* a portal.
+    _instances = {}
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(Database, cls).__new__(cls)
-            cls._instance._initialize()
-        return cls._instance
+    def __new__(cls, portal: str = DEFAULT_PORTAL):
+        if portal not in cls._instances:
+            instance = super(Database, cls).__new__(cls)
+            instance._initialize(portal)
+            cls._instances[portal] = instance
+        return cls._instances[portal]
 
-    def _initialize(self):
+    def _initialize(self, portal: str):
         """Initialize the database by loading from file or creating default structure."""
-        self.db_path = os.path.join(DATA_FOLDER_NAME, 'database.json')
-        # Ensure the data folder exists so TinyDB can create the file
-        os.makedirs(DATA_FOLDER_NAME, exist_ok=True)
+        self.portal = portal
+        # Per-portal storage root: data/<portal>/database.json
+        self.db_path = os.path.join(DATA_FOLDER_NAME, portal, 'database.json')
+        # Ensure the portal data folder exists so TinyDB can create the file
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         # TinyDB handles file creation
         self.db = TinyDB(self.db_path, indent=2, encoding='utf-8')
         
