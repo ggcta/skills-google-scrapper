@@ -26,36 +26,60 @@ struct Item {
 /// Holds the running `csb login` child so finish_login can complete it.
 struct LoginState(Mutex<Option<Child>>);
 
-/// Resolve the repository root (where data/ and csbmdvault/ live). Prefers
-/// CSB_PROJECT_ROOT, else walks up for a checkout that has both `.git` and `go`.
-fn project_root() -> PathBuf {
+/// Candidate directories to search for the repo root / csb binary: an explicit
+/// CSB_PROJECT_ROOT, then every ancestor of the working dir, then every ancestor
+/// of the app executable (so it works no matter where the app is launched from).
+fn candidate_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
     if let Ok(p) = std::env::var("CSB_PROJECT_ROOT") {
-        return PathBuf::from(p);
+        roots.push(PathBuf::from(p));
     }
-    let start = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mut dir = start.clone();
-    loop {
-        if dir.join(".git").exists() && dir.join("go").exists() {
-            return dir;
-        }
-        match dir.parent() {
-            Some(p) => dir = p.to_path_buf(),
-            None => break,
-        }
+    if let Ok(cwd) = std::env::current_dir() {
+        roots.extend(cwd.ancestors().map(|a| a.to_path_buf()));
     }
-    start
+    if let Ok(exe) = std::env::current_exe() {
+        roots.extend(exe.ancestors().map(|a| a.to_path_buf()));
+    }
+    roots
 }
 
-/// Resolve the `csb` binary path. Prefers CSB_BIN, else <root>/csb, else PATH.
-fn csb_bin() -> String {
+/// Resolve the `csb` binary. Prefers CSB_BIN, else the first candidate root that
+/// contains a `csb` file. Returns an actionable error if none is found.
+fn resolve_csb() -> Result<PathBuf, String> {
     if let Ok(b) = std::env::var("CSB_BIN") {
-        return b;
+        let p = PathBuf::from(&b);
+        if p.exists() {
+            return Ok(p);
+        }
+        return Err(format!("CSB_BIN points to a missing file: {b}"));
     }
-    let local = project_root().join("csb");
-    if local.exists() {
-        return local.to_string_lossy().into_owned();
+    for r in candidate_roots() {
+        let c = r.join("csb");
+        if c.exists() {
+            return Ok(c);
+        }
     }
-    "csb".to_string()
+    Err("csb binary not found. Build it from the repo root:\n  \
+         cd go && go build -o ../csb .\n\
+         (or set CSB_BIN to its full path)."
+        .to_string())
+}
+
+/// The repository root (where data/ and csbmdvault/ live), used as the working
+/// directory for csb. Prefers a checkout containing both `.git` and `go`, else
+/// the directory holding the resolved csb binary.
+fn repo_root() -> PathBuf {
+    for r in candidate_roots() {
+        if r.join(".git").exists() && r.join("go").exists() {
+            return r;
+        }
+    }
+    if let Ok(csb) = resolve_csb() {
+        if let Some(parent) = csb.parent() {
+            return parent.to_path_buf();
+        }
+    }
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
 fn portal_flag(portal: &str) -> &'static str {
@@ -79,11 +103,12 @@ fn kind_flag(kind: &str, long: bool) -> &'static str {
 
 /// Run `csb` to completion and return stdout (used for the --json commands).
 fn run_csb(args: &[String]) -> Result<String, String> {
-    let out = Command::new(csb_bin())
+    let bin = resolve_csb()?;
+    let out = Command::new(&bin)
         .args(args)
-        .current_dir(project_root())
+        .current_dir(repo_root())
         .output()
-        .map_err(|e| format!("failed to launch csb: {e}"))?;
+        .map_err(|e| format!("failed to launch csb ({}): {e}", bin.display()))?;
     if !out.status.success() {
         return Err(String::from_utf8_lossy(&out.stderr).into_owned());
     }
@@ -151,13 +176,14 @@ fn fetch(
         args.push("--headless".into());
     }
 
-    let mut child = Command::new(csb_bin())
+    let bin = resolve_csb()?;
+    let mut child = Command::new(&bin)
         .args(&args)
-        .current_dir(project_root())
+        .current_dir(repo_root())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("failed to launch csb: {e}"))?;
+        .map_err(|e| format!("failed to launch csb ({}): {e}", bin.display()))?;
 
     // Forward stderr lines too (progress is printed there for some commands).
     if let Some(err) = child.stderr.take() {
@@ -181,12 +207,13 @@ fn fetch(
 /// Open a visible browser to sign in; the child is held until finish_login.
 #[tauri::command]
 fn login(state: State<LoginState>, portal: String) -> Result<(), String> {
-    let child = Command::new(csb_bin())
+    let bin = resolve_csb()?;
+    let child = Command::new(&bin)
         .args(["login", portal_flag(&portal)])
-        .current_dir(project_root())
+        .current_dir(repo_root())
         .stdin(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("failed to launch csb: {e}"))?;
+        .map_err(|e| format!("failed to launch csb ({}): {e}", bin.display()))?;
     *state.0.lock().unwrap() = Some(child);
     Ok(())
 }
@@ -206,7 +233,7 @@ fn finish_login(state: State<LoginState>) -> Result<(), String> {
 /// Reveal the Markdown vault in the OS file manager.
 #[tauri::command]
 fn open_vault() -> Result<(), String> {
-    let vault = project_root().join("csbmdvault");
+    let vault = repo_root().join("csbmdvault");
     let opener = if cfg!(target_os = "macos") {
         "open"
     } else if cfg!(target_os = "windows") {

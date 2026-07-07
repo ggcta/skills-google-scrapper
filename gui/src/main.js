@@ -121,13 +121,20 @@ $("#searchQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") $(
 
 // --- Login flow ---
 $("#loginBtn").addEventListener("click", async () => {
-  $("#loginPortal").textContent = portal;
-  $("#loginModal").hidden = false;
+  // Launch the browser first; only reveal the "click Done" modal once csb has
+  // actually started, so a launch failure surfaces as a readable status message
+  // instead of a modal that flashes open and shut.
+  setStatus("Opening sign-in browser…", "busy");
+  $("#loginBtn").disabled = true;
   try {
     await invoke("login", { portal });
+    $("#loginPortal").textContent = portal;
+    $("#loginModal").hidden = false;
+    setStatus(`Browser open for ${portal}. Sign in, then click Done.`, "busy");
   } catch (err) {
     setStatus("Login failed: " + err);
-    $("#loginModal").hidden = true;
+  } finally {
+    $("#loginBtn").disabled = false;
   }
 });
 $("#loginDone").addEventListener("click", async () => {
