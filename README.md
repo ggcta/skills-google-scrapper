@@ -159,6 +159,15 @@ File view, graph view, and the script in action:
 ![Obsidian Graph View](docs/assets/obsidian-graph.png)
 ![The script in action](docs/assets/script-in-action.png)
 
+## Go rewrite (in progress)
+
+A single-binary [Go reimplementation](go/README.md) lives under `go/`. It reads
+and writes the same `data/` and `csbmdvault/` layout and shares the login
+profile, so it runs interchangeably with this Python version. It already has full
+command parity (`md`, `list`/`--reload`, `search`, `fetch -l/-c/-p`, `login`,
+`interactive`), with output verified byte-for-byte against the Python build. See
+[docs/rewrite-plan.md](docs/rewrite-plan.md) for the roadmap (Go CLI → Tauri GUI).
+
 ## Further reading
 
 1. [Getting Started (non-technical walkthrough)](docs/getting-started.md)
