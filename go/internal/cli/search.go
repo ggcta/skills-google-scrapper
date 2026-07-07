@@ -33,13 +33,17 @@ func cmdSearch(args []string) int {
 		tables = []string{"paths", "courses", "labs"}
 	}
 
+	jsonOut := p.has("--json")
 	tablesRepr := pyListRepr(tables)
-	if field == "" {
-		fmt.Printf("Searching for '%s' in %s...\n", p.positionals[0], tablesRepr)
-	} else {
-		fmt.Printf("Searching for '%s' in %s (field: %s)...\n", p.positionals[0], tablesRepr, field)
+	if !jsonOut {
+		if field == "" {
+			fmt.Printf("Searching for '%s' in %s...\n", p.positionals[0], tablesRepr)
+		} else {
+			fmt.Printf("Searching for '%s' in %s (field: %s)...\n", p.positionals[0], tablesRepr, field)
+		}
 	}
 
+	var jsonResults []jsonItem
 	total := 0
 	for _, table := range tables {
 		docs, err := store.LoadTable(p.portal, table)
@@ -52,6 +56,13 @@ func cmdSearch(args []string) int {
 			if docMatches(d, query, field) {
 				matched = append(matched, d)
 			}
+		}
+		if jsonOut {
+			for _, d := range matched {
+				jsonResults = append(jsonResults, jsonItem{ID: d.ID(), Name: d.Name(), Type: strings.TrimSuffix(table, "s"), Portal: p.portal})
+			}
+			total += len(matched)
+			continue
 		}
 		if len(matched) > 0 {
 			fmt.Printf("\n--- %s (%d) ---\n", table, len(matched))
@@ -68,6 +79,13 @@ func cmdSearch(args []string) int {
 			}
 			total += len(matched)
 		}
+	}
+	if jsonOut {
+		if jsonResults == nil {
+			jsonResults = []jsonItem{}
+		}
+		emitJSON(jsonResults)
+		return 0
 	}
 	if total == 0 {
 		fmt.Println("No results found.")

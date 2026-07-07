@@ -34,14 +34,21 @@ func cmdList(args []string) int {
 		}
 	}
 
+	jsonOut := p.has("--json")
 	docs, err := store.LoadTable(p.portal, table)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return 1
 	}
-	fmt.Printf("Listing all %s [%s]...\n", label, p.portal)
+	if !jsonOut {
+		fmt.Printf("Listing all %s [%s]...\n", label, p.portal)
+	}
 	if len(docs) == 0 {
-		fmt.Printf("No %s found locally.\n", label)
+		if jsonOut {
+			emitJSON([]jsonItem{})
+		} else {
+			fmt.Printf("No %s found locally.\n", label)
+		}
 		return 0
 	}
 
@@ -59,6 +66,16 @@ func cmdList(args []string) int {
 		return rows[i].name < rows[j].name
 	})
 
+	// Structured output for GUI/scripting consumers.
+	if p.has("--json") {
+		out := make([]jsonItem, len(rows))
+		for i, r := range rows {
+			out[i] = jsonItem{ID: r.id, Name: r.name, Type: strings.TrimSuffix(label, "s"), Portal: p.portal}
+		}
+		emitJSON(out)
+		return 0
+	}
+
 	fmt.Printf("\n\033[45m[%s]\033[0m\n\n", center(strings.ToUpper(label), 85))
 	for _, r := range rows {
 		fmt.Printf("+|-• \033[35m[%5s - %-72s]\033[0m\n", r.id, r.name)
@@ -75,7 +92,7 @@ func reloadList(portalKey, table string, headless bool) error {
 		"courses": cfg.APICourses,
 		"labs":    cfg.APILabs,
 	}[table]
-	fmt.Printf("Reloading %s list from remote [%s]...\n", table, portalKey)
+	fmt.Fprintf(os.Stderr, "Reloading %s list from remote [%s]...\n", table, portalKey)
 
 	sess, err := browser.Launch(context.Background(), browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
@@ -111,7 +128,7 @@ func reloadList(portalKey, table string, headless bool) error {
 			}
 		}
 	}
-	fmt.Printf("Total %s found: %d\n", table, found)
+	fmt.Fprintf(os.Stderr, "Total %s found: %d\n", table, found)
 	return nil
 }
 
