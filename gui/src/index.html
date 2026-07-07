@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSB Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◆</span>
+        <div>
+          <div class="title">CSB Studio</div>
+          <div class="subtitle">Cloud Skills Boost scraper</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="portal-toggle" id="portalToggle">
+          <button data-portal="public" class="active">Public</button>
+          <button data-portal="partner">Partner</button>
+        </div>
+        <button class="btn" id="loginBtn">Sign in</button>
+        <button class="btn ghost" id="vaultBtn">Open vault</button>
+      </div>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="fetch" class="active">Fetch</button>
+      <button data-tab="browse">Browse</button>
+      <button data-tab="search">Search</button>
+    </nav>
+
+    <main>
+      <!-- FETCH -->
+      <section class="panel active" data-panel="fetch">
+        <div class="row">
+          <label>Type</label>
+          <div class="segmented" id="fetchKind">
+            <button data-kind="path" class="active">Path</button>
+            <button data-kind="course">Course</button>
+            <button data-kind="lab">Lab</button>
+          </div>
+        </div>
+        <div class="row">
+          <label>IDs or URLs</label>
+          <input id="fetchIds" type="text" placeholder="e.g. 16 53  or a full skills.google URL" />
+        </div>
+        <div class="row options">
+          <label class="chk"><input type="checkbox" id="optForce" /> Force re-fetch</label>
+          <label class="chk"><input type="checkbox" id="optToc" /> TOC only</label>
+          <label class="chk"><input type="checkbox" id="optNoTranscript" /> No transcripts</label>
+          <label class="chk"><input type="checkbox" id="optHeadless" checked /> Headless</label>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="fetchBtn">Fetch</button>
+          <span class="hint">Paths cascade to courses → labs. Sign in first for gated content.</span>
+        </div>
+        <pre class="console" id="console" aria-live="polite"></pre>
+      </section>
+
+      <!-- BROWSE -->
+      <section class="panel" data-panel="browse">
+        <div class="row">
+          <div class="segmented" id="browseKind">
+            <button data-kind="paths" class="active">Paths</button>
+            <button data-kind="courses">Courses</button>
+            <button data-kind="labs">Labs</button>
+          </div>
+          <button class="btn" id="browseBtn">List</button>
+          <span class="count" id="browseCount"></span>
+        </div>
+        <div class="table-wrap"><table id="browseTable"><tbody></tbody></table></div>
+      </section>
+
+      <!-- SEARCH -->
+      <section class="panel" data-panel="search">
+        <div class="row">
+          <input id="searchQuery" type="text" placeholder="Search titles and metadata…" />
+          <div class="segmented" id="searchKind">
+            <button data-kind="all" class="active">All</button>
+            <button data-kind="paths">Paths</button>
+            <button data-kind="courses">Courses</button>
+            <button data-kind="labs">Labs</button>
+          </div>
+          <button class="btn" id="searchBtn">Search</button>
+          <span class="count" id="searchCount"></span>
+        </div>
+        <div class="table-wrap"><table id="searchTable"><tbody></tbody></table></div>
+      </section>
+    </main>
+
+    <!-- Login modal -->
+    <div class="modal-backdrop" id="loginModal" hidden>
+      <div class="modal">
+        <h2>Signing in to <span id="loginPortal">public</span></h2>
+        <p>A browser window is opening. Sign in to Cloud Skills Boost, then click Done.</p>
+        <div class="modal-actions">
+          <button class="btn primary" id="loginDone">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="statusbar" id="statusbar">Ready.</div>
+    <script src="main.js"></script>
+  </body>
+</html>

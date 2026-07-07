@@ -1,0 +1,7 @@
+# Rust / Tauri build output
+src-tauri/target/
+src-tauri/gen/
+
+# Node (if a bundler is added later)
+node_modules/
+dist/
