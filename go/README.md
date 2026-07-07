@@ -29,8 +29,10 @@ Requires Go 1.26+ and Google Chrome (chromedp drives your installed Chrome).
 | `fetch -l` (labs) | ✅ Done | End-to-end; output byte-identical to Python (verified live). |
 | `fetch -c` (courses) | ✅ Done | Full pipeline (metadata, outline, transcripts, external Rise/Storage lessons, quizzes, labs, documents). Course 53 verified **byte-identical** live. |
 | `fetch -p` (paths) | ✅ Done | Parses the plan and cascades to courses → labs, inheriting flags/portal. |
-| `list --reload` | ⏳ Next | Catalog list fetch via browser. |
-| `interactive` | ⏳ Next | Guided menu. |
+| `list --reload` | ✅ Done | Refreshes the catalog from the site JSON API (verified: 800 partner courses). |
+| `interactive` | ✅ Done | Guided menu with persistent working portal. |
+
+**The Go CLI is now at full functional parity with the Python version.**
 
 Known simplifications in the Go build (do not affect Markdown output):
 - The course/lab JSON keeps the Markdown-relevant fields and drops unused

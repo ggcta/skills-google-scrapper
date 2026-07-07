@@ -50,3 +50,15 @@ func (s *Session) PageHTML() (string, error) {
 	err := chromedp.Run(s.Ctx, chromedp.OuterHTML("html", &html, chromedp.ByQuery))
 	return html, err
 }
+
+// FetchText navigates to url and returns document.body.innerText — used for the
+// catalog list API endpoints, which render raw JSON in the page body.
+func (s *Session) FetchText(url string) (string, error) {
+	var text string
+	err := chromedp.Run(s.Ctx,
+		chromedp.Navigate(url),
+		chromedp.WaitReady("body", chromedp.ByQuery),
+		chromedp.Evaluate(`document.body.innerText`, &text),
+	)
+	return text, err
+}
