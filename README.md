@@ -151,16 +151,6 @@ csbmdvault/                   # your Markdown vault → open this in Obsidian
 
 Point Obsidian at the `csbmdvault/` folder to browse everything as a graph.
 
-## Run with Docker (web UI)
-
-A small Flask web UI is available for browsing what you've downloaded:
-
-```bash
-docker build -t csbhelper .
-docker run -dp 8080:8080 csbhelper
-# then open http://localhost:8080
-```
-
 ## Example: Obsidian
 
 File view, graph view, and the script in action:
@@ -177,7 +167,8 @@ File view, graph view, and the script in action:
 4. [What the data files look like](docs/data.md)
 5. [What the Markdown files look like](docs/output.md)
 6. [Generating prompts to reformat transcripts](docs/promt-llm.md)
-7. [Contributing](CONTRIBUTION.md)
+7. [Plan: re-implementing as a single binary (Go / Rust / Tauri)](docs/rewrite-plan.md)
+8. [Contributing](CONTRIBUTION.md)
 
 ## A note on responsible use
 

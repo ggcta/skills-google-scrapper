@@ -55,20 +55,7 @@ App-wide settings live in `app/config/settings.py`, including:
 
 The `data/` and `csbmdvault/` folders are created automatically on first run.
 
-## Run with Docker (web UI only)
-
-A small Flask web UI for browsing downloaded content:
-
-```sh
-docker build -t csbhelper .
-docker run -dp 8080:8080 csbhelper
-# open http://localhost:8080
-```
-
-> The Docker image serves the browsing UI. Scraping itself is meant to be run
-> locally with `uv run`, because it drives a Chrome window you log in to.
-
-## Legacy setup scripts
-
-Older `setup_env.sh` / `pip install -r requirements.txt` / `pipenv` flows still
-exist for reference, but **`uv sync` is the supported path** and supersedes them.
+> Dependencies are managed entirely by **uv** (`pyproject.toml` + `uv.lock`).
+> There is no `requirements.txt`, `setup_env.sh`, or `pipenv` flow anymore, and
+> no Docker image — scraping drives a real Chrome window you sign in to, so it is
+> meant to be run locally with `uv run`.
