@@ -1,102 +1,74 @@
-## I. Installation - A Manual Approach
+# Installation
 
-### 1. Clone the repo
+> Not a developer? The **[Getting Started guide](getting-started.md)** covers
+> installation in plain language, including how to install `git` and `uv`.
+
+The app is run with **[uv](https://docs.astral.sh/uv/)**, which manages the
+virtual environment and dependencies for you. You do **not** need to create a
+`venv` or run `pip` by hand.
+
+## Prerequisites
+
+- **Python 3.12+**
+- **uv** — install it from <https://docs.astral.sh/uv/getting-started/installation/>
+- **Google Chrome** — the scraper drives a real Chrome browser via Selenium.
+
+## 1. Clone the repo
 
 ```sh
 git clone https://github.com/samdx/cloudskillsboost-helper.git
 cd cloudskillsboost-helper
 ```
 
-### 2. Create a Virtual Environment
-
-You can create a virtual environment using `venv`:
+## 2. Install dependencies
 
 ```sh
-python -m venv .venv
+uv sync
 ```
 
-### 3. Activate the Virtual Environment
+This reads `pyproject.toml` / `uv.lock`, creates a `.venv` automatically, and
+installs everything. Re-run it any time you pull new changes.
 
-- **Windows**:
+## 3. Run the app
 
-  ```sh
-  .venv\Scripts\activate
-  ```
-
-- **macOS/Linux**:
-
-  ```sh
-  source .venv/bin/activate
-  ```
-
-### 4. Install Packages from `requirements.txt`
-
-Once the virtual environment is activated, you can install the packages listed in `requirements.txt`:
+You never activate the virtualenv manually — prefix commands with `uv run`:
 
 ```sh
-pip install -r requirements.txt
+# Show all commands
+uv run app/main.py --help
+
+# Launch the interactive menu
+uv run app/main.py interactive
 ```
 
-## II. Installation - Automating the Process
+See **[usage.md](usage.md)** for the full command reference.
 
-There is a script to automate the entire process.
+## Optional configuration
 
-#### `setup_env.sh`
+App-wide settings live in `app/config/settings.py`, including:
 
-Linux/macOS:
+- `OUTPUT_FOLDER_NAME` — where Markdown is written (default: `csbmdvault/`)
+- `DATA_FOLDER_NAME` — where the database and JSON backups live (default: `data/`)
+- `WEBDRIVER_PROFILE_FOLDER_NAME` — the reusable Chrome profile that stores your
+  login session (default: `.webdriver_profiles/`)
+- `DEFAULT_PORTAL` — `public` or `partner`
+
+The `data/` and `csbmdvault/` folders are created automatically on first run.
+
+## Run with Docker (web UI only)
+
+A small Flask web UI for browsing downloaded content:
 
 ```sh
-#!/bin/sh
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate virtual environment
-. .venv/Scripts/activate
-
-# Install packages
-pip install -r requirements.txt
+docker build -t csbhelper .
+docker run -dp 8080:8080 csbhelper
+# open http://localhost:8080
 ```
 
-Windows:
+> The Docker image serves the browsing UI. Scraping itself is meant to be run
+> locally with `uv run`, because it drives a Chrome window you log in to.
 
-```sh
-#!/bin/sh
+## Legacy setup scripts
 
-# Create virtual environment
-python -m venv .venv
-
-# Activate virtual environment
-. .venv/bin/activate
-
-# Install packages
-pip install -r requirements.txt
-```
-
-### Running the Script
-
-Make the script executable and run it:
-
-```sh
-chmod +x setup_env.sh
-./setup_env.sh
-```
-
-### III. Optional - Using `pipenv`
-
-Alternatively, you can use `pipenv` to manage your virtual environment and dependencies in one step:
-
-1. **Install `pipenv`**:
-   ```sh
-   pip install pipenv
-   ```
-
-2. **Create Virtual Environment and Install Packages**:
-   ```sh
-   pipenv install -r requirements.txt
-   ```
-
-3. **Activate the Virtual Environment**:
-   ```sh
-   pipenv shell
-   ```
+Older `setup_env.sh` / `pip install -r requirements.txt` / `pipenv` flows still
+exist for reference, but **`uv sync` is the supported path** and supersedes them.

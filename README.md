@@ -1,74 +1,187 @@
-# Google Cloud Skills Boost Automation/Scraping Script
+# Google Cloud Skills Boost — Scraper & Knowledge-Base Builder
 
 ![Welcome Screen](docs/assets/welcome-screen.png)
 
-A helper or a scraper.
+Turn [Google Cloud Skills Boost](https://www.skills.google) courses, learning
+paths, and labs into clean, well-structured **Markdown files** you can drop
+straight into Obsidian (or any Markdown-based personal knowledge base).
 
-## How to run this with Docker
+> New here and not a developer? Jump to the
+> **[Getting Started guide](docs/getting-started.md)** — it walks you through
+> everything step by step.
 
-1. Clone the repo.
-2. `cd` to the repo's folder.
-3. `docker build -t csbhelper .`
-4. `docker run -dp '8080:8080' csbhelper`
-5. Start to browse the web UI at `localhost:8080`.
+## What it does
 
-## TL;DR
+- Scrapes **paths → courses → labs** and writes one Markdown file per item,
+  with front-matter (id, title, url, topics, scraped date), a table of
+  contents, video transcripts, quizzes, and links to downloaded documents.
+- Fetching a **path cascades down the whole tree**: it pulls every course in
+  the path and every lab in those courses, inheriting your options as it goes.
+- Supports **both portals**:
+  - **Public** — `https://www.skills.google` (default)
+  - **Partner** — `https://partner.skills.google`
 
-This is a small tools for scraping contents from Google Cloud Skills Boost website to Markdown files, which helps to build your Personal Knowledge Base, Obsidian, for example.
+  The same content can have *different IDs* on each portal, so each portal keeps
+  its own scoped storage and can never overwrite the other.
+- Stores everything locally in a **TinyDB** database plus per-item JSON backups,
+  so you can `list`, `search`, and re-generate Markdown offline.
+- Ships a **command-line interface** and a friendly **interactive menu** — they
+  share the exact same logic under the hood.
 
-The idea:
+## Requirements
 
-1. Extract the courses' content from CSB website into Markdown files.
-2. Manage/update those contents in your Personal Knowledge Base (Obsidian for example).
+- **Python 3.12+**
+- **[uv](https://docs.astral.sh/uv/)** — the package/venv manager used to run
+  the app (`uv run …` handles the virtual environment and dependencies for you).
+- **Google Chrome** — the scraper drives a real Chrome browser via Selenium.
+- A **Google Cloud Skills Boost account** — most course/lab pages require you to
+  be signed in.
 
-To start:
+See **[docs/installation.md](docs/installation.md)** for setup details.
 
-1. Update `config/settings.py` file to meet your environment.
-2. Create a `venv` for your Python distribution, for example `.venv`.
-3. Install dependencies from `requirements.txt`: `pip3 install -r requirements.txt`.
-4. Start download with the `scrapter.py`.
+## Quick start
 
 ```bash
-python scrapter.py
+# 1. Install dependencies (creates the virtualenv automatically)
+uv sync
+
+# 2. Sign in once — a browser opens; log in, then press Enter to close it.
+#    Your session is saved to a reusable browser profile.
+uv run app/main.py login            # public portal
+uv run app/main.py login -B         # partner portal
+
+# 3. Build the catalog of paths (first run only)
+uv run app/main.py list --reload --paths
+
+# 4. Fetch a path and everything under it → Markdown
+uv run app/main.py fetch -p 16
+
+# 5. Open the generated Markdown in Obsidian (see "Where files go" below)
 ```
 
-Hint:
-
-- A simple web interface to browse your downloaded courses.
+Prefer menus over flags? Just run the interactive mode:
 
 ```bash
-python app.py
+uv run app/main.py interactive
 ```
 
-5. Open output Markdown files with your Obsidian or any other similar software.
+## Command reference
 
-## Features
+Every command runs as `uv run app/main.py <command> [options]`.
 
-- Gathers a list of Path.
-- Offer selection to specify a course or list of courses.
-- Extract the course(s)' content, including id, title, tag, videos' transcript, and quiz.
-- Write path's or course's content to a well-structured Markdown file for each.
-- Can also help to 'Mark Complete Video' as well.
-- Generate prompt for LLM to re-formatting the videos' transcripts.
+| Command | Aliases | What it does |
+|---|---|---|
+| `list` | `l` | List stored paths / courses / labs. Add `--reload/-r` to refresh from the website first. |
+| `fetch` | `f` | Scrape content into Markdown + JSON. |
+| `interactive` | `i` | Launch the guided menu. |
+| `md` | | Re-generate Markdown from already-stored data (no browser needed). |
+| `search` | `s` | Search the local database. |
+| `browser` | `b`, `w` | Open a browser for manual login/debugging. |
 
-## Example of Obsidian
+### Choosing a portal
 
-File View.
+Every data command accepts a portal selector (default = **public**):
+
+| Flag | Portal |
+|---|---|
+| `-A` / `-a` / `--public` | Public — `www.skills.google` (default) |
+| `-B` / `-b` / `--partner` | Partner — `partner.skills.google` |
+| `--portal <name>` / `-P` | Explicit name (advanced) |
+
+You can also just paste a **full URL** instead of an ID — the portal is inferred
+from the host automatically:
+
+```bash
+uv run app/main.py fetch -c https://partner.skills.google/course_templates/35
+```
+
+### `fetch` — the main workhorse
+
+```bash
+# A whole path (→ its courses → their labs)
+uv run app/main.py fetch -p 16
+
+# One or more courses
+uv run app/main.py fetch -c 53 1145
+
+# A standalone lab
+uv run app/main.py fetch -l 104653
+
+# A partner path
+uv run app/main.py fetch -B -p 4343
+```
+
+Useful `fetch` options:
+
+| Option | Effect |
+|---|---|
+| `--force` / `-f` | Re-scrape even if the item is already stored (cascades to children). |
+| `--toc` / `-t` | Table of contents / structure only — skip transcripts and details. |
+| `--no-transcript` | Keep everything but video transcripts. |
+| `--no-md` | Update the database only; don't write Markdown. |
+| `--headless` | Run Chrome without a visible window. |
+
+### Other examples
+
+```bash
+# List partner courses, refreshing from the website first
+uv run app/main.py list -B --courses --reload
+
+# Search the public database for "kubernetes"
+uv run app/main.py search kubernetes
+
+# Re-generate Markdown for courses 53 and 1145 (offline)
+uv run app/main.py md -c 53,1145
+```
+
+## Where your files go
+
+```
+data/                         # local database + JSON backups (per portal)
+  public/ | partner/
+    database.json
+    courses/ | paths/ | labs/
+
+csbmdvault/                   # your Markdown vault → open this in Obsidian
+  public/ | partner/
+    courses/ | paths/ | labs/   # one .md file per item
+  materials/                    # downloaded documents, shared across portals
+    courses/<id>/…
+```
+
+Point Obsidian at the `csbmdvault/` folder to browse everything as a graph.
+
+## Run with Docker (web UI)
+
+A small Flask web UI is available for browsing what you've downloaded:
+
+```bash
+docker build -t csbhelper .
+docker run -dp 8080:8080 csbhelper
+# then open http://localhost:8080
+```
+
+## Example: Obsidian
+
+File view, graph view, and the script in action:
 
 ![Obsidian File View](docs/assets/obsidian-files.png)
-
-Graph View.
-
-![Obsidian File View](docs/assets/obsidian-graph.png)
-
-The script in action.
-
+![Obsidian Graph View](docs/assets/obsidian-graph.png)
 ![The script in action](docs/assets/script-in-action.png)
 
-## Further Reading
+## Further reading
 
-1. [Installation](docs/installation.md)
-2. [Usage](docs/usage.md)
-3. [How does the data files look like?](docs/data.md)
-4. [How does the Markdown files look like?](docs/output.md)
-5. [Generate prompts to formatting transcript?](docs/promt-llm.md)
+1. [Getting Started (non-technical walkthrough)](docs/getting-started.md)
+2. [Installation](docs/installation.md)
+3. [Usage](docs/usage.md)
+4. [What the data files look like](docs/data.md)
+5. [What the Markdown files look like](docs/output.md)
+6. [Generating prompts to reformat transcripts](docs/promt-llm.md)
+7. [Contributing](CONTRIBUTION.md)
+
+## A note on responsible use
+
+This tool automates a signed-in browser to save content **you already have
+access to** for personal offline study. Respect Google Cloud Skills Boost's
+Terms of Service, keep your fetches reasonable, and don't redistribute scraped
+content.
