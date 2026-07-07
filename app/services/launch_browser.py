@@ -45,6 +45,9 @@ def launch_browser(profile_folder: Optional[str] = WEBDRIVER_PROFILE_FOLDER_NAME
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--password-store=basic")
         options.add_argument("--use-mock-keychain")
+        # Mute all audio in the scraper's browser (every tab) — no sound is
+        # needed while scraping and it shouldn't disturb the user.
+        options.add_argument("--mute-audio")
         options.add_argument('log-level=3')
         options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation"])
 
@@ -86,6 +89,8 @@ def launch_browser(profile_folder: Optional[str] = WEBDRIVER_PROFILE_FOLDER_NAME
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--password-store=basic")
         options.add_argument("--use-mock-keychain")
+        # Mute all audio in the scraper's browser (every tab).
+        options.add_argument("--mute-audio")
         options.add_argument('log-level=3')
         options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation"])
 

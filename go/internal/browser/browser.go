@@ -68,6 +68,9 @@ func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 		chromedp.Flag("disable-blink-features", "AutomationControlled"),
 		chromedp.Flag("password-store", "basic"),
 		chromedp.Flag("use-mock-keychain", true),
+		// Mute all audio in the scraper's browser instance (every tab) — we
+		// never need sound while scraping and it shouldn't disturb the user.
+		chromedp.Flag("mute-audio", true),
 	}
 	if o.Headless {
 		// The less-detectable "new" headless mode.
