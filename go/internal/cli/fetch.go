@@ -14,9 +14,9 @@ import (
 	"csb/internal/store"
 )
 
-// cmdFetch scrapes content into Markdown + JSON. This slice implements standalone
-// lab fetching (-l) end-to-end; course (-c) and path (-p) fetching land in the
-// next slice (they require the deep per-activity extraction pipeline).
+// cmdFetch scrapes content into Markdown + JSON: paths cascade to their courses
+// and labs; courses cascade to their labs; flags and portal inherit down the
+// tree. Ports the Python cmd_fetch.
 func cmdFetch(args []string) int {
 	p := parseArgs(args, map[string]bool{
 		"-c": true, "--courses": true,
@@ -26,28 +26,19 @@ func cmdFetch(args []string) int {
 	force := p.has("--force", "-f")
 	noMD := p.has("--no-md")
 	tocOnly := p.has("--toc", "-t")
+	noTranscript := p.has("--no-transcript")
 	headless := p.has("--headless")
 
+	pathIDs, hasP := p.value("-p", "--paths")
+	courseIDs, hasC := p.value("-c", "--courses")
 	labIDs, hasL := p.value("-l", "--labs")
-	_, hasC := p.value("-c", "--courses")
-	_, hasP := p.value("-p", "--paths")
 
-	if !hasL && !hasC && !hasP {
+	if !hasP && !hasC && !hasL {
 		fmt.Println("Please specify items to fetch using -p <id>, -c <id>, or -l <id>.")
 		return 1
 	}
-	if hasC || hasP {
-		fmt.Println("Note: course (-c) and path (-p) fetching are not in the Go build yet.")
-		fmt.Println("      Use the Python CLI for those, or fetch labs with -l. (Coming next.)")
-		if !hasL {
-			return 1
-		}
-	}
 
-	// --- Labs ---
-	ids := splitIDs(labIDs)
-	fmt.Printf("\n--- Processing Labs: %v ---\n", ids)
-	fmt.Println("\nLaunching browser for lab extraction...")
+	fmt.Println("\nLaunching browser...")
 	sess, err := browser.Launch(context.Background(), browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
@@ -59,12 +50,27 @@ func cmdFetch(args []string) int {
 	defer sess.Close()
 
 	rc := 0
-	for _, raw := range ids {
-		pk, id := portal.AndID(raw)
-		if pk == "" {
-			pk = p.portal
+	// Paths first (cascade), then standalone courses, then standalone labs.
+	for _, raw := range splitIDs(pathIDs) {
+		pk, id := resolvePortal(raw, p.portal)
+		fmt.Printf("\n--- Processing Path %s [%s] ---\n", id, pk)
+		if err := fetchPath(sess, pk, id, force, noMD, tocOnly, noTranscript); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to fetch path %s: %v\n", id, err)
+			rc = 1
 		}
-		if err := fetchLab(sess, pk, id, force, noMD, tocOnly); err != nil {
+	}
+	for _, raw := range splitIDs(courseIDs) {
+		pk, id := resolvePortal(raw, p.portal)
+		fmt.Printf("\n--- Processing Course %s [%s] ---\n", id, pk)
+		if err := fetchCourse(sess, pk, id, force, noMD, tocOnly, noTranscript); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to fetch course %s: %v\n", id, err)
+			rc = 1
+		}
+	}
+	for _, raw := range splitIDs(labIDs) {
+		pk, id := resolvePortal(raw, p.portal)
+		fmt.Printf("\n--- Processing Lab %s [%s] ---\n", id, pk)
+		if err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to fetch lab %s: %v\n", id, err)
 			rc = 1
 		}
@@ -72,9 +78,19 @@ func cmdFetch(args []string) int {
 	return rc
 }
 
-// fetchLab loads, parses, and persists a single lab (JSON + Markdown + DB).
-func fetchLab(sess *browser.Session, portalKey, id string, force, noMD, tocOnly bool) error {
-	// Skip if already stored, unless forced (mirrors Lab.fetch_data).
+// resolvePortal resolves a raw id/URL into (portal, id); a URL host overrides the
+// default portal.
+func resolvePortal(raw, defaultPortal string) (string, string) {
+	pk, id := portal.AndID(raw)
+	if pk == "" {
+		pk = defaultPortal
+	}
+	return pk, id
+}
+
+// fetchLab loads, parses, and persists a single lab. When fetchURL is empty the
+// lab's catalog URL is used; partner labs from a path pass their focus URL.
+func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD, tocOnly bool) error {
 	if !force {
 		if existing, _ := store.LoadLab(portalKey, id); existing != nil && existing.Title != "" {
 			fmt.Printf("•-• [+] Existed: %s - %s\n", id, existing.Title)
@@ -82,15 +98,17 @@ func fetchLab(sess *browser.Session, portalKey, id string, force, noMD, tocOnly 
 		}
 	}
 
-	target := portal.Get(portalKey).Lab + "/" + id // catalog_lab/<id>
+	target := fetchURL
+	if target == "" {
+		target = portal.Get(portalKey).Lab + "/" + id // catalog_lab/<id>
+	}
 	fmt.Printf("Fetching: %s\n", target)
 	html, finalURL, err := sess.Navigate(target, 1500*time.Millisecond)
 	if err != nil {
 		return err
 	}
 	if strings.Contains(finalURL, "sign_in") {
-		return fmt.Errorf("authentication required — run 'csb login%s' first",
-			portalFlagHint(portalKey))
+		return fmt.Errorf("authentication required — run 'csb login%s' first", portalFlagHint(portalKey))
 	}
 
 	lc, err := scrape.ParseLabHTML(html)

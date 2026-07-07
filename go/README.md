@@ -27,10 +27,19 @@ Requires Go 1.26+ and Google Chrome (chromedp drives your installed Chrome).
 | `search` | ✅ Done | Whole-doc and `--field` matching; output matches Python. |
 | `login` | ✅ Done | Opens a browser to sign in; session shared with Python. |
 | `fetch -l` (labs) | ✅ Done | End-to-end; output byte-identical to Python (verified live). |
-| `fetch -c` (courses) | ⏳ Next | Needs the deep per-activity extraction pipeline. |
-| `fetch -p` (paths) | ⏳ Next | Course list + cascade down the tree. |
+| `fetch -c` (courses) | ✅ Done | Full pipeline (metadata, outline, transcripts, external Rise/Storage lessons, quizzes, labs, documents). Course 53 verified **byte-identical** live. |
+| `fetch -p` (paths) | ✅ Done | Parses the plan and cascades to courses → labs, inheriting flags/portal. |
 | `list --reload` | ⏳ Next | Catalog list fetch via browser. |
 | `interactive` | ⏳ Next | Guided menu. |
+
+Known simplifications in the Go build (do not affect Markdown output):
+- The course/lab JSON keeps the Markdown-relevant fields and drops unused
+  catalog flags (`isLocked`, `duration`, `inProgress`, `score`, `disabled`,
+  `paid`); `quizItems` keep `stem`/`options`. Both tools still generate
+  identical Markdown.
+- The database (`database.json`) stores course/path **metadata** (not full
+  modules) to stay small; `UpsertDoc` merges, so a prior Python run's fields are
+  preserved.
 
 Portal flags (`-A`/`-a`/`--public`, `-B`/`-b`/`--partner`, `--portal NAME`) and
 URL inference (paste a full URL instead of an id) work on every command.
