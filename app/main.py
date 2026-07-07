@@ -48,15 +48,18 @@ def add_portal_flags(parser):
     parser.set_defaults(portal=DEFAULT_PORTAL)
 
 
-def _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only):
+def _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only, fetch_url=None):
     """
     Fetch a single lab and persist it (JSON, markdown, and the labs collection).
     Returns the Lab if fetched, or None if it was skipped (already stored).
+
+    fetch_url, when given, overrides the lab's default catalog URL — used for
+    partner labs, which are served from a parent-referencing focus URL.
     """
     lab = Lab(id=lid, driver=driver, portal=portal)
-    # fetch_data scrapes the lab's catalog page (name, description, steps).
+    # fetch_data scrapes the lab's page (name, description, steps).
     # Honors force: skips if already stored unless force is set.
-    if not lab.fetch_data(force=force):
+    if not lab.fetch_data(force=force, fetch_url=fetch_url):
         return None
 
     lab.save_json()  # Backs up to file and syncs to DB
@@ -74,6 +77,7 @@ def cmd_list(args):
     """Handle list command"""
 
     portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    headless = getattr(args, 'headless', False)
 
     # Determine type
     if args.courses:
@@ -92,7 +96,7 @@ def cmd_list(args):
         driver = None
         try:
             print("\n\033[35mLaunching browser for list extraction...\033[0m")
-            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
 
             print(f"Reloading {label} list from remote [{portal}]...")
             collection = target_class(driver=driver, portal=portal)
@@ -144,6 +148,7 @@ def cmd_fetch(args):
     toc_only = args.toc
     no_transcript = args.no_transcript
     default_portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    headless = getattr(args, 'headless', False)
 
     fetch_paths_ids = args.paths
     fetch_courses_ids = args.courses
@@ -160,7 +165,7 @@ def cmd_fetch(args):
         driver = None
         try:
             print("\n\033[35mLaunching browser for path extraction...\033[0m")
-            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
             
             for raw_pid in fetch_paths_ids:
                 portal, pid = _resolve_portal(raw_pid, default_portal)
@@ -194,7 +199,9 @@ def cmd_fetch(args):
                         try:
                             if 'lab' in a_type:
                                 print(f"\n--- Path {pid} > Lab {a_id} - {a_name} [{portal}] ---")
-                                if _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only):
+                                # Partner labs live at a parent-referencing focus URL.
+                                if _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only,
+                                                       fetch_url=activity.get('url')):
                                     print(f"Lab {a_id} updated.")
                             else:
                                 print(f"\n--- Path {pid} > Course {a_id} - {a_name} [{portal}] ---")
@@ -222,7 +229,7 @@ def cmd_fetch(args):
         try:
              # Launch browser for authenticated access
              print("\n\033[35mLaunching browser for course extraction...\033[0m")
-             driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+             driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
              
              for raw_cid in fetch_courses_ids:
                 portal, cid = _resolve_portal(raw_cid, default_portal)
@@ -245,7 +252,7 @@ def cmd_fetch(args):
         driver = None
         try:
             print("\n\033[35mLaunching browser for lab extraction...\033[0m")
-            driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
 
             for raw_lid in fetch_labs_ids:
                 portal, lid = _resolve_portal(raw_lid, default_portal)
@@ -335,6 +342,7 @@ def cmd_login(args):
     print(f"\n\033[35mLaunching browser to sign in to the '{portal}' portal...\033[0m")
     print(f"Opening: {url}")
 
+    # Login is always visible so the user can interact with the sign-in flow.
     driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
     try:
         driver.get(url)
@@ -443,6 +451,7 @@ def main():
     
     # Reload flag
     parser_l.add_argument('--reload', '-r', action='store_true', help='Reload list from remote before listing')
+    parser_l.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
     add_portal_flags(parser_l)
 
     # Mutually exclusive group for sorting
@@ -463,6 +472,7 @@ def main():
     parser_f.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
     parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
+    parser_f.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
     add_portal_flags(parser_f)
 
     parser_f.set_defaults(func=cmd_fetch)
