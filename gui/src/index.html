@@ -77,14 +77,23 @@
       <section class="panel" data-panel="search">
         <div class="row">
           <input id="searchQuery" type="text" placeholder="Search titles and metadata…" />
+          <button class="btn" id="searchBtn">Search</button>
+          <span class="count" id="searchCount"></span>
+        </div>
+        <div class="row filters">
+          <label>Portal</label>
+          <div class="segmented" id="searchPortal">
+            <button data-portal="all" class="active">All</button>
+            <button data-portal="public">Public</button>
+            <button data-portal="partner">Partner</button>
+          </div>
+          <label>Type</label>
           <div class="segmented" id="searchKind">
             <button data-kind="all" class="active">All</button>
             <button data-kind="paths">Paths</button>
             <button data-kind="courses">Courses</button>
             <button data-kind="labs">Labs</button>
           </div>
-          <button class="btn" id="searchBtn">Search</button>
-          <span class="count" id="searchCount"></span>
         </div>
         <div class="table-wrap"><table id="searchTable"><tbody></tbody></table></div>
       </section>

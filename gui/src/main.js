@@ -39,6 +39,7 @@ wireGroup("#portalToggle", "portal", (p) => {
 wireGroup("#fetchKind", "kind", () => {});
 wireGroup("#browseKind", "kind", () => {});
 wireGroup("#searchKind", "kind", () => {});
+wireGroup("#searchPortal", "portal", () => {});
 
 // --- Fetch ---
 const consoleEl = $("#console");
@@ -85,7 +86,8 @@ function renderRows(tableSel, countSel, items) {
     tr.innerHTML =
       `<td class="cell-id">${it.id}</td>` +
       `<td>${escapeHtml(it.name)}</td>` +
-      `<td class="cell-type">${it.type}</td>`;
+      `<td class="cell-type">${it.type}</td>` +
+      `<td class="cell-portal"><span class="badge badge-${it.portal}">${it.portal}</span></td>`;
     tbody.appendChild(tr);
   }
   $(countSel).textContent = `${items.length} item${items.length === 1 ? "" : "s"}`;
@@ -108,11 +110,20 @@ $("#browseBtn").addEventListener("click", async () => {
 $("#searchBtn").addEventListener("click", async () => {
   const query = $("#searchQuery").value.trim();
   if (!query) { setStatus("Enter a search query."); return; }
+  const kind = selected("#searchKind", "kind");
+  // Search scope is chosen here (independent of the global toggle): "all"
+  // queries both portals and merges, so results span the whole library.
+  const scope = selected("#searchPortal", "portal");
+  const portals = scope === "all" ? ["public", "partner"] : [scope];
   setStatus("Searching…", "busy");
   try {
-    const items = await invoke("search_items", { portal, query, kind: selected("#searchKind", "kind") });
+    const batches = await Promise.all(
+      portals.map((pk) => invoke("search_items", { portal: pk, query, kind }))
+    );
+    const items = batches.flat();
     renderRows("#searchTable", "#searchCount", items);
-    setStatus(`${items.length} result(s) for “${query}”.`, "ok");
+    const where = scope === "all" ? "both portals" : scope;
+    setStatus(`${items.length} result(s) for “${query}” in ${where}.`, "ok");
   } catch (err) {
     setStatus("Search failed: " + err);
   }
