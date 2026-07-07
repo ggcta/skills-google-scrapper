@@ -91,10 +91,15 @@ def _prompt_fetch_flags() -> dict:
     matching the attributes cmd_fetch expects.
     """
     force = _yes_no("Force re-fetch items that already exist?", default=False)
-    toc = _yes_no("Table of contents only (skip transcripts/details)?", default=False)
-    no_transcript = False
-    if not toc:
-        no_transcript = _yes_no("Skip video transcripts?", default=False)
+
+    # Single content-depth choice replaces the previously overlapping
+    # "TOC only" and "Skip transcripts" questions.
+    depth = _prompt(
+        "Content depth? [F]ull (default) / [t]oc only / full but [n]o transcripts: "
+    ).lower()
+    toc = depth in ("t", "toc")
+    no_transcript = depth in ("n", "no", "no-transcript")
+
     no_md = _yes_no("Skip generating markdown files?", default=False)
     return {
         "force": force,
