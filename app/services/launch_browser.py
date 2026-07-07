@@ -9,12 +9,15 @@ from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME
 
 
 # Launch a browser with the specified profile and headless mode
-def launch_browser(profile_folder: Optional[str] = None,
+def launch_browser(profile_folder: Optional[str] = WEBDRIVER_PROFILE_FOLDER_NAME,
                    headless=True,
                    browser="chrome" or None):
     """
     Launches a Selenium WebDriver instance with the specified browser and profile path.
-    A default browser profile will be set to ./webdriver_profiles/ if no profile path is provided.
+
+    The persistent WEBDRIVER_PROFILE_FOLDER_NAME profile is reused by default, so
+    an existing signed-in session (public and/or partner) carries over to every run.
+    Pass profile_folder=None to use a throwaway profile instead.
     """
 
     # Launch Chrome browser
@@ -39,15 +42,16 @@ def launch_browser(profile_folder: Optional[str] = None,
         options.add_argument("--metrics-recording-only")
         options.add_argument("--no-first-run")
         options.add_argument("--safebrowsing-disable-auto-update")
-        options.add_argument("--enable-automation")
+        options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--password-store=basic")
         options.add_argument("--use-mock-keychain")
         options.add_argument('log-level=3')
         options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation"])
 
-        # Set the headless mode, default is True
+        # Set the headless mode, default is True. Use the "new" headless mode,
+        # which is far less detectable than the legacy --headless.
         if headless:
-            options.add_argument("--headless")
+            options.add_argument("--headless=new")
 
         # Set the profile folder, default is None
         if profile_folder:
@@ -79,14 +83,14 @@ def launch_browser(profile_folder: Optional[str] = None,
         options.add_argument("--metrics-recording-only")
         options.add_argument("--no-first-run")
         options.add_argument("--safebrowsing-disable-auto-update")
-        options.add_argument("--enable-automation")
+        options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--password-store=basic")
         options.add_argument("--use-mock-keychain")
         options.add_argument('log-level=3')
         options.add_experimental_option("excludeSwitches", ["enable-logging", "enable-automation"])
 
         if headless:
-            options.add_argument("--headless")
+            options.add_argument("--headless=new")
 
         if profile_folder:
             webdriver_profile_path = os.path.join(os.getcwd(), profile_folder)
