@@ -137,7 +137,13 @@ class Course(BaseEntity):
             course_ld_json_element = course_html.select_one(COURSE_LD_JSON)
             meta_element = course_html.select_one(COURSE_META_DESCRIPTION)
 
-            if not course_ld_json_element or not meta_element:
+            # Partner portal course pages carry no ld+json blob; fall back to
+            # the og:title + meta description (the outline still comes from the
+            # ql-contents-menu, handled in extract_course_outline).
+            if not course_ld_json_element or not course_ld_json_element.string:
+                return self._extract_course_metadata_partner(course_html)
+
+            if not meta_element:
                 raise NoSuchElementException("(extract_course_metadata) meta_element not found.")
 
             course_ld_json_text = course_ld_json_element.string
@@ -164,6 +170,36 @@ class Course(BaseEntity):
         except Exception as error:
             print(f"(extract_course_metadata) Error: {error}")
             return False
+
+    # MARK: _extract_course_metadata_partner
+    def _extract_course_metadata_partner(self, course_html) -> bool:
+        """
+        Extract course metadata from a partner portal course page, which has no
+        ld+json blob. Name comes from og:title (site suffix stripped) and the
+        description from the meta description tag. Partner pages expose no
+        machine-readable publish date, objectives, or topics.
+        """
+        og_title = course_html.select_one("meta[property='og:title']")
+        meta_element = course_html.select_one(COURSE_META_DESCRIPTION)
+
+        name = None
+        if og_title and og_title.get('content'):
+            name = re.sub(r'\s*\|\s*Google.*$', '', og_title['content']).strip()
+        if not name:
+            print("(extract_course_metadata) Partner course name not found.")
+            return False
+
+        description = ''
+        if meta_element and meta_element.get('content'):
+            description = self.clean_text(meta_element['content'])
+            description = re.sub(r'\s{2,}', '\n\n', description).strip()
+
+        self.name = name
+        self.description = description
+        self.datePublished = self.datePublished or ""
+        self.topics = self.topics or []
+        self.objectives = self.objectives or []
+        return True
 
     # MARK: extract_course_outline
     def extract_course_outline(self, course_html) -> bool:
