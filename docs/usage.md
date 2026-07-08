@@ -101,6 +101,12 @@ uv run app/main.py list --labs
 - `--headless` — reload without a visible browser window.
 - portal flags — e.g. `list -B --courses`.
 
+Each row shows its **fetch status**: a green `✓ <date>` when the item has been
+scraped (the date is when it was last fetched), or a dim `— not fetched` when
+it's only a catalog entry you haven't downloaded yet. `search` shows the same
+marker. In the GUI, the Browse and Search tabs render this as a status badge and
+add a **Status** sort (fetched-first, newest first) plus an "N fetched" count.
+
 ### `search` (alias `s`) — query the local database
 
 ```bash

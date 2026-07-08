@@ -70,7 +70,7 @@ func cmdList(args []string) int {
 	if p.has("--json") {
 		out := make([]jsonItem, len(rows))
 		for i, r := range rows {
-			out[i] = jsonItem{ID: r.id, Name: r.name, Type: strings.TrimSuffix(label, "s"), Portal: p.portal}
+			out[i] = newJSONItem(p.portal, table, r.id, r.name)
 		}
 		emitJSON(out)
 		return 0
@@ -78,7 +78,7 @@ func cmdList(args []string) int {
 
 	fmt.Printf("\n\033[45m[%s]\033[0m\n\n", center(strings.ToUpper(label), 85))
 	for _, r := range rows {
-		fmt.Printf("+|-• \033[35m[%5s - %-72s]\033[0m\n", r.id, r.name)
+		fmt.Printf("+|-• \033[35m[%5s - %-72s]\033[0m %s\n", r.id, r.name, fetchStatusText(p.portal, table, r.id))
 	}
 	return 0
 }

@@ -45,6 +45,21 @@ func loadJSON(path string, v any) error {
 	return json.Unmarshal(b, v)
 }
 
+// FetchStatus reports whether an item (table is paths/courses/labs) has been
+// fully fetched and, if so, its scrapedTime in epoch-ms. The per-item JSON
+// backup exists only after a real fetch — a catalog reload writes DB stubs only
+// — so its presence is the source of truth for "downloaded". A present file
+// with a zero/absent scrapedTime still counts as fetched (ms == 0).
+func FetchStatus(portalKey, table, id string) (scrapedMs int64, fetched bool) {
+	var meta struct {
+		ScrapedTime int64 `json:"scrapedTime"`
+	}
+	if err := loadJSON(jsonPath(portalKey, table, id), &meta); err != nil {
+		return 0, false
+	}
+	return meta.ScrapedTime, true
+}
+
 // LoadCourse reads a stored course. Returns (nil, nil) if the file is absent.
 func LoadCourse(portalKey, id string) (*model.Course, error) {
 	var c model.Course

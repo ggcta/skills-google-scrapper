@@ -83,14 +83,24 @@ const concretePortal = () => (portal === "all" ? "public" : portal);
 // Client-side sort so it works across merged "All" results without a re-fetch.
 function sortItems(items, by) {
   const arr = items.slice();
+  const byName = (a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" });
   if (by === "id") {
     arr.sort((a, b) => {
       const na = parseInt(a.id, 10), nb = parseInt(b.id, 10);
       if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
       return String(a.id).localeCompare(String(b.id));
     });
+  } else if (by === "status") {
+    // Fetched first (newest download first), then unfetched, each by name.
+    arr.sort((a, b) => {
+      if (!!a.fetched !== !!b.fetched) return a.fetched ? -1 : 1;
+      if (a.fetched && (b.scrapedTime || 0) !== (a.scrapedTime || 0)) {
+        return (b.scrapedTime || 0) - (a.scrapedTime || 0);
+      }
+      return byName(a, b);
+    });
   } else {
-    arr.sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { sensitivity: "base" }));
+    arr.sort(byName);
   }
   return arr;
 }
@@ -144,10 +154,24 @@ function renderRows(tableSel, countSel, items) {
       `<td class="cell-id">${it.id}</td>` +
       `<td>${escapeHtml(it.name)}</td>` +
       `<td class="cell-type">${it.type}</td>` +
-      `<td class="cell-portal"><span class="badge badge-${it.portal}">${it.portal}</span></td>`;
+      `<td class="cell-portal"><span class="badge badge-${it.portal}">${it.portal}</span></td>` +
+      `<td class="cell-status">${statusCell(it)}</td>`;
     tbody.appendChild(tr);
   }
-  $(countSel).textContent = `${items.length} item${items.length === 1 ? "" : "s"}`;
+  const fetched = items.filter((it) => it.fetched).length;
+  $(countSel).textContent =
+    `${items.length} item${items.length === 1 ? "" : "s"} · ${fetched} fetched`;
+}
+
+// statusCell renders the fetch status: a green "✓ date" when downloaded, a dim
+// dash when not yet fetched.
+function statusCell(it) {
+  if (it.fetched) {
+    const label = it.scrapedDate || "fetched";
+    const title = it.scrapedDate ? `Fetched on ${it.scrapedDate}` : "Fetched";
+    return `<span class="badge badge-fetched" title="${title}">✓ ${label}</span>`;
+  }
+  return `<span class="badge badge-unfetched" title="Not fetched yet">— not fetched</span>`;
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));

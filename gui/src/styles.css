@@ -127,6 +127,7 @@ tr:hover td { background: var(--surface-2); }
 .cell-id { font-family: var(--mono); color: var(--muted); width: 90px; }
 .cell-type { color: var(--muted); width: 90px; text-transform: capitalize; }
 .cell-portal { width: 96px; }
+.cell-status { width: 128px; white-space: nowrap; }
 
 /* Portal badge */
 .badge {
@@ -136,8 +137,12 @@ tr:hover td { background: var(--surface-2); }
 }
 .badge-public { background: rgba(59,110,245,.14); color: var(--accent); border-color: rgba(59,110,245,.3); }
 .badge-partner { background: rgba(214,158,46,.16); color: #c98a1a; border-color: rgba(214,158,46,.34); }
+/* Fetch-status badges */
+.badge-fetched { background: rgba(34,160,90,.15); color: #1a7f43; border-color: rgba(34,160,90,.32); text-transform: none; }
+.badge-unfetched { background: transparent; color: var(--muted); border-color: var(--border); text-transform: none; font-weight: 600; }
 @media (prefers-color-scheme: dark) {
   .badge-partner { color: #e6b450; }
+  .badge-fetched { color: #4ade80; }
 }
 
 /* Filter row: compact inline labels */
