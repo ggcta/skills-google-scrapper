@@ -83,8 +83,11 @@ pipeline used to build the current set).
 - **Portal toggle** (Public / Partner) applies to every action.
 - **Fetch** — path / course / lab by ID or URL, with force / TOC-only /
   no-transcripts / headless options; live output streams into the console.
-- **Browse** — list stored paths / courses / labs (`csb list --json`).
-- **Search** — query the local database (`csb search --json`).
+- **Browse** — list stored paths / courses / labs (`csb list --json`), each with
+  a **fetch-status badge** (green `✓ <date>` when downloaded, dim `— not fetched`
+  otherwise), a **Status** sort, and an "N fetched" count.
+- **Search** — query the local database (`csb search --json`), with the same
+  fetch-status badges.
 - **Sign in** — opens a browser via `csb login`; click *Done* when finished.
 - **Open vault** — reveals `csbmdvault/` in the OS file manager.
 

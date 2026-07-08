@@ -59,7 +59,7 @@ func cmdSearch(args []string) int {
 		}
 		if jsonOut {
 			for _, d := range matched {
-				jsonResults = append(jsonResults, jsonItem{ID: d.ID(), Name: d.Name(), Type: strings.TrimSuffix(table, "s"), Portal: p.portal})
+				jsonResults = append(jsonResults, newJSONItem(p.portal, table, d.ID(), d.Name()))
 			}
 			total += len(matched)
 			continue
@@ -75,7 +75,7 @@ func cmdSearch(args []string) int {
 				if name == "" {
 					name = "N/A"
 				}
-				fmt.Printf("+|-• \033[35m[%5s - %-72s]\033[0m\n", id, name)
+				fmt.Printf("+|-• \033[35m[%5s - %-72s]\033[0m %s\n", id, name, fetchStatusText(p.portal, table, d.ID()))
 			}
 			total += len(matched)
 		}

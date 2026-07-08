@@ -134,6 +134,38 @@ class Collection(Serialize):
         except Exception as e:
             print(f"(Collection.save_json) Error syncing to DB: {e}")
 
+    def _fetch_status(self, item_id):
+        """
+        Return (fetched, scraped_date) for an item, read from its per-item JSON.
+
+        The per-item JSON file is written only by a real fetch — a catalog reload
+        writes collection/DB stubs only — so its presence is the source of truth
+        for whether the item has been downloaded. scraped_date is a YYYY-MM-DD
+        string when a scrapedTime is present, else None.
+        """
+        item_path = PathlibPath(DATA_FOLDER_NAME) / self.portal / self.type.lower() / f"{item_id}.json"
+        try:
+            with open(item_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (FileNotFoundError, ValueError, OSError):
+            return False, None
+        ms = data.get("scrapedTime")
+        if ms:
+            try:
+                return True, datetime.fromtimestamp(ms / 1000.0).strftime("%Y-%m-%d")
+            except (ValueError, OSError, OverflowError):
+                return True, None
+        return True, None
+
+    def _fetch_status_text(self, item_id):
+        """Colorized fetch-status suffix for list output (matches the Go CLI)."""
+        fetched, date = self._fetch_status(item_id)
+        if not fetched:
+            return "\033[2m— not fetched\033[0m"
+        if date:
+            return f"\033[32m✓ {date}\033[0m"
+        return "\033[32m✓ fetched\033[0m"
+
     def print_list(self, sort_by: str = 'name'):
         """
         Print out the collection prior to prompting user for a selection.
@@ -176,7 +208,7 @@ class Collection(Serialize):
         for an_item in a_sorted_list:
             item_id = an_item[0]
             item_name = an_item[1] if an_item[1] is not None else ''
-            print(f"+|-• \033[35m[{item_id:>5} - {item_name:<72}]\033[0m")
+            print(f"+|-• \033[35m[{item_id:>5} - {item_name:<72}]\033[0m {self._fetch_status_text(item_id)}")
 
     def write_md(self):
         """
