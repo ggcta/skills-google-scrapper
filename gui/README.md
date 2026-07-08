@@ -41,14 +41,26 @@ it reads/writes the same `data/` and `csbmdvault/` as the CLI.
 
 ## Run in development
 
-```bash
-# one-time: install the Tauri CLI
-cargo install tauri-cli --version '^2.0'
+The project ships a [`justfile`](../justfile) (a modern task runner) so you don't
+have to remember the multi-step dance:
 
-# from the repo root, with ./csb built:
-cd gui/src-tauri
-cargo tauri dev
+```bash
+brew install just     # one-time (macOS); see https://just.systems for other OSes
+just setup            # one-time: install the Tauri v2 CLI
+just dev              # builds the csb binary, then launches the desktop app
 ```
+
+`just dev` runs `go build -o ./csb ./go` and then `cargo tauri dev` for you.
+Other recipes: `just run <args>` (CLI), `just bundle` (package), `just test`.
+
+<details><summary>Manual equivalent (no <code>just</code>)</summary>
+
+```bash
+cargo install tauri-cli --version '^2.0'   # one-time
+cd go && go build -o ../csb . && cd ..      # build the binary the GUI calls
+cd gui/src-tauri && cargo tauri dev
+```
+</details>
 
 `cargo build` (what CI/verification runs) compiles the Rust shell; `cargo tauri
 dev` opens the actual window.
@@ -56,8 +68,8 @@ dev` opens the actual window.
 ## Build a distributable
 
 ```bash
-cd gui/src-tauri
-cargo tauri build          # produces a .app/.dmg (macOS), .exe/.msi (Windows), etc.
+just bundle
+# or: cd gui/src-tauri && cargo tauri build   # .app/.dmg (macOS), .exe/.msi (Windows), …
 ```
 
 > Replace `icons/icon.png` (currently a 1×1 placeholder) with real icons before

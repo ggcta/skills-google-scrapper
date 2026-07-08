@@ -68,11 +68,35 @@ func (s *Session) start() error {
 	return nil
 }
 
-// relaunch tears down the (dead) browser and starts a new one.
+// relaunch tears down the (dead) browser and starts a new one. It waits for the
+// old browser to release the profile before relaunching, so the new Chrome
+// doesn't race the stale lock (which surfaces as Chrome's "Something went wrong
+// when opening your profile" dialog).
 func (s *Session) relaunch() error {
 	s.Close()
 	log.Print("[browser] session died; relaunching…")
+	s.waitProfileReleased(5 * time.Second)
 	return s.start()
+}
+
+// waitProfileReleased blocks until the profile's SingletonLock is gone (the old
+// Chrome has exited) or the deadline passes. No-op for a throwaway profile.
+func (s *Session) waitProfileReleased(max time.Duration) {
+	if s.opts.ProfileDir == "" {
+		return
+	}
+	dir := s.opts.ProfileDir
+	if abs, err := filepath.Abs(dir); err == nil {
+		dir = abs
+	}
+	lock := filepath.Join(dir, "SingletonLock")
+	deadline := time.Now().Add(max)
+	for time.Now().Before(deadline) {
+		if _, err := os.Lstat(lock); os.IsNotExist(err) {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 // alive reports whether the session context is still usable.
@@ -108,6 +132,10 @@ func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 		// Mute all audio in the scraper's browser instance (every tab) — we
 		// never need sound while scraping and it shouldn't disturb the user.
 		chromedp.Flag("mute-audio", true),
+		// Suppress the "Chrome didn't shut down correctly / restore pages"
+		// bubble, since we always tear the browser down programmatically.
+		chromedp.Flag("disable-session-crashed-bubble", true),
+		chromedp.Flag("restore-last-session", false),
 	}
 	if o.Headless {
 		// The less-detectable "new" headless mode.
