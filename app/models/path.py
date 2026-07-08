@@ -77,43 +77,72 @@ class Path(BaseEntity):
     # MARK: _parse_ld_json
     def _parse_ld_json(self, json_content: str, path_html=None) -> None:
         """
-        Populate path data from the public portal's ld+json blob.
+        Consolidate a public path's activity list from two sources.
 
-        The ld+json ``hasPart`` mislabels standalone labs as ``Course`` entries
-        with a bogus course_templates URL (e.g. the lab "A Tour of Google Cloud
-        Hands-on Labs" appears as course_templates/1281, a different course). The
-        path page's ``ql-contents-menu`` carries the real per-activity href,
-        where a genuine standalone lab is a top-level ``/focuses/<id>`` (anything
-        under ``/paths/<id>/...`` is a course, its href only pointing at the
-        user's resume position). Cross-reference by name to correct lab entries.
+        The ld+json ``hasPart`` is unreliable: it labels every entry
+        ``@type: "Course"`` and points a standalone lab's url at a coincidental,
+        unrelated (often purchase-gated) course_templates id — e.g. the lab
+        "A Tour of Google Cloud Hands-on Labs" appears as course_templates/1281,
+        a different, paywalled course that isn't in the path at all. So the
+        ld+json urls can't be trusted.
+
+        The path's ``ql-contents-menu`` is authoritative: each activity's href
+        tells the truth — a top-level ``/focuses/<id>`` is a genuine standalone
+        lab; anything under ``/paths/<pid>/...`` is a course (its href only
+        pointing at the user's resume spot). We iterate the ql-menu as the source
+        of truth (order + type + lab/course ids where present) and consult the
+        ld+json only to supply the course id for the session-deep-link case and
+        to enrich names. A lab's bogus ld url is never used.
         """
         path_data = json.loads(json_content)
-        href_by_name = self._path_activity_hrefs(path_html)
 
-        # A Path JSON element should and must have 'hasPart' key
-        courses_list: dict[str, dict] = {}
-        for course in path_data['hasPart']:
+        # ld+json enrichment: course id + clean name, keyed by lower-cased title.
+        ld_by_name: dict[str, dict] = {}
+        for course in path_data.get('hasPart', []):
             name = course["name"].strip()
-            href = href_by_name.get(name.lower(), "")
-            focus_match = re.match(r'^/focuses/(\d+)', href)
-            if focus_match:
-                # Genuine standalone lab: use the focus id and full focus URL
-                # (keeping the ?parent=…&path=… query the lab page needs).
-                lab_id = focus_match.group(1)
-                courses_list[lab_id] = {
-                    "id": lab_id,
-                    "type": "lab",
-                    "name": name,
-                    "url": f"{self.base_url}{href}",
-                }
-            else:
-                # Course: the ld+json course_templates URL is the correct one.
+            ld_by_name[name.lower()] = {"id": course['url'].split('/')[-1], "name": name}
+
+        menu = self._path_menu_activities(path_html)
+        courses_list: dict[str, dict] = {}
+
+        if not menu:
+            # No contents menu (unusual): fall back to the ld+json as-is. Labs
+            # can't be distinguished here, but real courses still resolve.
+            for course in path_data.get('hasPart', []):
                 course_id = course['url'].split('/')[-1]
                 courses_list[course_id] = {
-                    "id": course_id,
-                    "type": course["@type"],
-                    "name": name,
-                    "url": course["url"].strip(),
+                    "id": course_id, "type": "Course",
+                    "name": course["name"].strip(), "url": course["url"].strip(),
+                }
+        else:
+            for activity in menu:
+                title = (activity.get("title") or "").strip()
+                href = activity.get("href") or ""
+                ld_hit = ld_by_name.get(title.lower())
+                name = ld_hit["name"] if ld_hit and ld_hit.get("name") else title
+
+                focus_match = re.match(r'^/focuses/(\d+)', href)
+                if focus_match:
+                    # Standalone lab: focus id + full focus URL (keep the query).
+                    lab_id = focus_match.group(1)
+                    courses_list[lab_id] = {
+                        "id": lab_id, "type": "lab", "name": name,
+                        "url": f"{self.base_url}{href}",
+                    }
+                    continue
+
+                # Course: prefer the id in the href; else (a course_sessions
+                # resume deep-link) take it from the aligned ld+json entry.
+                template_match = re.search(r'/course_templates/(\d+)', href)
+                if template_match:
+                    course_id = template_match.group(1)
+                elif ld_hit:
+                    course_id = ld_hit["id"]
+                else:
+                    continue  # unresolvable — skip rather than fetch the wrong thing
+                courses_list[course_id] = {
+                    "id": course_id, "type": "Course", "name": name,
+                    "url": f"{self.base_url}/course_templates/{course_id}",
                 }
 
         self.name = path_data['name'].strip()
@@ -121,14 +150,11 @@ class Path(BaseEntity):
         self.datePublished = path_data.get('datePublished', '').strip()
         self.courses = courses_list
 
-    # MARK: _path_activity_hrefs
+    # MARK: _path_menu_activities
     @staticmethod
-    def _path_activity_hrefs(path_html) -> dict:
-        """
-        Map each path activity's (lower-cased) title to its ql-contents-menu
-        href, used to tell a standalone lab (/focuses/<id>) from a course.
-        """
-        out: dict[str, str] = {}
+    def _path_menu_activities(path_html) -> list:
+        """Return the path's ql-contents-menu activities in order."""
+        out: list = []
         if path_html is None:
             return out
         menu = path_html.select_one("ql-contents-menu")
@@ -140,10 +166,7 @@ class Path(BaseEntity):
             return out
         for module in modules:
             for step in module.get("steps", []):
-                for activity in step.get("activities", []):
-                    title = (activity.get("title") or "").strip().lower()
-                    if title and title not in out:
-                        out[title] = activity.get("href") or ""
+                out.extend(step.get("activities", []))
         return out
 
     # MARK: _parse_partner_html

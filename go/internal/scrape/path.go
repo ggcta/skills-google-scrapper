@@ -43,23 +43,37 @@ func ParsePathHTML(pageHTML, portalKey string) (PathContent, error) {
 // "/focuses/2794?parent=catalog&path=20" -> id 2794.
 var focusHrefRe = regexp.MustCompile(`^/focuses/(\d+)`)
 
-// parsePathPublic builds the activity list for a public path.
+// courseTemplateHrefRe extracts a course id from a href that contains
+// /course_templates/<id> (present for non-started courses).
+var courseTemplateHrefRe = regexp.MustCompile(`/course_templates/(\d+)`)
+
+// ldEntry is a hasPart record from the path's ld+json.
+type ldEntry struct {
+	ID   string // course_templates id from the ld url
+	Name string
+}
+
+// parsePathPublic consolidates a public path's activity list from two sources.
 //
-// The ld+json hasPart mislabels standalone labs as `Course` entries with a
-// bogus course_templates URL (e.g. the lab "A Tour of Google Cloud Hands-on
-// Labs" appears as course_templates/1281, a completely different course). The
-// path page's ql-contents-menu carries the real per-activity href, where a
-// genuine standalone lab is a top-level `/focuses/<id>` (anything under
-// `/paths/<id>/...` is a course, its href merely pointing at the user's resume
-// position). We take names/course-ids from the ld+json and cross-reference the
-// ql-menu by name to correct the lab entries.
+// The ld+json hasPart is unreliable: it labels every entry `@type: "Course"` and
+// points a standalone lab's url at a coincidental, unrelated (often paywalled)
+// course_templates id — e.g. the lab "A Tour of Google Cloud Hands-on Labs"
+// appears as course_templates/1281, which is a different, purchase-gated course
+// that isn't in the path at all. So the ld+json urls can't be trusted.
+//
+// The path's ql-contents-menu is authoritative: each activity's href tells the
+// truth — a top-level /focuses/<id> is a genuine standalone lab; anything under
+// /paths/<pid>/... is a course (its href only pointing at the user's resume
+// spot). We therefore iterate the ql-menu as the source of truth (order + type
+// + lab/course ids where present) and consult the ld+json only to supply the
+// course id for the session-deep-link case and to enrich names. A lab's bogus
+// ld url is never used.
 func parsePathPublic(doc *goquery.Document, ld, portalKey string) (PathContent, error) {
 	var raw struct {
 		Name          string `json:"name"`
 		Description   string `json:"description"`
 		DatePublished string `json:"datePublished"`
 		HasPart       []struct {
-			Type string `json:"@type"`
 			Name string `json:"name"`
 			URL  string `json:"url"`
 		} `json:"hasPart"`
@@ -72,66 +86,91 @@ func parsePathPublic(doc *goquery.Document, ld, portalKey string) (PathContent, 
 		Description:   textutil.CleanText(raw.Description),
 		DatePublished: strings.TrimSpace(raw.DatePublished),
 	}
-
-	hrefByName := pathActivityHrefs(doc)
 	base := portal.Get(portalKey).Base
 
+	// ld+json enrichment: course id + clean name, keyed by normalized title.
+	ldByName := make(map[string]ldEntry, len(raw.HasPart))
 	for _, c := range raw.HasPart {
 		name := strings.TrimSpace(c.Name)
-		href := hrefByName[normalizeName(name)]
-		if m := focusHrefRe.FindStringSubmatch(href); m != nil {
-			// Genuine standalone lab: use the focus id and full focus URL
-			// (keeping the ?parent=…&path=… query the lab page needs).
+		parts := strings.Split(strings.TrimSpace(c.URL), "/")
+		ldByName[normalizeName(name)] = ldEntry{ID: parts[len(parts)-1], Name: name}
+	}
+
+	menu := pathMenuActivities(doc)
+	if len(menu) == 0 {
+		// No contents menu (unusual): fall back to the ld+json as-is. Labs can't
+		// be distinguished here, but at least real courses resolve.
+		for _, c := range raw.HasPart {
+			name := strings.TrimSpace(c.Name)
+			parts := strings.Split(strings.TrimSpace(c.URL), "/")
 			pc.Courses = append(pc.Courses, model.CourseRef{
-				ID:   m[1],
-				Type: "lab",
-				Name: name,
-				URL:  base + href,
+				ID: parts[len(parts)-1], Type: "Course", Name: name, URL: strings.TrimSpace(c.URL),
+			})
+		}
+		return pc, nil
+	}
+
+	// The ql-contents-menu is authoritative for what's in the path.
+	for _, a := range menu {
+		title := strings.TrimSpace(a.Title)
+		ldHit, hasLD := ldByName[normalizeName(title)]
+		name := title
+		if hasLD && ldHit.Name != "" {
+			name = ldHit.Name
+		}
+
+		if m := focusHrefRe.FindStringSubmatch(a.Href); m != nil {
+			// Standalone lab: focus id + full focus URL (keep ?parent=…&path=…).
+			pc.Courses = append(pc.Courses, model.CourseRef{
+				ID: m[1], Type: "lab", Name: name, URL: base + a.Href,
 			})
 			continue
 		}
-		// Course: the ld+json course_templates URL is the correct one.
-		parts := strings.Split(c.URL, "/")
+
+		// Course: prefer the id in the href; otherwise (a course_sessions
+		// resume deep-link) take it from the aligned ld+json entry.
+		id := ""
+		if m := courseTemplateHrefRe.FindStringSubmatch(a.Href); m != nil {
+			id = m[1]
+		} else if hasLD {
+			id = ldHit.ID
+		}
+		if id == "" {
+			continue // unresolvable — skip rather than fetch the wrong thing
+		}
 		pc.Courses = append(pc.Courses, model.CourseRef{
-			ID:   parts[len(parts)-1],
-			Type: c.Type,
-			Name: name,
-			URL:  strings.TrimSpace(c.URL),
+			ID: id, Type: "Course", Name: name, URL: base + "/course_templates/" + id,
 		})
 	}
 	return pc, nil
 }
 
-// pathActivityHrefs maps each path activity's (normalized) title to its
-// ql-contents-menu href.
-func pathActivityHrefs(doc *goquery.Document) map[string]string {
-	out := map[string]string{}
+// menuActivity is one entry from the path's ql-contents-menu.
+type menuActivity struct {
+	Href  string `json:"href"`
+	Title string `json:"title"`
+}
+
+// pathMenuActivities returns the path's ql-contents-menu activities in order.
+func pathMenuActivities(doc *goquery.Document) []menuActivity {
 	raw, ok := doc.Find("ql-contents-menu").First().Attr("modules")
 	if !ok || raw == "" {
-		return out
+		return nil
 	}
 	var modules []struct {
 		Steps []struct {
-			Activities []struct {
-				Href  string `json:"href"`
-				Title string `json:"title"`
-			} `json:"activities"`
+			Activities []menuActivity `json:"activities"`
 		} `json:"steps"`
 	}
 	if err := json.Unmarshal([]byte(raw), &modules); err != nil {
 		if err2 := json.Unmarshal([]byte(html.UnescapeString(raw)), &modules); err2 != nil {
-			return out
+			return nil
 		}
 	}
+	var out []menuActivity
 	for _, m := range modules {
 		for _, s := range m.Steps {
-			for _, a := range s.Activities {
-				if key := normalizeName(a.Title); key != "" {
-					if _, exists := out[key]; !exists {
-						out[key] = a.Href
-					}
-				}
-			}
+			out = append(out, s.Activities...)
 		}
 	}
 	return out
