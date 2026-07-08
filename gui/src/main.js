@@ -194,9 +194,34 @@ $("#browseBtn").addEventListener("click", async () => {
     browseItems = batches.flat();
     renderBrowse();
     const where = portal === "all" ? "both portals" : portal;
-    setStatus(`Listed ${browseItems.length} from ${where}.`, "ok");
+    if (browseItems.length === 0) {
+      setStatus(`No ${kind} stored yet — click Sync to fetch the catalog from the website.`, "");
+    } else {
+      setStatus(`Listed ${browseItems.length} from ${where}.`, "ok");
+    }
   } catch (err) {
     setStatus("List failed: " + err);
+  }
+});
+
+// Sync = pull the catalog from the website (opens a headless browser; slower).
+// This is how an empty first-run database gets populated.
+$("#browseSyncBtn").addEventListener("click", async () => {
+  const kind = selected("#browseKind", "kind");
+  const btn = $("#browseSyncBtn");
+  btn.disabled = true;
+  setStatus(`Syncing ${kind} from the website… (this can take a minute)`, "busy");
+  try {
+    const batches = await Promise.all(
+      portalsFor().map((pk) => invoke("sync_items", { portal: pk, kind }))
+    );
+    browseItems = batches.flat();
+    renderBrowse();
+    setStatus(`Synced ${browseItems.length} ${kind} from the website.`, "ok");
+  } catch (err) {
+    setStatus("Sync failed: " + err);
+  } finally {
+    btn.disabled = false;
   }
 });
 

@@ -46,8 +46,15 @@ func cmdList(args []string) int {
 	if len(docs) == 0 {
 		if jsonOut {
 			emitJSON([]jsonItem{})
-		} else {
-			fmt.Printf("No %s found locally.\n", label)
+			return 0
+		}
+		fmt.Printf("No %s found locally.\n", label)
+		if !p.has("--reload", "-r") {
+			// First-run guidance: the local database starts empty; the catalog
+			// has to be pulled from the website once.
+			kindFlag := map[string]string{"paths": "-p", "courses": "-c", "labs": "-l"}[table]
+			fmt.Printf("Tip: fetch the catalog from the website with:  csb list -r %s %s\n",
+				portalFlag(p.portal), kindFlag)
 		}
 		return 0
 	}
@@ -106,10 +113,12 @@ func reloadListWith(sess *browser.Session, portalKey, table string) error {
 		"courses": cfg.APICourses,
 		"labs":    cfg.APILabs,
 	}[table]
-	fmt.Fprintf(os.Stderr, "Reloading %s list from remote [%s]...\n", table, portalKey)
+	fmt.Fprintf(os.Stderr, "Reloading %s list from remote [%s] (this can take a moment)...\n", table, portalKey)
 
 	found := 0
 	for page := 1; page <= 100; page++ {
+		// Per-page progress so a multi-page catalog fetch doesn't look hung.
+		fmt.Fprintf(os.Stderr, "  fetching page %d… (%d %s so far)\r", page, found, table)
 		text, err := sess.FetchText(fmt.Sprintf("%s&page=%d", apiURL, page))
 		if err != nil {
 			return err
@@ -133,6 +142,7 @@ func reloadListWith(sess *browser.Session, portalKey, table string) error {
 			}
 		}
 	}
+	fmt.Fprint(os.Stderr, "\r\033[K") // clear the progress line
 	fmt.Fprintf(os.Stderr, "Total %s found: %d\n", table, found)
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"csb/internal/portal"
+	"csb/internal/store"
 )
 
 // cmdInteractive runs a guided menu that dispatches to the same command
@@ -116,8 +117,18 @@ func interactiveList(prompt func(string) string, yesNo func(string) bool, workin
 	if flag == "" {
 		return
 	}
+	table := map[string]string{"--paths": "paths", "--courses": "courses", "--labs": "labs"}[flag]
+
 	args := []string{portalFlag(working), flag}
-	if yesNo("Reload from the website first?") {
+	reload := yesNo("Reload from the website first?")
+	if !reload {
+		// First-run helper: if nothing is stored yet, offer to pull the catalog
+		// now (otherwise the listing would just come back empty).
+		if docs, _ := store.LoadTable(working, table); len(docs) == 0 {
+			reload = yesNo(fmt.Sprintf("No %s stored locally yet — reload from the website now?", table))
+		}
+	}
+	if reload {
 		args = append(args, "--reload")
 	}
 	if yesNo("Sort by ID (instead of name)?") {

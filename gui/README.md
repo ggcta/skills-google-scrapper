@@ -85,7 +85,9 @@ pipeline used to build the current set).
   no-transcripts / headless options; live output streams into the console.
 - **Browse** — list stored paths / courses / labs (`csb list --json`), each with
   a **fetch-status badge** (green `✓ <date>` when downloaded, dim `— not fetched`
-  otherwise), a **Status** sort, and an "N fetched" count.
+  otherwise), a **Status** sort, and an "N fetched" count. **Refresh** re-reads
+  the local database; **⟳ Sync** pulls the catalog from the website (a headless
+  `csb list --reload`) — needed once on first run to populate an empty database.
 - **Search** — query the local database (`csb search --json`), with the same
   fetch-status badges.
 - **Sign in** — opens a browser via `csb login`; click *Done* when finished.

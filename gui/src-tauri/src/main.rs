@@ -136,6 +136,25 @@ fn list_items(portal: String, kind: String) -> Result<Vec<Item>, String> {
     serde_json::from_str(&out).map_err(|e| e.to_string())
 }
 
+/// Refresh the catalog (paths/courses/labs) from the website, then return the
+/// stored list. Runs `csb list --reload --headless --json`, which opens a
+/// headless browser and pages through the site's catalog API. This is the only
+/// way to populate an empty first-run database, so the GUI exposes it as a
+/// distinct "Sync" action (slower than the local-only Refresh).
+#[tauri::command]
+fn sync_items(portal: String, kind: String) -> Result<Vec<Item>, String> {
+    let args = vec![
+        "list".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, true).into(),
+        "--reload".into(),
+        "--headless".into(),
+        "--json".into(),
+    ];
+    let out = run_csb(&args)?;
+    serde_json::from_str(&out).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 fn search_items(portal: String, query: String, kind: String) -> Result<Vec<Item>, String> {
     let mut args = vec!["search".into(), query, portal_flag(&portal).into()];
@@ -262,6 +281,7 @@ fn main() {
         .manage(LoginState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             list_items,
+            sync_items,
             search_items,
             fetch,
             login,
