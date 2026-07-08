@@ -11,9 +11,9 @@ import (
 
 // EvalAsync evaluates a JavaScript expression that resolves to a Promise and
 // unmarshals the resolved value into out. Used for the __fetchCourse() call that
-// pulls external Rise/Storage lesson content.
+// pulls external Rise/Storage lesson content. Bounded by NavTimeout.
 func (s *Session) EvalAsync(expr string, out any) error {
-	return chromedp.Run(s.Ctx,
+	return s.run(NavTimeout,
 		chromedp.Evaluate(expr, out, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
 			return p.WithAwaitPromise(true)
 		}),
@@ -24,7 +24,7 @@ func (s *Session) EvalAsync(expr string, out any) error {
 // mirroring the Python requests-with-driver-cookies approach).
 func (s *Session) Cookies() ([]*network.Cookie, error) {
 	var cookies []*network.Cookie
-	err := chromedp.Run(s.Ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+	err := s.run(15*time.Second, chromedp.ActionFunc(func(ctx context.Context) error {
 		var e error
 		cookies, e = network.GetCookies().Do(ctx)
 		return e
@@ -36,9 +36,7 @@ func (s *Session) Cookies() ([]*network.Cookie, error) {
 // for the quiz element (mirrors process_quiz). A missing button just times out
 // quietly and is not treated as an error.
 func (s *Session) ClickStartQuiz() {
-	ctx, cancel := context.WithTimeout(s.Ctx, 8*time.Second)
-	defer cancel()
-	_ = chromedp.Run(ctx,
+	_ = s.run(8*time.Second,
 		chromedp.Click("a.start-button.button.button--positive", chromedp.ByQuery),
 		chromedp.WaitReady("ql-quiz", chromedp.ByQuery),
 	)
@@ -47,18 +45,35 @@ func (s *Session) ClickStartQuiz() {
 // PageHTML returns the current page's HTML without navigating.
 func (s *Session) PageHTML() (string, error) {
 	var html string
-	err := chromedp.Run(s.Ctx, chromedp.OuterHTML("html", &html, chromedp.ByQuery))
+	err := s.run(15*time.Second, chromedp.OuterHTML("html", &html, chromedp.ByQuery))
 	return html, err
 }
 
 // FetchText navigates to url and returns document.body.innerText — used for the
-// catalog list API endpoints, which render raw JSON in the page body.
+// catalog list API endpoints, which render raw JSON in the page body. Like
+// Navigate, it is bounded by NavTimeout and relaunches a dead session once.
 func (s *Session) FetchText(url string) (string, error) {
 	var text string
-	err := chromedp.Run(s.Ctx,
-		chromedp.Navigate(url),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.Evaluate(`document.body.innerText`, &text),
-	)
-	return text, err
+	for attempt := 0; attempt < 2; attempt++ {
+		if !s.alive() {
+			if rerr := s.relaunch(); rerr != nil {
+				return "", rerr
+			}
+		}
+		ctx, cancel := context.WithTimeout(s.Ctx, NavTimeout)
+		err := chromedp.Run(ctx,
+			chromedp.Navigate(url),
+			chromedp.WaitReady("body", chromedp.ByQuery),
+			chromedp.Evaluate(`document.body.innerText`, &text),
+		)
+		cancel()
+		if err == nil {
+			return text, nil
+		}
+		if !s.alive() && attempt == 0 {
+			continue
+		}
+		return text, err
+	}
+	return text, nil
 }

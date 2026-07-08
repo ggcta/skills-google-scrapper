@@ -28,9 +28,19 @@ type Options struct {
 	Headless bool
 }
 
-// Session is a running browser. Call Close when done.
+// NavTimeout bounds a single navigation/evaluation so a page that hangs (e.g. a
+// body that never becomes ready) can't block the whole run forever. It is a var
+// so tests can shorten it.
+var NavTimeout = 45 * time.Second
+
+// Session is a running browser. Call Close when done. It is self-healing: if the
+// underlying browser/tab dies (its context is canceled), the next navigation
+// transparently relaunches it, reusing the same on-disk profile so the sign-in
+// carries over.
 type Session struct {
 	Ctx    context.Context
+	parent context.Context
+	opts   Options
 	cancel []func()
 }
 
@@ -39,7 +49,34 @@ func (s *Session) Close() {
 	for i := len(s.cancel) - 1; i >= 0; i-- {
 		s.cancel[i]()
 	}
+	s.cancel = nil
 }
+
+// start launches a fresh browser and wires up s.Ctx / s.cancel.
+func (s *Session) start() error {
+	allocCtx, cancelAlloc := chromedp.NewExecAllocator(s.parent, allocFlags(s.opts)...)
+	ctx, cancelCtx := chromedp.NewContext(allocCtx, chromedp.WithErrorf(quietErrorf))
+	// Force the browser process to actually start so profile/allocator errors
+	// surface here rather than on first navigate.
+	if err := chromedp.Run(ctx); err != nil {
+		cancelCtx()
+		cancelAlloc()
+		return err
+	}
+	s.Ctx = ctx
+	s.cancel = []func(){cancelCtx, cancelAlloc}
+	return nil
+}
+
+// relaunch tears down the (dead) browser and starts a new one.
+func (s *Session) relaunch() error {
+	s.Close()
+	log.Print("[browser] session died; relaunching…")
+	return s.start()
+}
+
+// alive reports whether the session context is still usable.
+func (s *Session) alive() bool { return s.Ctx != nil && s.Ctx.Err() == nil }
 
 // allocFlags mirrors the Chrome flags used by the Python launcher.
 func allocFlags(o Options) []chromedp.ExecAllocatorOption {
@@ -87,29 +124,55 @@ func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 
 // Launch starts Chrome and returns a Session.
 func Launch(parent context.Context, o Options) (*Session, error) {
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(parent, allocFlags(o)...)
-	ctx, cancelCtx := chromedp.NewContext(allocCtx, chromedp.WithErrorf(quietErrorf))
-	// Force the browser process to actually start so profile/allocator errors
-	// surface here rather than on first navigate.
-	if err := chromedp.Run(ctx); err != nil {
-		cancelCtx()
-		cancelAlloc()
+	s := &Session{parent: parent, opts: o}
+	if err := s.start(); err != nil {
 		return nil, err
 	}
-	return &Session{Ctx: ctx, cancel: []func(){cancelCtx, cancelAlloc}}, nil
+	return s, nil
 }
 
-// Navigate loads url, waits for the body, and returns the rendered page HTML
-// and the final URL (after any redirect, e.g. to a sign-in page).
+// Navigate loads url, waits for the body, and returns the rendered page HTML and
+// the final URL (after any redirect, e.g. to a sign-in page). It is bounded by
+// NavTimeout, and if the session has died it relaunches and retries once so a
+// single crashed page doesn't cascade "context canceled" across the whole run.
 func (s *Session) Navigate(url string, settle time.Duration) (html, finalURL string, err error) {
-	err = chromedp.Run(s.Ctx,
-		chromedp.Navigate(url),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		sleep(settle),
-		chromedp.Location(&finalURL),
-		chromedp.OuterHTML("html", &html, chromedp.ByQuery),
-	)
+	for attempt := 0; attempt < 2; attempt++ {
+		if !s.alive() {
+			if rerr := s.relaunch(); rerr != nil {
+				return "", "", fmt.Errorf("browser relaunch failed: %w", rerr)
+			}
+		}
+		ctx, cancel := context.WithTimeout(s.Ctx, NavTimeout)
+		err = chromedp.Run(ctx,
+			chromedp.Navigate(url),
+			chromedp.WaitReady("body", chromedp.ByQuery),
+			sleep(settle),
+			chromedp.Location(&finalURL),
+			chromedp.OuterHTML("html", &html, chromedp.ByQuery),
+		)
+		cancel()
+		if err == nil {
+			return html, finalURL, nil
+		}
+		// If the session itself crashed (parent ctx canceled), relaunch and
+		// retry once. A per-nav timeout (parent still alive) is just reported.
+		if !s.alive() && attempt == 0 {
+			continue
+		}
+		return html, finalURL, err
+	}
 	return html, finalURL, err
+}
+
+// run executes actions bounded by timeout on the current session context. Used
+// by the non-navigating helpers (eval, cookies, page html).
+func (s *Session) run(timeout time.Duration, actions ...chromedp.Action) error {
+	if !s.alive() {
+		return context.Canceled
+	}
+	ctx, cancel := context.WithTimeout(s.Ctx, timeout)
+	defer cancel()
+	return chromedp.Run(ctx, actions...)
 }
 
 // DefaultProfileDir returns the shared profile path under the CWD, or a throwaway
