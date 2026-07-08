@@ -9,6 +9,8 @@ let portal = "public";
 // Last-loaded rows per tab, kept so a sort change can re-render without re-fetching.
 let browseItems = [];
 let searchItems = [];
+// The last query actually run, so portal/type changes can re-run the search.
+let lastSearchQuery = "";
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -31,17 +33,30 @@ function wireGroup(rootSel, attr, onSelect) {
 }
 const selected = (rootSel, attr) => $(`${rootSel} button.active`)?.dataset[attr];
 
+// Selector changes take effect immediately — no extra button press. Explicit
+// buttons remain only where input/confirmation is needed (Fetch IDs, Search query).
+function refreshActiveTab() {
+  const active = $(".panel.active")?.dataset.panel;
+  if (active === "browse") $("#browseBtn").click();
+  else if (active === "search" && lastSearchQuery) $("#searchBtn").click();
+}
+
 // --- Tabs & portal ---
 wireGroup("#tabs", "tab", (tab) => {
   $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === tab));
+  // Entering Browse shows the current portal's items right away.
+  if (tab === "browse") $("#browseBtn").click();
+  else if (tab === "search" && lastSearchQuery) $("#searchBtn").click();
 });
 wireGroup("#portalToggle", "portal", (p) => {
   portal = p;
   setStatus(portal === "all" ? "Portal: All (public + partner)" : `Portal: ${portal}`);
+  // Portal is global: reflect it in the active tab immediately.
+  refreshActiveTab();
 });
 wireGroup("#fetchKind", "kind", () => {});
-wireGroup("#browseKind", "kind", () => {});
-wireGroup("#searchKind", "kind", () => {});
+wireGroup("#browseKind", "kind", () => $("#browseBtn").click());
+wireGroup("#searchKind", "kind", () => { if (lastSearchQuery) $("#searchBtn").click(); });
 // Fetch option toggles are independent (multi-select), so each just flips its
 // own active state on click.
 $$("#fetchToggles .toggle").forEach((b) =>
@@ -164,6 +179,7 @@ $("#browseBtn").addEventListener("click", async () => {
 $("#searchBtn").addEventListener("click", async () => {
   const query = $("#searchQuery").value.trim();
   if (!query) { setStatus("Enter a search query."); return; }
+  lastSearchQuery = query;
   const kind = selected("#searchKind", "kind");
   // Portal scope comes from the global topbar control; "All" spans both.
   setStatus("Searching…", "busy");
