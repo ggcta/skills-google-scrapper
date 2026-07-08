@@ -93,6 +93,16 @@ main { flex: 1; overflow: auto; padding: 18px; }
 .row > label { width: 96px; color: var(--muted); font-weight: 600; }
 .options { gap: 18px; }
 .chk { display: inline-flex; align-items: center; gap: 6px; color: var(--text); font-weight: 500; width: auto; }
+
+/* Fetch option toggles: even-width buttons across one row. */
+.toggles { display: flex; gap: 10px; }
+.toggle {
+  flex: 1; text-align: center; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.toggle:hover { border-color: var(--accent); }
+.toggle.active { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
 input[type="text"] {
   flex: 1; min-width: 220px; padding: 9px 12px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px;

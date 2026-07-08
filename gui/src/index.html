@@ -47,11 +47,11 @@
           <label>IDs or URLs</label>
           <input id="fetchIds" type="text" placeholder="e.g. 16 53  or a full skills.google URL" />
         </div>
-        <div class="row options">
-          <label class="chk"><input type="checkbox" id="optForce" /> Force re-fetch</label>
-          <label class="chk"><input type="checkbox" id="optToc" /> TOC only</label>
-          <label class="chk"><input type="checkbox" id="optNoTranscript" /> No transcripts</label>
-          <label class="chk"><input type="checkbox" id="optHeadless" checked /> Headless</label>
+        <div class="row toggles" id="fetchToggles">
+          <button type="button" class="toggle" data-opt="force">Force re-fetch</button>
+          <button type="button" class="toggle" data-opt="toc">TOC only</button>
+          <button type="button" class="toggle" data-opt="noTranscript">No transcripts</button>
+          <button type="button" class="toggle active" data-opt="headless">Headless</button>
         </div>
         <div class="row">
           <button class="btn primary" id="fetchBtn">Fetch</button>

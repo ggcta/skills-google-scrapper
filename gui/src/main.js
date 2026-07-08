@@ -6,6 +6,9 @@ const invoke = window.__TAURI__?.core?.invoke;
 const listen = window.__TAURI__?.event?.listen;
 
 let portal = "public";
+// Last-loaded rows per tab, kept so a sort change can re-render without re-fetching.
+let browseItems = [];
+let searchItems = [];
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -39,8 +42,22 @@ wireGroup("#portalToggle", "portal", (p) => {
 wireGroup("#fetchKind", "kind", () => {});
 wireGroup("#browseKind", "kind", () => {});
 wireGroup("#searchKind", "kind", () => {});
-wireGroup("#browseSort", "sort", () => {});
-wireGroup("#searchSort", "sort", () => {});
+// Fetch option toggles are independent (multi-select), so each just flips its
+// own active state on click.
+$$("#fetchToggles .toggle").forEach((b) =>
+  b.addEventListener("click", () => b.classList.toggle("active"))
+);
+const toggleOn = (opt) => $(`#fetchToggles [data-opt="${opt}"]`)?.classList.contains("active");
+
+// Changing the sort re-applies immediately (no need to click List/Search again):
+// re-sort what's already shown, or run the list if nothing is loaded yet.
+wireGroup("#browseSort", "sort", () => {
+  if (browseItems.length) renderBrowse();
+  else $("#browseBtn").click();
+});
+wireGroup("#searchSort", "sort", () => {
+  if (searchItems.length) renderSearch();
+});
 
 // The topbar portal is the single source of truth for every tab.
 // "All" means both portals for the read tabs (Browse/Search); the concrete
@@ -90,10 +107,10 @@ $("#fetchBtn").addEventListener("click", async () => {
       portal: concretePortal(),
       kind: selected("#fetchKind", "kind"),
       ids,
-      force: $("#optForce").checked,
-      toc: $("#optToc").checked,
-      noTranscript: $("#optNoTranscript").checked,
-      headless: $("#optHeadless").checked,
+      force: toggleOn("force"),
+      toc: toggleOn("toc"),
+      noTranscript: toggleOn("noTranscript"),
+      headless: toggleOn("headless"),
     });
   } catch (err) {
     logLine("ERROR: " + err);
@@ -121,6 +138,13 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
+function renderBrowse() {
+  renderRows("#browseTable", "#browseCount", sortItems(browseItems, selected("#browseSort", "sort")));
+}
+function renderSearch() {
+  renderRows("#searchTable", "#searchCount", sortItems(searchItems, selected("#searchSort", "sort")));
+}
+
 $("#browseBtn").addEventListener("click", async () => {
   const kind = selected("#browseKind", "kind");
   setStatus("Loading…", "busy");
@@ -128,10 +152,10 @@ $("#browseBtn").addEventListener("click", async () => {
     const batches = await Promise.all(
       portalsFor().map((pk) => invoke("list_items", { portal: pk, kind }))
     );
-    const items = sortItems(batches.flat(), selected("#browseSort", "sort"));
-    renderRows("#browseTable", "#browseCount", items);
+    browseItems = batches.flat();
+    renderBrowse();
     const where = portal === "all" ? "both portals" : portal;
-    setStatus(`Listed ${items.length} from ${where}.`, "ok");
+    setStatus(`Listed ${browseItems.length} from ${where}.`, "ok");
   } catch (err) {
     setStatus("List failed: " + err);
   }
@@ -147,10 +171,10 @@ $("#searchBtn").addEventListener("click", async () => {
     const batches = await Promise.all(
       portalsFor().map((pk) => invoke("search_items", { portal: pk, query, kind }))
     );
-    const items = sortItems(batches.flat(), selected("#searchSort", "sort"));
-    renderRows("#searchTable", "#searchCount", items);
+    searchItems = batches.flat();
+    renderSearch();
     const where = portal === "all" ? "both portals" : portal;
-    setStatus(`${items.length} result(s) for “${query}” in ${where}.`, "ok");
+    setStatus(`${searchItems.length} result(s) for “${query}” in ${where}.`, "ok");
   } catch (err) {
     setStatus("Search failed: " + err);
   }
