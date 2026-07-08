@@ -10,3 +10,12 @@ csbmdvault/.obsidian/workspace.json
 csbmdvault/.obsidian/graph.json
 !csbmdvault/.obsidian
 .build
+
+# Compiled binaries (CLI + GUI). The .bin/.exe extensions let a single glob
+# cover them; /csb is the legacy extensionless name.
+*.bin
+*.exe
+/csb
+# Rust / Tauri build artifacts (the GUI app binary + bundles).
+/gui/src-tauri/target/
+/gui/src-tauri/gen/

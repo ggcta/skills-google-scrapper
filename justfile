@@ -9,9 +9,10 @@
 default:
     @just --list
 
-# Build the csb Go binary at the repo root (what the GUI shells out to).
+# Build the csb Go binary at the repo root (what the GUI shells out to). The
+# .bin extension keeps build artifacts out of git via a single `*.bin` ignore.
 cli:
-    cd go && go build -o ../csb .
+    cd go && go build -o ../csb.bin .
 
 # Launch the desktop app (CSB Studio). Rebuilds the CLI first.
 dev: cli
@@ -23,7 +24,7 @@ bundle: cli
 
 # Run the CLI directly, e.g. `just run fetch -A -p 20` or `just run list -B -c`.
 run *ARGS: cli
-    ./csb {{ARGS}}
+    ./csb.bin {{ARGS}}
 
 # Go vet + tests.
 test:

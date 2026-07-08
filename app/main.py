@@ -141,6 +141,55 @@ def cmd_list(args):
 
     collection.print_list(sort_by=sort_by)
 
+def _kind_tables(kind):
+    """Map a --all KIND argument to the catalog tables to sweep, or None."""
+    k = (kind or '').strip().lower()
+    if k in ('', 'path', 'paths', 'p'):
+        return ['paths']
+    if k in ('course', 'courses', 'c'):
+        return ['courses']
+    if k in ('lab', 'labs', 'l'):
+        return ['labs']
+    if k in ('all', 'everything', '*'):
+        return ['paths', 'courses', 'labs']
+    return None
+
+def _collect_all_ids(kind, portal, headless):
+    """Refresh the requested catalog(s) from the site and return their stored ids.
+
+    Returns a dict {table: [id, ...]} for the tables implied by KIND. Reloading
+    is best-effort: on failure we fall back to whatever is already stored.
+    """
+    tables = _kind_tables(kind)
+    if tables is None:
+        print(f"Unknown kind '{kind}' for --all (use paths, courses, labs, or all).")
+        return {}
+
+    class_map = {'paths': Paths, 'courses': Courses, 'labs': Labs}
+    out = {}
+    driver = None
+    try:
+        print("\n\033[35mLaunching browser to enumerate the catalog...\033[0m")
+        driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+        for table in tables:
+            collection = class_map[table](driver=driver, portal=portal)
+            collection.load_json()
+            try:
+                fetch_method = getattr(collection, f"fetch_{table}", None)
+                if fetch_method:
+                    print(f"Reloading {table} list from remote [{portal}]...")
+                    fetch_method(force=True)
+            except Exception as e:
+                print(f"warning: could not refresh {table} catalog: {e}")
+            collection.load_json()
+            out[table] = list(collection.collection.keys())
+            print(f"{table}: {len(out[table])} to fetch [{portal}]")
+    finally:
+        if driver:
+            print("Closing browser...")
+            driver.quit()
+    return out
+
 def cmd_fetch(args):
     """Handle fetch (scrape) command"""
     force = args.force
@@ -153,7 +202,20 @@ def cmd_fetch(args):
     fetch_paths_ids = args.paths
     fetch_courses_ids = args.courses
     fetch_labs_ids = args.labs
-    
+
+    # Hidden bulk mode: --all [paths|courses|labs|all] refreshes the catalog(s)
+    # from the site then fetches every stored item. Paths cascade to their
+    # courses and labs, so the default (paths) already pulls almost everything.
+    all_kind = getattr(args, 'all', None)
+    if all_kind is not None:
+        collected = _collect_all_ids(all_kind, default_portal, headless)
+        if collected.get('paths'):
+            fetch_paths_ids = collected['paths']
+        if collected.get('courses'):
+            fetch_courses_ids = collected['courses']
+        if collected.get('labs'):
+            fetch_labs_ids = collected['labs']
+
     # Validation
     if not (fetch_paths_ids or fetch_courses_ids or fetch_labs_ids):
         print("Please specify items to fetch using -p <id>, -c <id>, or -l <id>.")
@@ -473,6 +535,11 @@ def main():
     parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
     parser_f.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
+    # Hidden bulk mode: refresh the catalog(s) from the site, then fetch every
+    # stored item. Optional KIND: paths (default) / courses / labs / all. Kept
+    # out of --help (documented in docs/usage.md) but a real, supported feature.
+    parser_f.add_argument('--all', nargs='?', const='paths', metavar='KIND',
+                          help=argparse.SUPPRESS)
     add_portal_flags(parser_f)
 
     parser_f.set_defaults(func=cmd_fetch)

@@ -14,7 +14,7 @@ gui/
     src/main.rs   Tauri commands: list_items, search_items, fetch, login, …
     tauri.conf.json
     Cargo.toml
-    icons/        placeholder (replace before `tauri build`)
+    icons/        app icon set (icon.svg source + generated .png/.icns/.ico)
 ```
 
 ## Prerequisites
@@ -28,11 +28,12 @@ CLI can run via cargo.
 
 ## Build the `csb` binary first
 
-The GUI resolves the binary in this order: `CSB_BIN` env → `<repo-root>/csb` →
-`csb` on `PATH`. The simplest setup drops it at the repo root:
+The GUI resolves the binary in this order: `CSB_BIN` env → `<repo-root>/csb.bin`
+(or `csb.exe`/legacy `csb`). The simplest setup drops it at the repo root — the
+`.bin` extension keeps it out of git via a single `*.bin` ignore:
 
 ```bash
-cd go && go build -o ../csb . && cd ..
+cd go && go build -o ../csb.bin . && cd ..    # or: just cli
 ```
 
 It also runs `csb` with the working directory set to the repo root (detected by
@@ -50,14 +51,14 @@ just setup            # one-time: install the Tauri v2 CLI
 just dev              # builds the csb binary, then launches the desktop app
 ```
 
-`just dev` runs `go build -o ./csb ./go` and then `cargo tauri dev` for you.
+`just dev` builds `csb.bin` and then runs `cargo tauri dev` for you.
 Other recipes: `just run <args>` (CLI), `just bundle` (package), `just test`.
 
 <details><summary>Manual equivalent (no <code>just</code>)</summary>
 
 ```bash
 cargo install tauri-cli --version '^2.0'   # one-time
-cd go && go build -o ../csb . && cd ..      # build the binary the GUI calls
+cd go && go build -o ../csb.bin . && cd .. # build the binary the GUI calls
 cd gui/src-tauri && cargo tauri dev
 ```
 </details>
@@ -72,8 +73,10 @@ just bundle
 # or: cd gui/src-tauri && cargo tauri build   # .app/.dmg (macOS), .exe/.msi (Windows), …
 ```
 
-> Replace `icons/icon.png` (currently a 1×1 placeholder) with real icons before
-> bundling — e.g. `cargo tauri icon path/to/1024.png`.
+The app ships a real icon set in `icons/` (a blue "boost" arrow — the Dock/
+taskbar icon). To restyle it, edit `icons/icon.svg` and regenerate:
+`cargo tauri icon icons/icon.svg` (or re-run the `sips`/`iconutil`/`magick`
+pipeline used to build the current set).
 
 ## What it does
 

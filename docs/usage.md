@@ -68,6 +68,26 @@ uv run app/main.py fetch -B -p 4343            # a partner path
 uv run app/main.py fetch -c https://partner.skills.google/course_templates/35
 ```
 
+#### Bulk fetch everything — `fetch --all`
+
+A power-user option (hidden from `--help`, but fully supported) refreshes the
+catalog from the site, then scrapes every item it finds. `--all` takes an
+optional kind — `paths` (the default), `courses`, `labs`, or `all`:
+
+```bash
+uv run app/main.py fetch --all              # every public path (cascades to its courses + labs)
+uv run app/main.py fetch --all -B           # every partner path
+uv run app/main.py fetch --all courses      # every standalone course
+uv run app/main.py fetch --all all --headless   # paths + courses + labs, no window
+csb fetch --all                             # same, via the Go binary
+```
+
+Because paths cascade to their courses and labs, plain `fetch --all` already
+pulls almost the entire portal; `--all all` additionally sweeps any standalone
+courses/labs not reachable from a path. Combine with `-f`/`--force` to re-scrape
+items you already have. This can take a long time and drive a lot of traffic —
+prefer `--headless` and expect it to run for a while.
+
 ### `list` (alias `l`) — see what you have
 
 ```bash

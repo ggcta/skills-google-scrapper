@@ -84,16 +84,9 @@ func cmdList(args []string) int {
 }
 
 // reloadList refreshes a catalog list (paths/courses/labs) from the site's JSON
-// API and upserts id/name into the database (ports Collection.fetch_*).
+// API and upserts id/name into the database (ports Collection.fetch_*). It owns
+// its browser session; callers that already have one use reloadListWith.
 func reloadList(portalKey, table string, headless bool) error {
-	cfg := portal.Get(portalKey)
-	apiURL := map[string]string{
-		"paths":   cfg.APIPaths,
-		"courses": cfg.APICourses,
-		"labs":    cfg.APILabs,
-	}[table]
-	fmt.Fprintf(os.Stderr, "Reloading %s list from remote [%s]...\n", table, portalKey)
-
 	sess, err := browser.Launch(context.Background(), browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
@@ -102,6 +95,18 @@ func reloadList(portalKey, table string, headless bool) error {
 		return err
 	}
 	defer sess.Close()
+	return reloadListWith(sess, portalKey, table)
+}
+
+// reloadListWith refreshes a catalog list using an existing browser session.
+func reloadListWith(sess *browser.Session, portalKey, table string) error {
+	cfg := portal.Get(portalKey)
+	apiURL := map[string]string{
+		"paths":   cfg.APIPaths,
+		"courses": cfg.APICourses,
+		"labs":    cfg.APILabs,
+	}[table]
+	fmt.Fprintf(os.Stderr, "Reloading %s list from remote [%s]...\n", table, portalKey)
 
 	found := 0
 	for page := 1; page <= 100; page++ {

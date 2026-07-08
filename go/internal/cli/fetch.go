@@ -32,10 +32,23 @@ func cmdFetch(args []string) int {
 	pathIDs, hasP := p.value("-p", "--paths")
 	courseIDs, hasC := p.value("-c", "--courses")
 	labIDs, hasL := p.value("-l", "--labs")
+	all := p.has("--all")
 
-	if !hasP && !hasC && !hasL {
+	if !hasP && !hasC && !hasL && !all {
 		fmt.Println("Please specify items to fetch using -p <id>, -c <id>, or -l <id>.")
 		return 1
+	}
+
+	// Resolve/validate the bulk-mode kind up front, before spending a browser.
+	allKind := "paths"
+	if all {
+		if len(p.positionals) > 0 {
+			allKind = p.positionals[0]
+		}
+		if kindTables(allKind) == nil {
+			fmt.Fprintf(os.Stderr, "Unknown kind %q for --all (use paths, courses, labs, or all).\n", allKind)
+			return 1
+		}
 	}
 
 	fmt.Println("\nLaunching browser...")
@@ -48,6 +61,13 @@ func cmdFetch(args []string) int {
 		return 1
 	}
 	defer sess.Close()
+
+	// Hidden bulk mode: `fetch --all [paths|courses|labs|all]` refreshes the
+	// catalog(s) from the site then fetches every item. Default kind is paths
+	// (which cascade to their courses and labs).
+	if all {
+		return fetchAll(sess, p.portal, allKind, force, noMD, tocOnly, noTranscript)
+	}
 
 	rc := 0
 	// Paths first (cascade), then standalone courses, then standalone labs.
@@ -76,6 +96,75 @@ func cmdFetch(args []string) int {
 		}
 	}
 	return rc
+}
+
+// fetchAll refreshes the relevant catalog(s) from the site, then fetches every
+// stored item. kind is one of paths/courses/labs (singular accepted) or "all".
+// Paths cascade to their courses and labs, so `fetch --all` (kind=paths) already
+// pulls almost everything; "all" additionally sweeps standalone courses/labs.
+func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnly, noTranscript bool) int {
+	tables := kindTables(kind)
+	if tables == nil {
+		fmt.Fprintf(os.Stderr, "Unknown kind %q for --all (use paths, courses, labs, or all).\n", kind)
+		return 1
+	}
+
+	rc := 0
+	for _, table := range tables {
+		fmt.Printf("\n=== Fetching ALL %s [%s] ===\n", table, portalKey)
+		if err := reloadListWith(sess, portalKey, table); err != nil {
+			// Non-fatal: fall back to whatever is already stored locally.
+			fmt.Fprintf(os.Stderr, "warning: could not refresh %s catalog: %v\n", table, err)
+		}
+		docs, err := store.LoadTable(portalKey, table)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error loading %s: %v\n", table, err)
+			rc = 1
+			continue
+		}
+		if len(docs) == 0 {
+			fmt.Printf("No %s found for [%s].\n", table, portalKey)
+			continue
+		}
+		singular := map[string]string{"paths": "Path", "courses": "Course", "labs": "Lab"}[table]
+		for i, d := range docs {
+			id := d.ID()
+			if id == "" {
+				continue
+			}
+			fmt.Printf("\n--- [%d/%d] %s %s [%s] ---\n", i+1, len(docs), singular, id, portalKey)
+			var e error
+			switch table {
+			case "paths":
+				e = fetchPath(sess, portalKey, id, force, noMD, tocOnly, noTranscript)
+			case "courses":
+				e = fetchCourse(sess, portalKey, id, force, noMD, tocOnly, noTranscript)
+			case "labs":
+				e = fetchLab(sess, portalKey, id, "", force, noMD, tocOnly)
+			}
+			if e != nil {
+				fmt.Fprintf(os.Stderr, "Failed to fetch %s %s: %v\n", singular, id, e)
+				rc = 1
+			}
+		}
+	}
+	return rc
+}
+
+// kindTables maps a --all kind argument to the catalog tables to sweep.
+func kindTables(kind string) []string {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "", "path", "paths", "p":
+		return []string{"paths"}
+	case "course", "courses", "c":
+		return []string{"courses"}
+	case "lab", "labs", "l":
+		return []string{"labs"}
+	case "all", "everything", "*":
+		return []string{"paths", "courses", "labs"}
+	default:
+		return nil
+	}
 }
 
 // resolvePortal resolves a raw id/URL into (portal, id); a URL host overrides the

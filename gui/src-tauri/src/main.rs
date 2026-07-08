@@ -53,15 +53,24 @@ fn resolve_csb() -> Result<PathBuf, String> {
         }
         return Err(format!("CSB_BIN points to a missing file: {b}"));
     }
+    // Prefer the extensioned build artifact (csb.bin / csb.exe on Windows),
+    // falling back to a legacy extensionless `csb`.
+    let names: &[&str] = if cfg!(windows) {
+        &["csb.exe", "csb.bin", "csb"]
+    } else {
+        &["csb.bin", "csb"]
+    };
     for r in candidate_roots() {
-        let c = r.join("csb");
-        if c.exists() {
-            return Ok(c);
+        for name in names {
+            let c = r.join(name);
+            if c.exists() {
+                return Ok(c);
+            }
         }
     }
     Err("csb binary not found. Build it from the repo root:\n  \
-         cd go && go build -o ../csb .\n\
-         (or set CSB_BIN to its full path)."
+         cd go && go build -o ../csb.bin .\n\
+         (or run `just cli`, or set CSB_BIN to its full path)."
         .to_string())
 }
 
