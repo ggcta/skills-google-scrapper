@@ -2,7 +2,7 @@ import html
 import json
 from config.settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from pathlib import Path as PathlibPath
-from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
+from utils.utils import util_atomic_write_text, util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 from models.serialize import Serialize
 
 
@@ -176,21 +176,11 @@ class BaseEntity(Serialize):
         except Exception as e:
             print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
 
-        # 2. SAVE to individual JSON file (Backup)
-        # Create the folder if it doesn't exist
-        if not self._json_path.parent.exists():
-            self._json_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Create the JSON file if it doesn't exist
-        # Save the data to a JSON file with UTF-8 encoding and Unix line endings
+        # 2. SAVE to individual JSON file (Backup), written atomically so a
+        # Ctrl+C or crash can never leave a truncated backup on disk.
         try:
-            with open(self._json_path, 'w',
-                    encoding='utf-8',
-                    newline='\n') as jsonfile:
-                json.dump(entity_data,
-                        jsonfile,
-                        ensure_ascii=False,
-                        indent=2)
+            payload = json.dumps(entity_data, ensure_ascii=False, indent=2)
+            util_atomic_write_text(self._json_path, payload)
         except IOError as e:
             print(f"(BaseEntity.save_json) Error writing JSON to file: {self._json_path}")
             print(e)
@@ -267,13 +257,9 @@ class BaseEntity(Serialize):
 
         mdtext = self.generate_markdown(**kwargs)
 
-        # Create the folder if it doesn't exist
-        if not self._md_path.parent.exists():
-            self._md_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write the markdown content to a file, overwrite if exists
-        with open(self._md_path, "w", encoding="utf-8", newline='\n') as mdfile:
-            mdfile.write(mdtext)
+        # Write atomically (temp file + os.replace) so an interrupted run never
+        # leaves a half-written Markdown file in the vault.
+        util_atomic_write_text(self._md_path, mdtext)
 
     def clean_text(self, text: str) -> str:
         """

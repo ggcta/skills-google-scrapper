@@ -1,6 +1,36 @@
+import os
 import re
+import tempfile
 from html.parser import HTMLParser
 from urllib.parse import urlparse
+
+
+def util_atomic_write_text(path, text: str, encoding: str = 'utf-8', newline: str = '\n') -> None:
+    """
+    Write text to path atomically.
+
+    Writes to a temp file in the same directory, fsyncs it, then os.replace()s
+    it over the target. The replace is atomic on POSIX, so an interrupt (Ctrl+C)
+    or crash can never leave a half-written file — the path always holds either
+    its previous contents or the complete new contents. Parent directories are
+    created as needed.
+    """
+    path = os.fspath(path)
+    directory = os.path.dirname(path) or '.'
+    os.makedirs(directory, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=directory, prefix='.tmp-')
+    try:
+        with os.fdopen(fd, 'w', encoding=encoding, newline=newline) as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def util_portal_and_id(value: str):

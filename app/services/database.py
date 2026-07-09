@@ -1,7 +1,57 @@
 import os
+import json
 import datetime
+import tempfile
 from tinydb import TinyDB, Query
+from tinydb.storages import Storage, touch
 from config.settings import DATA_FOLDER_NAME, DEFAULT_PORTAL
+
+
+class AtomicJSONStorage(Storage):
+    """
+    A TinyDB storage backend that writes database.json atomically.
+
+    TinyDB's default JSONStorage writes in place (seek/write/truncate), so a
+    Ctrl+C or crash mid-write can corrupt the database. This backend instead
+    writes each snapshot to a temp file in the same directory, fsyncs it, and
+    os.replace()s it over the target — an atomic swap on POSIX. It reads the
+    file fresh on every call (no persistent handle), so a replaced file is
+    always seen correctly.
+    """
+
+    def __init__(self, path: str, create_dirs=False, encoding='utf-8', **kwargs):
+        super().__init__()
+        self.path = path
+        self.encoding = encoding
+        self.kwargs = kwargs  # json.dump options such as indent
+        touch(path, create_dirs=create_dirs)
+
+    def read(self):
+        with open(self.path, encoding=self.encoding) as handle:
+            data = handle.read()
+        if not data.strip():
+            return None
+        return json.loads(data)
+
+    def write(self, data):
+        directory = os.path.dirname(self.path) or '.'
+        fd, tmp = tempfile.mkstemp(dir=directory, prefix='.tmp-', suffix='.json')
+        try:
+            with os.fdopen(fd, 'w', encoding=self.encoding, newline='\n') as handle:
+                json.dump(data, handle, **self.kwargs)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, self.path)
+        except BaseException:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            raise
+
+    def close(self):
+        pass
+
 
 class Database:
     # One cached instance (and one database file) per portal, so the public
@@ -23,8 +73,8 @@ class Database:
         self.db_path = os.path.join(DATA_FOLDER_NAME, portal, 'database.json')
         # Ensure the portal data folder exists so TinyDB can create the file
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        # TinyDB handles file creation
-        self.db = TinyDB(self.db_path, indent=2, encoding='utf-8')
+        # Use the atomic storage so an interrupted write can't corrupt the DB.
+        self.db = TinyDB(self.db_path, storage=AtomicJSONStorage, indent=2, encoding='utf-8')
         
         # Ensure metadata exists
         self.metadata_table = self.db.table('metadata')

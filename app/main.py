@@ -27,6 +27,27 @@ def _resolve_portal(raw, default_portal):
     return (inferred_portal or default_portal), ident
 
 
+def _stored_name(portal, table, ident):
+    """
+    Return a stored item's display name from the database (or '' if unknown),
+    so fetch progress lines can read "<id> - <name>" instead of a bare id.
+    """
+    try:
+        from services.database import Database
+        doc = Database(portal).get(table, ident)
+        if doc:
+            return doc.get('name') or doc.get('title') or ''
+    except Exception:
+        pass
+    return ''
+
+
+def _fetch_label(portal, table, ident):
+    """Format an item as "<id> - <name>" when the name is known, else "<id>"."""
+    name = _stored_name(portal, table, ident)
+    return f"{ident} - {name}" if name else str(ident)
+
+
 def add_portal_flags(parser):
     """
     Add shorthand portal-selection flags to a subparser, so callers can avoid
@@ -232,7 +253,7 @@ def cmd_fetch(args):
             for raw_pid in fetch_paths_ids:
                 portal, pid = _resolve_portal(raw_pid, default_portal)
                 try:
-                    print(f"Processing Path {pid} [{portal}]...")
+                    print(f"Processing Path {_fetch_label(portal, 'paths', pid)} [{portal}]...")
                     p = Path(id=pid, driver=driver, portal=portal)
                     # Load existing to see if we need to fetch?
                     # Fetch command implies scraping/updating.
@@ -296,7 +317,7 @@ def cmd_fetch(args):
              for raw_cid in fetch_courses_ids:
                 portal, cid = _resolve_portal(raw_cid, default_portal)
                 try:
-                    print(f"Processing Course {cid} [{portal}]...")
+                    print(f"Processing Course {_fetch_label(portal, 'courses', cid)} [{portal}]...")
                     c = Course(id=cid, driver=driver, portal=portal)
                     # extract_transcript fetches page, extracts metadata, outline, modules, saves json/md.
                     c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
@@ -319,7 +340,7 @@ def cmd_fetch(args):
             for raw_lid in fetch_labs_ids:
                 portal, lid = _resolve_portal(raw_lid, default_portal)
                 try:
-                    print(f"Processing Lab {lid} [{portal}]...")
+                    print(f"Processing Lab {_fetch_label(portal, 'labs', lid)} [{portal}]...")
                     if _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only):
                         print(f"Lab {lid} updated.")
                 except Exception as e:
@@ -590,8 +611,17 @@ def main():
     from services.migration import migrate_to_portal_layout
     migrate_to_portal_layout()
 
-    # Execute the selected command
-    args.func(args)
+    # Execute the selected command. A Ctrl+C stops cleanly: each browser is
+    # closed by its own finally block during unwinding, and because every item
+    # is written atomically as it completes, already-fetched items are kept.
+    try:
+        args.func(args)
+    except KeyboardInterrupt:
+        if getattr(args, 'command', None) in ('fetch', 'f'):
+            print("\nInterrupted — stopped cleanly; completed items are saved.")
+        else:
+            print("\nInterrupted.")
+        sys.exit(130)
 
 if __name__ == "__main__":
     main()
