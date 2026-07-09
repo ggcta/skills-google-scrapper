@@ -45,3 +45,36 @@ FileNotFoundError: [Errno 2] No such file or directory: '/Users/samdinh/repos/cs
 Check [CONTRIBUTION](CONTRIBUTION.md) for more.
 
 - [ ] TODO: Sync the data folder to a GCS bucket: `gcloud storage rsync --recursive data/ gs://csbhelper/`
+
+## v3.0.0 — Multi-vendor + complete rebrand (planned)
+
+**Why:** the tool is currently Google-specific (skills.google). The scraping
+model — *portals* that expose courses / paths / labs and turn them into a
+Markdown knowledge base — generalizes to other vendors, so 3.0.0 should become a
+**vendor-neutral learning-portal scraper**. That makes the current "Google Skills
+Scraper" name too narrow, and it's the right moment to do the *complete* rebrand
+we deferred in v2.2.0 (which only renamed user-facing text + the binary).
+
+- [ ] **Multi-vendor portal support.** Generalize `internal/portal` (currently
+      `public`/`partner` under one base) into a vendor→portal registry. Candidate
+      vendors: AWS (Skill Builder), Microsoft/Azure (Microsoft Learn), Alibaba
+      Cloud Academy, plus the existing Google Skills. Each vendor needs its own
+      base URLs, catalog API shape, auth/login flow, and page parsers. Keep the
+      shared model (Path/Course/Lab → Markdown) and per-vendor storage roots
+      (`data/<vendor>/<portal>/…`). Design the parser layer so a new vendor is a
+      pluggable module, not a fork.
+- [ ] **Pick a vendor-neutral name** (needed once it's multi-vendor). Ideas —
+      recommend **SkillVault** (skills across vendors → your Obsidian vault;
+      binary `skillvault`); alternates: `LearnVault`, `CourseVault`, `SkillScribe`.
+      Decision is open — this is the blocker for the rename below.
+- [ ] **Complete/deep rebrand** (the internal identifiers kept as codenames in
+      v2.2.0): Go module `csb` → new name (touches all `csb/internal/...`
+      imports), Rust crate `csb-gui`, the `CSB_*` env vars
+      (`CSB_DATA`/`CSB_VAULT`/`CSB_BIN`/`CSB_PROJECT_ROOT` → new prefix, keep the
+      old names as deprecated aliases for one release), and the on-disk dirs
+      (`csbmdvault/`, and if vendors get their own roots, restructure `data/`).
+- [ ] **Data migration.** Renaming/​restructuring the data + vault dirs must ship
+      a migration (or back-compat read of the old layout) so existing scraped
+      content isn't orphaned — 2.2.0 explicitly avoided this by keeping the dirs.
+- [ ] **Docs + versioning.** Bump to 3.0.0 across pyproject / tauri.conf.json /
+      crate; rewrite READMEs and `docs/` around the multi-vendor model.
