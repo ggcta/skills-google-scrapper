@@ -17,7 +17,7 @@ class Collection(Serialize):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict = None,
+                 collection: dict | None = None,
                  portal: str = DEFAULT_PORTAL):
         self.name = name
         # Which portal this collection belongs to (public / partner).

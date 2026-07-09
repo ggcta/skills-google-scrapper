@@ -11,7 +11,7 @@ class Topics(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str = BASE_URL,
-                 collection: dict = None):
+                 collection: dict | None = None):
         super().__init__(name, url, collection)
 
     def to_dict(self):

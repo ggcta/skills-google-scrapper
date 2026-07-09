@@ -24,7 +24,7 @@ class Lab(BaseEntity):
                  id: str,
                  name: str | None = None,
                  description: str | None = None,
-                 steps: dict = None,
+                 steps: dict | None = None,
                  driver=None,
                  title: str | None = None,
                  portal: str | None = None):

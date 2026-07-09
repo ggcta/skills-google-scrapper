@@ -11,12 +11,19 @@ class BaseEntity(Serialize):
     Base class for all entities including Path, Course, and Lab.
     """
 
+    # Declared (not assigned) so the type checker knows these can exist without
+    # every subclass actually setting them: a bare annotation adds nothing to
+    # instance.__dict__, so hasattr()/to_dict() still behave as if the
+    # attribute were never set on subclasses (e.g. Lab) that don't assign it.
+    datePublished: str | None
+    topics: list | None
+
     def __init__(self,
                  id: str,
                  name: str | None = None,
                  description: str | None = None,
                  title: str | None = None,
-                 portal: str = DEFAULT_PORTAL):
+                 portal: str | None = DEFAULT_PORTAL):
         self.id = id
         self.title = title or name
         self.description = description

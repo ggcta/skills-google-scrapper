@@ -11,7 +11,7 @@ class Courses(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict = None,
+                 collection: dict | None = None,
                  driver=None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["courses"], collection, portal=portal)

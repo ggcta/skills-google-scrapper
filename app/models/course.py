@@ -42,9 +42,9 @@ class Course(BaseEntity):
                  name: str | None = None,
                  description: str | None = None,
                  datePublished: str | None = None,
-                 objectives: list = None,
-                 topics: list = None,
-                 modules: list = None,
+                 objectives: list | None = None,
+                 topics: list | None = None,
+                 modules: list | None = None,
                  driver=None,
                  title: str | None = None,
                  portal: str | None = None):

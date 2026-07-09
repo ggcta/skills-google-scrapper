@@ -28,7 +28,7 @@ class Path(BaseEntity):
                  name: str | None = None,
                  description: str | None = None,
                  datePublished: str | None = None,
-                 courses: dict = None,
+                 courses: dict | None = None,
                  driver=None,
                  title: str | None = None,
                  portal: str | None = None):
