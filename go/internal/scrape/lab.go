@@ -1,4 +1,4 @@
-// Package scrape parses Cloud Skills Boost pages into model entities. The HTML
+// Package scrape parses Google Skills pages into model entities. The HTML
 // parsing is separated from the browser so it can be unit-tested offline against
 // saved fixtures.
 package scrape

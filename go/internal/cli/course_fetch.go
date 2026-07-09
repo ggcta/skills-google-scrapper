@@ -33,7 +33,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 		return err
 	}
 	if strings.Contains(finalURL, "sign_in") {
-		return fmt.Errorf("authentication required — run 'csb login%s' first", portalFlagHint(portalKey))
+		return fmt.Errorf("authentication required — run 'skills-scraper login%s' first", portalFlagHint(portalKey))
 	}
 
 	// Stored publish date, for the skip check.

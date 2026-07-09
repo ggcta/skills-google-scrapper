@@ -11,7 +11,7 @@ PROJECT_ROOT = PathlibPath(__file__).parent.parent.parent
 OUTPUT_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "csbmdvault"
 DATA_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "data"
 
-# Base URL for the Cloud Skills Boost website
+# Base URL for the Google Skills website
 BASE_URL: str = "https://www.skills.google"
 BASE_URL_PATHS: str = f"{BASE_URL}/paths"
 API_URL_PATHS: str = f"{BASE_URL}/catalog/list?format%5B%5D=learning_plans"

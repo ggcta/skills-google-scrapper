@@ -34,7 +34,7 @@ class Course(BaseEntity):
     """
     Class representing a course entity.\n
     Inherits from BaseEntity.\n
-    This class is responsible for extracting course data from the Cloud Skills Boost platform.
+    This class is responsible for extracting course data from the Google Skills platform.
     """
 
     def __init__(self,

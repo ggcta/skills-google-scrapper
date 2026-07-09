@@ -1,9 +1,9 @@
 // Prevent an extra console window on Windows in release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-//! CSB Studio — a thin Tauri desktop shell over the validated `csb` Go binary.
-//! Every operation shells out to `csb`; the GUI never reimplements scraping
-//! logic, so it inherits the CLI's byte-for-byte-verified behaviour.
+//! Google Skills Scraper — a thin Tauri desktop shell over the validated
+//! `skills-scraper` Go binary. Every operation shells out to it; the GUI never
+//! reimplements scraping logic, so it inherits the CLI's verified behaviour.
 
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
@@ -13,7 +13,7 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 
-/// A list/search row, matching `csb --json` output.
+/// A list/search row, matching `skills-scraper --json` output.
 #[derive(Serialize, serde::Deserialize)]
 struct Item {
     id: String,
@@ -23,10 +23,10 @@ struct Item {
     portal: String,
 }
 
-/// Holds the running `csb login` child so finish_login can complete it.
+/// Holds the running `skills-scraper login` child so finish_login can complete it.
 struct LoginState(Mutex<Option<Child>>);
 
-/// Candidate directories to search for the repo root / csb binary: an explicit
+/// Candidate directories to search for the repo root / skills-scraper binary: an explicit
 /// CSB_PROJECT_ROOT, then every ancestor of the working dir, then every ancestor
 /// of the app executable (so it works no matter where the app is launched from).
 fn candidate_roots() -> Vec<PathBuf> {
@@ -43,8 +43,10 @@ fn candidate_roots() -> Vec<PathBuf> {
     roots
 }
 
-/// Resolve the `csb` binary. Prefers CSB_BIN, else the first candidate root that
-/// contains a `csb` file. Returns an actionable error if none is found.
+/// Resolve the `skills-scraper` binary. Prefers CSB_BIN, else the first candidate
+/// root that contains a known binary name. Returns an actionable error if none is
+/// found. Legacy names (csb.bin / csb) are still accepted so old local builds keep
+/// working after the rebrand.
 fn resolve_csb() -> Result<PathBuf, String> {
     if let Ok(b) = std::env::var("CSB_BIN") {
         let p = PathBuf::from(&b);
@@ -53,12 +55,12 @@ fn resolve_csb() -> Result<PathBuf, String> {
         }
         return Err(format!("CSB_BIN points to a missing file: {b}"));
     }
-    // Prefer the extensioned build artifact (csb.bin / csb.exe on Windows),
-    // falling back to a legacy extensionless `csb`.
+    // Prefer the extensioned build artifact (skills-scraper.bin / .exe on
+    // Windows); legacy csb.bin / csb names are still honoured for old builds.
     let names: &[&str] = if cfg!(windows) {
-        &["csb.exe", "csb.bin", "csb"]
+        &["skills-scraper.exe", "skills-scraper.bin", "csb.exe", "csb.bin", "csb"]
     } else {
-        &["csb.bin", "csb"]
+        &["skills-scraper.bin", "skills-scraper", "csb.bin", "csb"]
     };
     for r in candidate_roots() {
         for name in names {
@@ -68,15 +70,15 @@ fn resolve_csb() -> Result<PathBuf, String> {
             }
         }
     }
-    Err("csb binary not found. Build it from the repo root:\n  \
-         cd go && go build -o ../csb.bin .\n\
+    Err("skills-scraper binary not found. Build it from the repo root:\n  \
+         cd go && go build -o ../skills-scraper.bin .\n\
          (or run `just cli`, or set CSB_BIN to its full path)."
         .to_string())
 }
 
 /// The repository root (where data/ and csbmdvault/ live), used as the working
 /// directory for csb. Prefers a checkout containing both `.git` and `go`, else
-/// the directory holding the resolved csb binary.
+/// the directory holding the resolved skills-scraper binary.
 fn repo_root() -> PathBuf {
     for r in candidate_roots() {
         if r.join(".git").exists() && r.join("go").exists() {
@@ -117,7 +119,7 @@ fn run_csb(args: &[String]) -> Result<String, String> {
         .args(args)
         .current_dir(repo_root())
         .output()
-        .map_err(|e| format!("failed to launch csb ({}): {e}", bin.display()))?;
+        .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
     if !out.status.success() {
         return Err(String::from_utf8_lossy(&out.stderr).into_owned());
     }
@@ -137,7 +139,7 @@ fn list_items(portal: String, kind: String) -> Result<Vec<Item>, String> {
 }
 
 /// Refresh the catalog (paths/courses/labs) from the website, then return the
-/// stored list. Runs `csb list --reload --headless --json`, which opens a
+/// stored list. Runs `skills-scraper list --reload --headless --json`, which opens a
 /// headless browser and pages through the site's catalog API. This is the only
 /// way to populate an empty first-run database, so the GUI exposes it as a
 /// distinct "Sync" action (slower than the local-only Refresh).
@@ -172,7 +174,7 @@ fn search_items(portal: String, query: String, kind: String) -> Result<Vec<Item>
     serde_json::from_str(&out).map_err(|e| e.to_string())
 }
 
-/// Stream a `csb fetch` run, emitting each output line as a `fetch-log` event
+/// Stream a `skills-scraper fetch` run, emitting each output line as a `fetch-log` event
 /// and a final `fetch-done` (bool success). Runs on a Tauri worker thread.
 #[tauri::command]
 fn fetch(
@@ -211,7 +213,7 @@ fn fetch(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("failed to launch csb ({}): {e}", bin.display()))?;
+        .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
 
     // Forward stderr lines too (progress is printed there for some commands).
     if let Some(err) = child.stderr.take() {
@@ -241,7 +243,7 @@ fn login(state: State<LoginState>, portal: String) -> Result<(), String> {
         .current_dir(repo_root())
         .stdin(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("failed to launch csb ({}): {e}", bin.display()))?;
+        .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
     *state.0.lock().unwrap() = Some(child);
     Ok(())
 }

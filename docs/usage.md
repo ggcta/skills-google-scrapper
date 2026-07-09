@@ -79,7 +79,7 @@ uv run app/main.py fetch --all              # every public path (cascades to its
 uv run app/main.py fetch --all -B           # every partner path
 uv run app/main.py fetch --all courses      # every standalone course
 uv run app/main.py fetch --all all --headless   # paths + courses + labs, no window
-csb fetch --all                             # same, via the Go binary
+skills-scraper fetch --all                             # same, via the Go binary
 ```
 
 Because paths cascade to their courses and labs, plain `fetch --all` already

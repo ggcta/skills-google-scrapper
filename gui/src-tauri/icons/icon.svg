@@ -16,7 +16,7 @@
   <!-- Rounded-square background (pre-masked squircle-ish corners). -->
   <rect x="0" y="0" width="1024" height="1024" rx="232" fill="url(#bg)"/>
 
-  <!-- Soft cloud backdrop — the "Cloud" in Cloud Skills Boost. -->
+  <!-- Soft cloud backdrop — an abstract "boost" mark. -->
   <g fill="#FFFFFF" fill-opacity="0.16">
     <rect x="250" y="612" width="524" height="150" rx="75"/>
     <circle cx="392" cy="632" r="112"/>

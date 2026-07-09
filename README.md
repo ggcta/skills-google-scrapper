@@ -1,10 +1,16 @@
-# Google Cloud Skills Boost — Scraper & Knowledge-Base Builder
+# Google Skills Scraper
 
 ![Welcome Screen](docs/assets/welcome-screen.png)
 
-Turn [Google Cloud Skills Boost](https://www.skills.google) courses, learning
+Turn [Google Skills](https://www.skills.google) courses, learning
 paths, and labs into clean, well-structured **Markdown files** you can drop
 straight into Obsidian (or any Markdown-based personal knowledge base).
+
+> **v2.2.0 — renamed to Google Skills Scraper.** Formerly "Cloud Skills Boost /
+> CSB Studio"; the site itself is now [Google Skills](https://www.skills.google).
+> The CLI binary is `skills-scraper.bin` (legacy `csb.bin`/`csb` still resolve)
+> and the desktop app is **Google Skills Scraper**. Existing `data/` and
+> `csbmdvault/` folders are unchanged — no migration needed.
 
 > New here and not a developer? Jump to the
 > **[Getting Started guide](docs/getting-started.md)** — it walks you through
@@ -34,7 +40,7 @@ straight into Obsidian (or any Markdown-based personal knowledge base).
 - **[uv](https://docs.astral.sh/uv/)** — the package/venv manager used to run
   the app (`uv run …` handles the virtual environment and dependencies for you).
 - **Google Chrome** — the scraper drives a real Chrome browser via Selenium.
-- A **Google Cloud Skills Boost account** — most course/lab pages require you to
+- A **Google Skills account** — most course/lab pages require you to
   be signed in.
 
 See **[docs/installation.md](docs/installation.md)** for setup details.
@@ -182,6 +188,6 @@ command parity (`md`, `list`/`--reload`, `search`, `fetch -l/-c/-p`, `login`,
 ## A note on responsible use
 
 This tool automates a signed-in browser to save content **you already have
-access to** for personal offline study. Respect Google Cloud Skills Boost's
+access to** for personal offline study. Respect Google Skills's
 Terms of Service, keep your fetches reasonable, and don't redistribute scraped
 content.

@@ -1,6 +1,6 @@
-# csb — Go rewrite (single binary)
+# skills-scraper — Go rewrite (single binary)
 
-A Go reimplementation of the Cloud Skills Boost scraper. It reads and writes the
+A Go reimplementation of the Google Skills Scraper. It reads and writes the
 **exact same** `data/` and `csbmdvault/` layout as the Python version, so the two
 are interchangeable and can be run side by side during the migration. They also
 **share the login profile** (`.webdriver_profiles/`), so signing in once works for
@@ -12,8 +12,8 @@ Run everything from the repository root (so it finds `data/` and `csbmdvault/`).
 
 ```bash
 cd go
-go build -o csb .
-# then run ../csb from the repo root, or `go run .` from go/
+go build -o skills-scraper.bin .
+# then run ../skills-scraper.bin from the repo root, or `go run .` from go/
 ```
 
 Requires Go 1.26+ and Google Chrome (chromedp drives your installed Chrome).
@@ -50,19 +50,19 @@ URL inference (paste a full URL instead of an id) work on every command.
 
 ```bash
 # Sign in once (shared with the Python tool)
-./csb login            # public
-./csb login -B         # partner
+./skills-scraper.bin login            # public
+./skills-scraper.bin login -B         # partner
 
 # Regenerate Markdown offline (no browser)
-./csb md -c 53
-./csb md -B -p 4184
+./skills-scraper.bin md -c 53
+./skills-scraper.bin md -B -p 4184
 
 # Browse the local database
-./csb list -B --courses
-./csb search spanner -B --lab
+./skills-scraper.bin list -B --courses
+./skills-scraper.bin search spanner -B --lab
 
 # Fetch a lab end-to-end
-./csb fetch -B -l 6523            # add --force to re-fetch, --headless to hide Chrome
+./skills-scraper.bin fetch -B -l 6523            # add --force to re-fetch, --headless to hide Chrome
 ```
 
 ## Layout

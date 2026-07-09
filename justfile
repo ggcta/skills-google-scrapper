@@ -1,20 +1,20 @@
-# CSB — task runner (https://just.systems). Run `just` to list recipes.
+# Google Skills Scraper — task runner (https://just.systems). Run `just` to list recipes.
 #
 # Quick start:
 #   brew install just        # one-time (macOS); see just.systems for others
 #   just setup               # one-time: install the Tauri CLI
-#   just dev                 # build the csb binary + launch the desktop app
+#   just dev                 # build the skills-scraper binary + launch the desktop app
 
 # Show the available recipes.
 default:
     @just --list
 
-# Build the csb Go binary at the repo root (what the GUI shells out to). The
+# Build the skills-scraper Go binary at the repo root (what the GUI shells out to). The
 # .bin extension keeps build artifacts out of git via a single `*.bin` ignore.
 cli:
-    cd go && go build -o ../csb.bin .
+    cd go && go build -o ../skills-scraper.bin .
 
-# Launch the desktop app (CSB Studio). Rebuilds the CLI first.
+# Launch the desktop app (Google Skills Scraper). Rebuilds the CLI first.
 dev: cli
     cd gui/src-tauri && cargo tauri dev
 
@@ -24,7 +24,7 @@ bundle: cli
 
 # Run the CLI directly, e.g. `just run fetch -A -p 20` or `just run list -B -c`.
 run *ARGS: cli
-    ./csb.bin {{ARGS}}
+   ../skills-scraper.bin {{ARGS}}
 
 # Go vet + tests.
 test:

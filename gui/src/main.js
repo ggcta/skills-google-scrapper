@@ -1,4 +1,4 @@
-// CSB Studio frontend. All work is delegated to the `csb` binary via Tauri
+// Google Skills Scraper frontend. All work is delegated to the `skills-scraper` binary via Tauri
 // commands (see src-tauri/src/main.rs). Uses the global Tauri API
 // (withGlobalTauri = true), so it runs without a bundler.
 
@@ -248,7 +248,7 @@ $("#searchQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") $(
 
 // --- Login flow ---
 $("#loginBtn").addEventListener("click", async () => {
-  // Launch the browser first; only reveal the "click Done" modal once csb has
+  // Launch the browser first; only reveal the "click Done" modal once skills-scraper has
   // actually started, so a launch failure surfaces as a readable status message
   // instead of a modal that flashes open and shut.
   const lp = concretePortal();

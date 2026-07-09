@@ -11,7 +11,7 @@ anywhere.
 
 ## What you'll need (once)
 
-1. **A Google Cloud Skills Boost account** — the same one you use at
+1. **A Google Skills account** — the same one you use at
    [skills.google](https://www.skills.google). You need to be able to sign in,
    because most course pages are only visible to logged-in users.
 2. **Google Chrome** installed. The tool opens a real Chrome window to read the
@@ -71,7 +71,7 @@ won't touch the rest of your computer.
 uv run app/main.py login
 ```
 
-A Chrome window opens. **Log in to Google Cloud Skills Boost like you normally
+A Chrome window opens. **Log in to Google Skills like you normally
 would.** When you're done and can see your dashboard, come back to the terminal
 and press **Enter**. The window closes and your login is remembered for next
 time.

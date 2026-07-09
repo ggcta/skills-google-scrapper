@@ -197,7 +197,7 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 		return err
 	}
 	if strings.Contains(finalURL, "sign_in") {
-		return fmt.Errorf("authentication required — run 'csb login%s' first", portalFlagHint(portalKey))
+		return fmt.Errorf("authentication required — run 'skills-scraper login%s' first", portalFlagHint(portalKey))
 	}
 
 	lc, err := scrape.ParseLabHTML(html)

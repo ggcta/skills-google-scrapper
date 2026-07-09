@@ -224,7 +224,7 @@ class DataManagement():
 
     def fetch_data(self):
         """
-        Fetch all paths from Cloud Skills Boost website.
+        Fetch all paths from Google Skills website.
         """
 
         if self.paths_collection.fetch_paths():

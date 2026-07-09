@@ -35,7 +35,7 @@ class Database:
         """Update the metadata table with app info and timestamp."""
         info = {
             'app_name': 'CSBHelper',
-            'description': 'Google Cloud Skills Boost Helper and Scraper',
+            'description': 'Google Skills Scraper',
             'version': '1.0.0',
             'site_url': 'https://www.skills.google/',
             'last_modified': datetime.datetime.now().isoformat()

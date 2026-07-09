@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CSB Studio",
-  "version": "0.1.0",
-  "identifier": "com.samdx.csb-studio",
+  "productName": "Google Skills Scraper",
+  "version": "2.2.0",
+  "identifier": "com.samdx.google-skills-scraper",
   "build": {
     "frontendDist": "../src"
   },
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "CSB Studio — Cloud Skills Boost",
+        "title": "Google Skills Scraper",
         "width": 1040,
         "height": 760,
         "minWidth": 760,

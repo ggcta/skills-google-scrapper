@@ -53,7 +53,7 @@ func cmdList(args []string) int {
 			// First-run guidance: the local database starts empty; the catalog
 			// has to be pulled from the website once.
 			kindFlag := map[string]string{"paths": "-p", "courses": "-c", "labs": "-l"}[table]
-			fmt.Printf("Tip: fetch the catalog from the website with:  csb list -r %s %s\n",
+			fmt.Printf("Tip: fetch the catalog from the website with:  skills-scraper list -r %s %s\n",
 				portalFlag(p.portal), kindFlag)
 		}
 		return 0

@@ -43,9 +43,9 @@ func Run(args []string) int {
 }
 
 func printUsage() {
-	fmt.Println(`csb — Cloud Skills Boost scraper (Go)
+	fmt.Println(`skills-scraper — Google Skills Scraper (Go)
 
-Usage: csb <command> [options]
+Usage: skills-scraper <command> [options]
 
 Commands:
   list, l        List stored paths, courses, or labs
@@ -58,7 +58,22 @@ Commands:
 Portal flags (most commands):
   -A, -a, --public    Public portal (default)
   -B, -b, --partner   Partner portal
-  --portal, -P NAME   Explicit portal name`)
+  --portal, -P NAME   Explicit portal name
+
+Fetch options (fetch):
+  -p/-c/-l <ids>      Paths / courses / labs to fetch (comma or space separated)
+  --all [kind]        Fetch the whole catalog (paths|courses|labs|all); reloads first
+  -f, --force         Re-fetch items even if already stored
+  -t, --toc           Table-of-contents only (skip step bodies)
+  --no-transcript     Fetch full pages but skip video transcripts
+  --no-md             Write JSON only, skip Markdown
+  --headless          Run Chrome without a visible window
+
+List options (list):
+  -r, --reload        Refresh the catalog from the website first (opens Chrome)
+  -i, --id            Sort by id instead of name
+  --headless          Reload without a visible browser window
+  --json              Machine-readable output (used by the GUI)`)
 }
 
 // flagSet is a tiny argument scanner shared by the commands. It recognises the
