@@ -9,8 +9,8 @@ class Courses(Collection):
     """
 
     def __init__(self,
-                 name: str = None,
-                 url: str = None,
+                 name: str | None = None,
+                 url: str | None = None,
                  collection: dict = None,
                  driver=None,
                  portal: str = DEFAULT_PORTAL):

@@ -15,8 +15,8 @@ class Collection(Serialize):
     """
 
     def __init__(self,
-                 name: str = None,
-                 url: str = None,
+                 name: str | None = None,
+                 url: str | None = None,
                  collection: dict = None,
                  portal: str = DEFAULT_PORTAL):
         self.name = name

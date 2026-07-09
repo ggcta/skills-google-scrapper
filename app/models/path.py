@@ -25,13 +25,13 @@ class Path(BaseEntity):
 
     def __init__(self,
                  id: str,
-                 name: str = None,
-                 description: str = None,
-                 datePublished: str = None,
+                 name: str | None = None,
+                 description: str | None = None,
+                 datePublished: str | None = None,
                  courses: dict = None,
                  driver=None,
-                 title: str = None,
-                 portal: str = None):
+                 title: str | None = None,
+                 portal: str | None = None):
         super().__init__(id=id,
                          name=name,
                          description=description,

@@ -8,15 +8,15 @@ class Paths(Collection):
     """
 
     def __init__(self,
-                 name: str = None,
-                 url: str = None,
+                 name: str | None = None,
+                 url: str | None = None,
                  collection: dict = None,
                  driver=None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["paths"], collection, portal=portal)
         self.driver = driver
 
-    def fetch_paths(self, base_url: str = None, force: bool = False) -> bool:
+    def fetch_paths(self, base_url: str | None = None, force: bool = False) -> bool:
         """
         Gather all paths from the CloudSkillsBoost Paths page using the API.\n
         Returns a Boolean to check status.

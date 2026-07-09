@@ -124,7 +124,7 @@ class Database:
         # Or just update it.
         # self.update_metadata() 
 
-    def search(self, table_name: str, query_str: str, field: str = None):
+    def search(self, table_name: str, query_str: str, field: str | None = None):
         """
         Search for documents in the specified table matching the query string.
         Returns a list of matching documents (values).

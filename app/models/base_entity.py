@@ -13,9 +13,9 @@ class BaseEntity(Serialize):
 
     def __init__(self,
                  id: str,
-                 name: str = None,
-                 description: str = None,
-                 title: str = None,
+                 name: str | None = None,
+                 description: str | None = None,
+                 title: str | None = None,
                  portal: str = DEFAULT_PORTAL):
         self.id = id
         self.title = title or name

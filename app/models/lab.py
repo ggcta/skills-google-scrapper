@@ -22,12 +22,12 @@ class Lab(BaseEntity):
 
     def __init__(self,
                  id: str,
-                 name: str = None,
-                 description: str = None,
+                 name: str | None = None,
+                 description: str | None = None,
                  steps: dict = None,
                  driver=None,
-                 title: str = None,
-                 portal: str = None):
+                 title: str | None = None,
+                 portal: str | None = None):
         super().__init__(id=id,
                          name=name,
                          description=description,
@@ -78,7 +78,7 @@ class Lab(BaseEntity):
         return lab_steps
 
     # MARK: fetch_data
-    def fetch_data(self, force: bool = False, fetch_url: str = None) -> bool:
+    def fetch_data(self, force: bool = False, fetch_url: str | None = None) -> bool:
         """
         Fetch this lab's data (name, description, steps).
 

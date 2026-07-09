@@ -73,7 +73,7 @@ class HTMLStripper(HTMLParser):
     def get_data(self):
         return ''.join(self.fed)
 
-def util_replace_special_chars(text_to_replace: str) -> str:
+def util_replace_special_chars(text_to_replace: str | None) -> str:
     """
     Remove special characters from the given text.
     This to make sure when a path is created, it doesn't contain any special characters.

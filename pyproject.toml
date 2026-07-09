@@ -12,3 +12,8 @@ dependencies = [
     "selenium>=4.40.0",
     "tinydb~=4.8.0",
 ]
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.9",
+]
