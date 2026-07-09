@@ -113,10 +113,50 @@ function logLine(line) {
 }
 if (listen) {
   listen("fetch-log", (e) => logLine(e.payload));
+  // Each item the binary saves arrives as a fetch-item event, so Browse/Search
+  // badges flip to "✓ fetched" live while a fetch is running.
+  listen("fetch-item", (e) => applyItemSaved(e.payload));
   listen("fetch-done", (e) => {
     setStatus(e.payload ? "Fetch complete." : "Fetch finished with errors.", e.payload ? "ok" : "");
     $("#fetchBtn").disabled = false;
+    // Re-list the visible read tab so newly-fetched items (e.g. labs found by
+    // cascading a path) appear with their status and the counts settle.
+    const active = $(".panel.active")?.dataset.panel;
+    if (active === "browse") $("#browseBtn").click();
+    else if (active === "search" && lastSearchQuery) $("#searchBtn").click();
   });
+}
+
+// applyItemSaved patches the loaded Browse/Search rows in place from a fetch-item
+// payload ({portal, kind, id, name, scrapedTime, scrapedDate}) and re-renders the
+// affected table (debounced, so a burst of saves doesn't thrash the DOM).
+function applyItemSaved(payload) {
+  let it;
+  try { it = JSON.parse(payload); } catch { return; }
+  const patch = (rows) => {
+    let hit = false;
+    for (const r of rows) {
+      if (String(r.id) === String(it.id) && r.portal === it.portal) {
+        r.fetched = true;
+        r.scrapedTime = it.scrapedTime;
+        r.scrapedDate = it.scrapedDate;
+        hit = true;
+      }
+    }
+    return hit;
+  };
+  if (patch(browseItems)) scheduleRender("browse");
+  if (patch(searchItems)) scheduleRender("search");
+}
+
+const renderTimers = {};
+function scheduleRender(which) {
+  if (renderTimers[which]) return;
+  renderTimers[which] = setTimeout(() => {
+    renderTimers[which] = null;
+    if (which === "browse") renderBrowse();
+    else renderSearch();
+  }, 250);
 }
 $("#fetchBtn").addEventListener("click", async () => {
   const ids = $("#fetchIds").value.split(/[\s,]+/).filter(Boolean);

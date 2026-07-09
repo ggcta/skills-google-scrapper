@@ -13,7 +13,10 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 
-/// A list/search row, matching `skills-scraper --json` output.
+/// A list/search row, matching `skills-scraper --json` output. The fetch-status
+/// fields must be declared here or they'd be silently dropped on the round-trip
+/// through this struct (serde ignores unknown fields on the way in and only
+/// re-emits declared ones on the way out), leaving the GUI badges blank.
 #[derive(Serialize, serde::Deserialize)]
 struct Item {
     id: String,
@@ -21,6 +24,12 @@ struct Item {
     #[serde(rename = "type")]
     kind: String,
     portal: String,
+    #[serde(default)]
+    fetched: bool,
+    #[serde(default, rename = "scrapedTime")]
+    scraped_time: i64,
+    #[serde(default, rename = "scrapedDate")]
+    scraped_date: String,
 }
 
 /// Holds the running `skills-scraper login` child so finish_login can complete it.
@@ -205,6 +214,9 @@ fn fetch(
     if headless {
         args.push("--headless".into());
     }
+    // Ask the binary for machine-readable "@@ITEM {json}" markers so we can
+    // refresh the Browse badges live as each item is saved.
+    args.push("--emit-progress".into());
 
     let bin = resolve_csb()?;
     let mut child = Command::new(&bin)
@@ -226,7 +238,14 @@ fn fetch(
     }
     if let Some(out) = child.stdout.take() {
         for line in BufReader::new(out).lines().map_while(Result::ok) {
-            let _ = app.emit("fetch-log", line);
+            // "@@ITEM {json}" markers become a structured fetch-item event (the
+            // raw JSON payload, parsed on the frontend); everything else is a
+            // normal console log line.
+            if let Some(json) = line.strip_prefix("@@ITEM ") {
+                let _ = app.emit("fetch-item", json.to_string());
+            } else {
+                let _ = app.emit("fetch-log", line);
+            }
         }
     }
     let ok = child.wait().map(|s| s.success()).unwrap_or(false);

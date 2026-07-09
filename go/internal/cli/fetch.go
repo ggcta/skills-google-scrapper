@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -21,6 +22,37 @@ import (
 // item could be fully scraped, so nothing partial is saved and the caller can
 // stop the run quietly rather than reporting it as a failure.
 var errInterrupted = errors.New("interrupted")
+
+// emitProgress, set by the hidden --emit-progress flag, makes fetch print a
+// machine-readable "@@ITEM {json}" line to stdout after each item is saved, so a
+// wrapping GUI can refresh its view live. It stays off for normal CLI use, where
+// the human-readable progress lines are enough.
+var emitProgress bool
+
+// itemSaved prints the structured per-item progress marker when --emit-progress
+// is on. kind is the singular lowercase type (path/course/lab). It is called
+// right after the item's JSON + DB row are persisted, so the fields it reports
+// are already durable on disk.
+func itemSaved(kind, portalKey, id, name string, scrapedMs int64) {
+	if !emitProgress {
+		return
+	}
+	date := ""
+	if scrapedMs > 0 {
+		date = time.UnixMilli(scrapedMs).Format("2006-01-02")
+	}
+	b, err := json.Marshal(map[string]any{
+		"portal":      portalKey,
+		"kind":        kind,
+		"id":          id,
+		"name":        name,
+		"scrapedTime": scrapedMs,
+		"scrapedDate": date,
+	})
+	if err == nil {
+		fmt.Printf("@@ITEM %s\n", b)
+	}
+}
 
 // reportable is true when err is a real failure worth printing — not nil, not an
 // interrupt, and not an error produced while the run was being canceled (a
@@ -44,6 +76,7 @@ func cmdFetch(args []string) int {
 	tocOnly := p.has("--toc", "-t")
 	noTranscript := p.has("--no-transcript")
 	headless := p.has("--headless")
+	emitProgress = p.has("--emit-progress")
 
 	pathIDs, hasP := p.value("-p", "--paths")
 	courseIDs, hasC := p.value("-c", "--courses")
@@ -277,6 +310,7 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 			return err
 		}
 	}
+	itemSaved("lab", portalKey, id, lab.Title, lab.ScrapedTime)
 	fmt.Printf("•-• [+] %s - %s (%d steps)\n", id, lab.Title, lab.Steps.Len())
 	return nil
 }

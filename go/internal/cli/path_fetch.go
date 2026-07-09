@@ -42,6 +42,7 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 			return err
 		}
 	}
+	itemSaved("path", portalKey, id, path.Title, path.ScrapedTime)
 	fmt.Printf("Path %s updated.\n", id)
 
 	// Cascade down the tree.

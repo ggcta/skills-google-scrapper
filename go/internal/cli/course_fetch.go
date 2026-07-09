@@ -102,6 +102,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 			return err
 		}
 	}
+	itemSaved("course", portalKey, effectiveID, course.Title, course.ScrapedTime)
 	fmt.Printf("•-• COMPLETED: %s - %s\n", effectiveID, course.Title)
 	return nil
 }
@@ -226,6 +227,7 @@ func processCourseLab(sess *browser.Session, base, courseID, portalKey string, a
 		return
 	}
 	_, _ = store.WriteLabMarkdown(lab, mdgen.Lab(lab, mdgen.Options{}))
+	itemSaved("lab", portalKey, labID, lab.Title, lab.ScrapedTime)
 	fmt.Printf("(process_lab) •-• [+] %s - %s (%d steps)\n", labID, lab.Title, lab.Steps.Len())
 }
 
