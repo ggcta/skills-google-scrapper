@@ -556,6 +556,8 @@ def main():
     parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
     parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
     parser_f.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
+    parser_f.add_argument('--log-dir', default=None, metavar='PATH',
+                          help='Directory for the per-run activity log (default PROJECT_ROOT/logs, or CSB_LOG_DIR)')
     # Hidden bulk mode: refresh the catalog(s) from the site, then fetch every
     # stored item. Optional KIND: paths (default) / courses / labs / all. Kept
     # out of --help (documented in docs/usage.md) but a real, supported feature.
@@ -611,17 +613,28 @@ def main():
     from services.migration import migrate_to_portal_layout
     migrate_to_portal_layout()
 
+    # For a fetch run, timestamp every line and mirror it to a per-run log file
+    # (default PROJECT_ROOT/logs, override with --log-dir / CSB_LOG_DIR).
+    is_fetch = getattr(args, 'command', None) in ('fetch', 'f')
+    if is_fetch:
+        from utils import logx
+        logx.init(getattr(args, 'log_dir', None))
+
     # Execute the selected command. A Ctrl+C stops cleanly: each browser is
     # closed by its own finally block during unwinding, and because every item
     # is written atomically as it completes, already-fetched items are kept.
     try:
         args.func(args)
     except KeyboardInterrupt:
-        if getattr(args, 'command', None) in ('fetch', 'f'):
+        if is_fetch:
             print("\nInterrupted — stopped cleanly; completed items are saved.")
         else:
             print("\nInterrupted.")
         sys.exit(130)
+    finally:
+        if is_fetch:
+            from utils import logx
+            logx.close()
 
 if __name__ == "__main__":
     main()
