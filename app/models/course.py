@@ -106,7 +106,7 @@ class Course(BaseEntity):
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
 
     # MARK: fetch_course_page
-    def fetch_course_page(self) -> BeautifulSoup:
+    def fetch_course_page(self) -> BeautifulSoup | None:
         """
         Fetch the course page and return the parsed HTML.
         """
@@ -366,7 +366,7 @@ class Course(BaseEntity):
             # Skip it unless force is set (force is inherited from the course).
             if lab.name and not force:
                 print(f"(process_lab) •-• [+] Existed: {lab.id} - {lab.name}")
-                return False
+                return
 
             # If the lab.name doesn't exist, the lab is new, continue.
             lab_steps = Lab.parse_steps(lab_page_html)
@@ -391,7 +391,7 @@ class Course(BaseEntity):
             print(f"(process_lab) Error: {error}")
 
     # MARK: fetch_external_course_content
-    def fetch_external_course_content(self, url: str) -> dict:
+    def fetch_external_course_content(self, url: str) -> dict | None:
         """
         Fetch external course content using __fetchCourse() JS function.
         Caches the result by base URL (without hash).
@@ -430,7 +430,7 @@ class Course(BaseEntity):
             return None
 
     # MARK: _extract_lesson_content
-    def _extract_lesson_content(self, course_data: dict, lesson_id: str) -> str:
+    def _extract_lesson_content(self, course_data: dict, lesson_id: str) -> str | None:
         """
         Extract content for a specific lesson from the full course data.
         """
@@ -464,7 +464,7 @@ class Course(BaseEntity):
             return None
 
     # MARK: _parse_lesson_item
-    def _parse_lesson_item(self, item: dict) -> str:
+    def _parse_lesson_item(self, item: dict) -> str | None:
         """
         Parse a single item from the lesson data into Markdown/HTML.
         """
