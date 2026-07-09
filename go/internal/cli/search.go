@@ -65,7 +65,7 @@ func cmdSearch(args []string) int {
 			continue
 		}
 		if len(matched) > 0 {
-			fmt.Printf("\n--- %s (%d) ---\n", table, len(matched))
+			fmt.Printf("\n%s (%d)\n", table, len(matched))
 			for _, d := range matched {
 				id := d.ID()
 				if id == "" {
