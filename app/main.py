@@ -244,7 +244,7 @@ def cmd_fetch(args):
 
     # --- Paths ---
     if fetch_paths_ids:
-        print(f"\n--- Processing Paths: {fetch_paths_ids} ---")
+        print(f"\nProcessing Paths: {fetch_paths_ids}")
         driver = None
         try:
             print("\n\033[35mLaunching browser for path extraction...\033[0m")
@@ -281,13 +281,13 @@ def cmd_fetch(args):
                         a_type = (activity.get('type') or 'course').lower()
                         try:
                             if 'lab' in a_type:
-                                print(f"\n--- Path {pid} > Lab {a_id} - {a_name} [{portal}] ---")
+                                print(f"\nPath {pid} > Lab {a_id} - {a_name} [{portal}]")
                                 # Partner labs live at a parent-referencing focus URL.
                                 if _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only,
                                                        fetch_url=activity.get('url')):
                                     print(f"Lab {a_id} updated.")
                             else:
-                                print(f"\n--- Path {pid} > Course {a_id} - {a_name} [{portal}] ---")
+                                print(f"\nPath {pid} > Course {a_id} - {a_name} [{portal}]")
                                 courses_collection.collection[a_id] = a_name
                                 c = Course(id=a_id, name=a_name, driver=driver, portal=portal)
                                 c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
@@ -307,7 +307,7 @@ def cmd_fetch(args):
 
     # --- Courses ---
     if fetch_courses_ids:
-        print(f"\n--- Processing Courses: {fetch_courses_ids} ---")
+        print(f"\nProcessing Courses: {fetch_courses_ids}")
         driver = None
         try:
              # Launch browser for authenticated access
@@ -331,7 +331,7 @@ def cmd_fetch(args):
 
     # --- Labs ---
     if fetch_labs_ids:
-        print(f"\n--- Processing Labs: {fetch_labs_ids} ---")
+        print(f"\nProcessing Labs: {fetch_labs_ids}")
         driver = None
         try:
             print("\n\033[35mLaunching browser for lab extraction...\033[0m")
