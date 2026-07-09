@@ -55,6 +55,22 @@ func LoadTable(portalKey, table string) ([]Doc, error) {
 	return docs, nil
 }
 
+// LookupName returns a stored item's display name from a database table
+// (paths/courses/labs), or "" when the item isn't recorded yet. Used to label
+// fetch progress with a human-readable name, not just an id.
+func LookupName(portalKey, table, id string) string {
+	docs, err := LoadTable(portalKey, table)
+	if err != nil {
+		return ""
+	}
+	for _, d := range docs {
+		if d.ID() == id {
+			return d.Name()
+		}
+	}
+	return ""
+}
+
 // Name returns a document's display name, preferring "name" then "title",
 // matching the Python collection fallback.
 func (d Doc) Name() string {

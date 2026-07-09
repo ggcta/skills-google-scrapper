@@ -89,6 +89,9 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 		}
 	}
 
+	if sess.Interrupted() {
+		return errInterrupted
+	}
 	if err := store.SaveCourseEntity(course); err != nil {
 		return err
 	}

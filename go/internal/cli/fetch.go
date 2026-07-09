@@ -2,9 +2,12 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"csb/internal/browser"
@@ -13,6 +16,19 @@ import (
 	"csb/internal/scrape"
 	"csb/internal/store"
 )
+
+// errInterrupted is returned by a fetch when the user pressed Ctrl+C before the
+// item could be fully scraped, so nothing partial is saved and the caller can
+// stop the run quietly rather than reporting it as a failure.
+var errInterrupted = errors.New("interrupted")
+
+// reportable is true when err is a real failure worth printing — not nil, not an
+// interrupt, and not an error produced while the run was being canceled (a
+// canceled navigation surfaces as a generic error before the loop's next
+// interrupt check).
+func reportable(sess *browser.Session, err error) bool {
+	return err != nil && !errors.Is(err, errInterrupted) && !sess.Interrupted()
+}
 
 // cmdFetch scrapes content into Markdown + JSON: paths cascade to their courses
 // and labs; courses cascade to their labs; flags and portal inherit down the
@@ -51,8 +67,15 @@ func cmdFetch(args []string) int {
 		}
 	}
 
+	// A Ctrl+C (or SIGTERM) cancels this context, which aborts any in-flight
+	// browser navigation and lets the fetch loops stop cleanly between items.
+	// Because every completed item is written atomically as it finishes, an
+	// interrupt never corrupts the database or loses already-fetched items.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	fmt.Println("\nLaunching browser...")
-	sess, err := browser.Launch(context.Background(), browser.Options{
+	sess, err := browser.Launch(ctx, browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
 	})
@@ -72,30 +95,51 @@ func cmdFetch(args []string) int {
 	rc := 0
 	// Paths first (cascade), then standalone courses, then standalone labs.
 	for _, raw := range splitIDs(pathIDs) {
+		if sess.Interrupted() {
+			break
+		}
 		pk, id := resolvePortal(raw, p.portal)
-		fmt.Printf("\n--- Processing Path %s [%s] ---\n", id, pk)
-		if err := fetchPath(sess, pk, id, force, noMD, tocOnly, noTranscript); err != nil {
+		fmt.Printf("\n--- Processing Path %s [%s] ---\n", labelFor(pk, "paths", id), pk)
+		if err := fetchPath(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			fmt.Fprintf(os.Stderr, "Failed to fetch path %s: %v\n", id, err)
 			rc = 1
 		}
 	}
 	for _, raw := range splitIDs(courseIDs) {
+		if sess.Interrupted() {
+			break
+		}
 		pk, id := resolvePortal(raw, p.portal)
-		fmt.Printf("\n--- Processing Course %s [%s] ---\n", id, pk)
-		if err := fetchCourse(sess, pk, id, force, noMD, tocOnly, noTranscript); err != nil {
+		fmt.Printf("\n--- Processing Course %s [%s] ---\n", labelFor(pk, "courses", id), pk)
+		if err := fetchCourse(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			fmt.Fprintf(os.Stderr, "Failed to fetch course %s: %v\n", id, err)
 			rc = 1
 		}
 	}
 	for _, raw := range splitIDs(labIDs) {
+		if sess.Interrupted() {
+			break
+		}
 		pk, id := resolvePortal(raw, p.portal)
-		fmt.Printf("\n--- Processing Lab %s [%s] ---\n", id, pk)
-		if err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); err != nil {
+		fmt.Printf("\n--- Processing Lab %s [%s] ---\n", labelFor(pk, "labs", id), pk)
+		if err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); reportable(sess, err) {
 			fmt.Fprintf(os.Stderr, "Failed to fetch lab %s: %v\n", id, err)
 			rc = 1
 		}
 	}
+	if sess.Interrupted() {
+		fmt.Fprintln(os.Stderr, "\nInterrupted — stopped cleanly; completed items are saved.")
+	}
 	return rc
+}
+
+// labelFor renders an item as "<id> - <name>" when the name is known locally, or
+// just "<id>" otherwise, so fetch progress lines are human-readable.
+func labelFor(portalKey, table, id string) string {
+	if name := store.LookupName(portalKey, table, id); name != "" {
+		return id + " - " + name
+	}
+	return id
 }
 
 // fetchAll refreshes the relevant catalog(s) from the site, then fetches every
@@ -128,11 +172,18 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 		}
 		singular := map[string]string{"paths": "Path", "courses": "Course", "labs": "Lab"}[table]
 		for i, d := range docs {
+			if sess.Interrupted() {
+				break
+			}
 			id := d.ID()
 			if id == "" {
 				continue
 			}
-			fmt.Printf("\n--- [%d/%d] %s %s [%s] ---\n", i+1, len(docs), singular, id, portalKey)
+			label := id
+			if name := d.Name(); name != "" {
+				label = id + " - " + name
+			}
+			fmt.Printf("\n--- [%d/%d] %s %s [%s] ---\n", i+1, len(docs), singular, label, portalKey)
 			var e error
 			switch table {
 			case "paths":
@@ -142,11 +193,17 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 			case "labs":
 				e = fetchLab(sess, portalKey, id, "", force, noMD, tocOnly)
 			}
-			if e != nil {
+			if reportable(sess, e) {
 				fmt.Fprintf(os.Stderr, "Failed to fetch %s %s: %v\n", singular, id, e)
 				rc = 1
 			}
 		}
+		if sess.Interrupted() {
+			break
+		}
+	}
+	if sess.Interrupted() {
+		fmt.Fprintln(os.Stderr, "\nInterrupted — stopped cleanly; completed items are saved.")
 	}
 	return rc
 }
@@ -208,6 +265,9 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 		return fmt.Errorf("could not determine lab name (page may require sign-in)")
 	}
 
+	if sess.Interrupted() {
+		return errInterrupted
+	}
 	lab := lc.ToModel(id, portalKey)
 	if err := store.SaveLabEntity(lab); err != nil {
 		return err

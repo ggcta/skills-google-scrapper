@@ -102,6 +102,11 @@ func (s *Session) waitProfileReleased(max time.Duration) {
 // alive reports whether the session context is still usable.
 func (s *Session) alive() bool { return s.Ctx != nil && s.Ctx.Err() == nil }
 
+// Interrupted reports whether the parent context has been canceled (e.g. the
+// user pressed Ctrl+C). Long fetch loops check this to stop cleanly between
+// items and avoid persisting a half-scraped one.
+func (s *Session) Interrupted() bool { return s.parent != nil && s.parent.Err() != nil }
+
 // allocFlags mirrors the Chrome flags used by the Python launcher.
 func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 	flags := []chromedp.ExecAllocatorOption{

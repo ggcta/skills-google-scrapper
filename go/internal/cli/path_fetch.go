@@ -30,6 +30,9 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 	if err != nil {
 		return err
 	}
+	if sess.Interrupted() {
+		return errInterrupted
+	}
 	path := pc.ToModel(id, portalKey)
 	if err := store.SavePathEntity(path); err != nil {
 		return err
@@ -43,19 +46,22 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 
 	// Cascade down the tree.
 	for _, key := range path.Courses.Keys {
+		if sess.Interrupted() {
+			return errInterrupted
+		}
 		ref := path.Courses.Values[key]
 		aType := strings.ToLower(ref.Type)
 		if strings.Contains(aType, "lab") {
 			fmt.Printf("\n--- Path %s > Lab %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
 			// Partner labs live at a parent-referencing focus URL (ref.URL).
-			if err := fetchLab(sess, portalKey, ref.ID, ref.URL, force, noMD, tocOnly); err != nil {
+			if err := fetchLab(sess, portalKey, ref.ID, ref.URL, force, noMD, tocOnly); reportable(sess, err) {
 				fmt.Printf("Failed to fetch lab %s in path %s: %v\n", ref.ID, id, err)
 			}
 			continue
 		}
 		fmt.Printf("\n--- Path %s > Course %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
 		_ = store.UpsertCollectionName(portalKey, "courses", ref.ID, ref.Name)
-		if err := fetchCourse(sess, portalKey, ref.ID, force, noMD, tocOnly, noTranscript); err != nil {
+		if err := fetchCourse(sess, portalKey, ref.ID, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			fmt.Printf("Failed to fetch course %s in path %s: %v\n", ref.ID, id, err)
 		}
 	}

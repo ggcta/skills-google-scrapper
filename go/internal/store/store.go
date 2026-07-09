@@ -115,14 +115,11 @@ func SavePath(p *model.Path) error { return saveJSON(jsonPath(p.PortalKey(), "pa
 func SaveLab(l *model.Lab) error { return saveJSON(jsonPath(l.PortalKey(), "labs", l.ID.String()), l) }
 
 func saveJSON(path string, v any) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	return writeFile(path, append(b, '\n'))
 }
 
 // WriteCourseMarkdown / WritePathMarkdown / WriteLabMarkdown write .md to the vault.
@@ -137,16 +134,40 @@ func WriteLabMarkdown(l *model.Lab, content string) (string, error) {
 }
 
 func writeMD(path, content string) (string, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return "", err
-	}
-	return path, os.WriteFile(path, []byte(content), 0o644)
+	return path, writeFile(path, []byte(content))
 }
 
-// writeFile writes bytes to path, creating parent directories.
+// writeFile atomically writes bytes to path: it writes to a temp file in the
+// same directory, fsyncs it, then renames it over the target. The rename is
+// atomic on POSIX, so an interrupt (Ctrl+C) or crash can never leave a
+// half-written database.json or per-item JSON backup — the file always holds
+// either its previous contents or the complete new contents. Parent
+// directories are created as needed.
 func writeFile(path string, b []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0o644)
+	tmp, err := os.CreateTemp(dir, ".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName) // no-op once the rename succeeds
+	if _, err := tmp.Write(b); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	// CreateTemp makes 0600 files; match the 0644 the app wrote before.
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, path)
 }
