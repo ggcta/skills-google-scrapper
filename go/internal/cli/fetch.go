@@ -149,7 +149,7 @@ func cmdFetch(args []string) int {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
-		logx.Printf("\n--- Processing Path %s [%s] ---\n", labelFor(pk, "paths", id), pk)
+		logx.Printf("\nProcessing Path %s [%s]\n", labelFor(pk, "paths", id), pk)
 		if err := fetchPath(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			logx.Errf("Failed to fetch path %s: %v\n", id, err)
 			rc = 1
@@ -160,7 +160,7 @@ func cmdFetch(args []string) int {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
-		logx.Printf("\n--- Processing Course %s [%s] ---\n", labelFor(pk, "courses", id), pk)
+		logx.Printf("\nProcessing Course %s [%s]\n", labelFor(pk, "courses", id), pk)
 		if err := fetchCourse(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			logx.Errf("Failed to fetch course %s: %v\n", id, err)
 			rc = 1
@@ -171,7 +171,7 @@ func cmdFetch(args []string) int {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
-		logx.Printf("\n--- Processing Lab %s [%s] ---\n", labelFor(pk, "labs", id), pk)
+		logx.Printf("\nProcessing Lab %s [%s]\n", labelFor(pk, "labs", id), pk)
 		if err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); reportable(sess, err) {
 			logx.Errf("Failed to fetch lab %s: %v\n", id, err)
 			rc = 1
@@ -205,7 +205,7 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 
 	rc := 0
 	for _, table := range tables {
-		logx.Printf("\n=== Fetching ALL %s [%s] ===\n", table, portalKey)
+		logx.Printf("\nFetching ALL %s [%s]\n", table, portalKey)
 		if err := reloadListWith(sess, portalKey, table); err != nil {
 			// Non-fatal: fall back to whatever is already stored locally.
 			logx.Errf("warning: could not refresh %s catalog: %v\n", table, err)
@@ -233,7 +233,7 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 			if name := d.Name(); name != "" {
 				label = id + " - " + name
 			}
-			logx.Printf("\n--- [%d/%d] %s %s [%s] ---\n", i+1, len(docs), singular, label, portalKey)
+			logx.Printf("\n[%d/%d] %s %s [%s]\n", i+1, len(docs), singular, label, portalKey)
 			var e error
 			switch table {
 			case "paths":

@@ -54,14 +54,14 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 		ref := path.Courses.Values[key]
 		aType := strings.ToLower(ref.Type)
 		if strings.Contains(aType, "lab") {
-			logx.Printf("\n--- Path %s > Lab %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
+			logx.Printf("\nPath %s > Lab %s - %s [%s]\n", id, ref.ID, ref.Name, portalKey)
 			// Partner labs live at a parent-referencing focus URL (ref.URL).
 			if err := fetchLab(sess, portalKey, ref.ID, ref.URL, force, noMD, tocOnly); reportable(sess, err) {
 				logx.Errf("Failed to fetch lab %s in path %s: %v\n", ref.ID, id, err)
 			}
 			continue
 		}
-		logx.Printf("\n--- Path %s > Course %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
+		logx.Printf("\nPath %s > Course %s - %s [%s]\n", id, ref.ID, ref.Name, portalKey)
 		_ = store.UpsertCollectionName(portalKey, "courses", ref.ID, ref.Name)
 		if err := fetchCourse(sess, portalKey, ref.ID, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			logx.Errf("Failed to fetch course %s in path %s: %v\n", ref.ID, id, err)
