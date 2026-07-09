@@ -399,7 +399,7 @@ def cmd_search(args):
     for table in tables:
         results = db.search(table, query, field)
         if results:
-            print(f"\n--- {table} ({len(results)}) ---")
+            print(f"\n{table} ({len(results)})")
             for res in results:
                 # Highlight ID and Name (entities store 'title', lists 'name')
                 res_id = res.get('id', 'N/A')
