@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"csb/internal/browser"
+	"csb/internal/logx"
 	"csb/internal/mdgen"
 	"csb/internal/portal"
 	"csb/internal/scrape"
@@ -50,7 +51,8 @@ func itemSaved(kind, portalKey, id, name string, scrapedMs int64) {
 		"scrapedDate": date,
 	})
 	if err == nil {
-		fmt.Printf("@@ITEM %s\n", b)
+		// Raw (un-timestamped) so the GUI's "@@ITEM " line parser still matches.
+		logx.Raw(fmt.Sprintf("@@ITEM %s\n", b))
 	}
 }
 
@@ -70,6 +72,7 @@ func cmdFetch(args []string) int {
 		"-c": true, "--courses": true,
 		"-p": true, "--paths": true,
 		"-l": true, "--labs": true,
+		"--log-dir": true,
 	})
 	force := p.has("--force", "-f")
 	noMD := p.has("--no-md")
@@ -100,6 +103,20 @@ func cmdFetch(args []string) int {
 		}
 	}
 
+	// Start the activity log for this run: every fetch line below is timestamped
+	// (ms precision) and mirrored to a per-run file under the log dir (default
+	// ./logs, override with --log-dir or CSB_LOG_DIR).
+	logDir, _ := p.value("--log-dir")
+	if logDir == "" {
+		logDir = logx.Dir()
+	}
+	if path, err := logx.Init(logDir); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: could not open log file in %s: %v\n", logDir, err)
+	} else {
+		fmt.Printf("Logging this run to %s\n", path)
+	}
+	defer logx.Close()
+
 	// A Ctrl+C (or SIGTERM) cancels this context, which aborts any in-flight
 	// browser navigation and lets the fetch loops stop cleanly between items.
 	// Because every completed item is written atomically as it finishes, an
@@ -107,13 +124,13 @@ func cmdFetch(args []string) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	fmt.Println("\nLaunching browser...")
+	logx.Println("\nLaunching browser...")
 	sess, err := browser.Launch(ctx, browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error launching browser: %v\n", err)
+		logx.Errf("error launching browser: %v\n", err)
 		return 1
 	}
 	defer sess.Close()
@@ -132,9 +149,9 @@ func cmdFetch(args []string) int {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
-		fmt.Printf("\n--- Processing Path %s [%s] ---\n", labelFor(pk, "paths", id), pk)
+		logx.Printf("\n--- Processing Path %s [%s] ---\n", labelFor(pk, "paths", id), pk)
 		if err := fetchPath(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
-			fmt.Fprintf(os.Stderr, "Failed to fetch path %s: %v\n", id, err)
+			logx.Errf("Failed to fetch path %s: %v\n", id, err)
 			rc = 1
 		}
 	}
@@ -143,9 +160,9 @@ func cmdFetch(args []string) int {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
-		fmt.Printf("\n--- Processing Course %s [%s] ---\n", labelFor(pk, "courses", id), pk)
+		logx.Printf("\n--- Processing Course %s [%s] ---\n", labelFor(pk, "courses", id), pk)
 		if err := fetchCourse(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
-			fmt.Fprintf(os.Stderr, "Failed to fetch course %s: %v\n", id, err)
+			logx.Errf("Failed to fetch course %s: %v\n", id, err)
 			rc = 1
 		}
 	}
@@ -154,14 +171,14 @@ func cmdFetch(args []string) int {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
-		fmt.Printf("\n--- Processing Lab %s [%s] ---\n", labelFor(pk, "labs", id), pk)
+		logx.Printf("\n--- Processing Lab %s [%s] ---\n", labelFor(pk, "labs", id), pk)
 		if err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); reportable(sess, err) {
-			fmt.Fprintf(os.Stderr, "Failed to fetch lab %s: %v\n", id, err)
+			logx.Errf("Failed to fetch lab %s: %v\n", id, err)
 			rc = 1
 		}
 	}
 	if sess.Interrupted() {
-		fmt.Fprintln(os.Stderr, "\nInterrupted — stopped cleanly; completed items are saved.")
+		logx.Errf("\nInterrupted — stopped cleanly; completed items are saved.\n")
 	}
 	return rc
 }
@@ -182,25 +199,25 @@ func labelFor(portalKey, table, id string) string {
 func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnly, noTranscript bool) int {
 	tables := kindTables(kind)
 	if tables == nil {
-		fmt.Fprintf(os.Stderr, "Unknown kind %q for --all (use paths, courses, labs, or all).\n", kind)
+		logx.Errf("Unknown kind %q for --all (use paths, courses, labs, or all).\n", kind)
 		return 1
 	}
 
 	rc := 0
 	for _, table := range tables {
-		fmt.Printf("\n=== Fetching ALL %s [%s] ===\n", table, portalKey)
+		logx.Printf("\n=== Fetching ALL %s [%s] ===\n", table, portalKey)
 		if err := reloadListWith(sess, portalKey, table); err != nil {
 			// Non-fatal: fall back to whatever is already stored locally.
-			fmt.Fprintf(os.Stderr, "warning: could not refresh %s catalog: %v\n", table, err)
+			logx.Errf("warning: could not refresh %s catalog: %v\n", table, err)
 		}
 		docs, err := store.LoadTable(portalKey, table)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error loading %s: %v\n", table, err)
+			logx.Errf("error loading %s: %v\n", table, err)
 			rc = 1
 			continue
 		}
 		if len(docs) == 0 {
-			fmt.Printf("No %s found for [%s].\n", table, portalKey)
+			logx.Printf("No %s found for [%s].\n", table, portalKey)
 			continue
 		}
 		singular := map[string]string{"paths": "Path", "courses": "Course", "labs": "Lab"}[table]
@@ -216,7 +233,7 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 			if name := d.Name(); name != "" {
 				label = id + " - " + name
 			}
-			fmt.Printf("\n--- [%d/%d] %s %s [%s] ---\n", i+1, len(docs), singular, label, portalKey)
+			logx.Printf("\n--- [%d/%d] %s %s [%s] ---\n", i+1, len(docs), singular, label, portalKey)
 			var e error
 			switch table {
 			case "paths":
@@ -227,7 +244,7 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 				e = fetchLab(sess, portalKey, id, "", force, noMD, tocOnly)
 			}
 			if reportable(sess, e) {
-				fmt.Fprintf(os.Stderr, "Failed to fetch %s %s: %v\n", singular, id, e)
+				logx.Errf("Failed to fetch %s %s: %v\n", singular, id, e)
 				rc = 1
 			}
 		}
@@ -236,7 +253,7 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 		}
 	}
 	if sess.Interrupted() {
-		fmt.Fprintln(os.Stderr, "\nInterrupted — stopped cleanly; completed items are saved.")
+		logx.Errf("\nInterrupted — stopped cleanly; completed items are saved.\n")
 	}
 	return rc
 }
@@ -272,7 +289,7 @@ func resolvePortal(raw, defaultPortal string) (string, string) {
 func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD, tocOnly bool) error {
 	if !force {
 		if existing, _ := store.LoadLab(portalKey, id); existing != nil && existing.Title != "" {
-			fmt.Printf("•-• [+] Existed: %s - %s\n", id, existing.Title)
+			logx.Printf("•-• [+] Existed: %s - %s\n", id, existing.Title)
 			return nil
 		}
 	}
@@ -281,7 +298,7 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 	if target == "" {
 		target = portal.Get(portalKey).Lab + "/" + id // catalog_lab/<id>
 	}
-	fmt.Printf("Fetching: %s\n", target)
+	logx.Printf("Fetching: %s\n", target)
 	html, finalURL, err := sess.Navigate(target, 1500*time.Millisecond)
 	if err != nil {
 		return err
@@ -311,7 +328,7 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 		}
 	}
 	itemSaved("lab", portalKey, id, lab.Title, lab.ScrapedTime)
-	fmt.Printf("•-• [+] %s - %s (%d steps)\n", id, lab.Title, lab.Steps.Len())
+	logx.Printf("•-• [+] %s - %s (%d steps)\n", id, lab.Title, lab.Steps.Len())
 	return nil
 }
 

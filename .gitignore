@@ -5,6 +5,8 @@
 .env
 /.venv
 /node_modules
+# Activity logs (default location; override with CSB_LOG_DIR / --log-dir).
+/logs/
 csbmdvault/
 csbmdvault/.obsidian/workspace.json
 csbmdvault/.obsidian/graph.json

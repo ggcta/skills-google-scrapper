@@ -68,6 +68,8 @@ Fetch options (fetch):
   --no-transcript     Fetch full pages but skip video transcripts
   --no-md             Write JSON only, skip Markdown
   --headless          Run Chrome without a visible window
+  --log-dir PATH      Directory for the per-run activity log (default ./logs,
+                      or set CSB_LOG_DIR)
 
 List options (list):
   -r, --reload        Refresh the catalog from the website first (opens Chrome)

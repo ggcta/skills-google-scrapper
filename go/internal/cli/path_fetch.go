@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"csb/internal/browser"
+	"csb/internal/logx"
 	"csb/internal/mdgen"
 	"csb/internal/portal"
 	"csb/internal/scrape"
@@ -17,7 +18,7 @@ import (
 // inheriting the flags and portal.
 func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly, noTranscript bool) error {
 	pathURL := portal.Get(portalKey).Paths + "/" + id
-	fmt.Printf("Processing Path %s...\n", id)
+	logx.Printf("Processing Path %s...\n", id)
 	html, finalURL, err := sess.Navigate(pathURL, 1500*time.Millisecond)
 	if err != nil {
 		return err
@@ -43,7 +44,7 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 		}
 	}
 	itemSaved("path", portalKey, id, path.Title, path.ScrapedTime)
-	fmt.Printf("Path %s updated.\n", id)
+	logx.Printf("Path %s updated.\n", id)
 
 	// Cascade down the tree.
 	for _, key := range path.Courses.Keys {
@@ -53,17 +54,17 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 		ref := path.Courses.Values[key]
 		aType := strings.ToLower(ref.Type)
 		if strings.Contains(aType, "lab") {
-			fmt.Printf("\n--- Path %s > Lab %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
+			logx.Printf("\n--- Path %s > Lab %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
 			// Partner labs live at a parent-referencing focus URL (ref.URL).
 			if err := fetchLab(sess, portalKey, ref.ID, ref.URL, force, noMD, tocOnly); reportable(sess, err) {
-				fmt.Printf("Failed to fetch lab %s in path %s: %v\n", ref.ID, id, err)
+				logx.Errf("Failed to fetch lab %s in path %s: %v\n", ref.ID, id, err)
 			}
 			continue
 		}
-		fmt.Printf("\n--- Path %s > Course %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
+		logx.Printf("\n--- Path %s > Course %s - %s [%s] ---\n", id, ref.ID, ref.Name, portalKey)
 		_ = store.UpsertCollectionName(portalKey, "courses", ref.ID, ref.Name)
 		if err := fetchCourse(sess, portalKey, ref.ID, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
-			fmt.Printf("Failed to fetch course %s in path %s: %v\n", ref.ID, id, err)
+			logx.Errf("Failed to fetch course %s in path %s: %v\n", ref.ID, id, err)
 		}
 	}
 	return nil

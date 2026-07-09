@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"csb/internal/browser"
+	"csb/internal/logx"
 	"csb/internal/mdgen"
 	"csb/internal/model"
 	"csb/internal/portal"
@@ -27,7 +28,7 @@ var sessionHrefRe = regexp.MustCompile(`/course_sessions/[^/]+`)
 // fetchCourse ports Course.extract_transcript end to end.
 func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOnly, noTranscript bool) error {
 	courseURL := portal.Get(portalKey).Courses + "/" + id
-	fmt.Printf("(fetch_course_page) Fetching: %s\n", courseURL)
+	logx.Printf("(fetch_course_page) Fetching: %s\n", courseURL)
 	html, finalURL, err := sess.Navigate(courseURL, activitySettle)
 	if err != nil {
 		return err
@@ -48,7 +49,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 	}
 	// Skip (public only) when the publish date is unchanged and not forced.
 	if !force && !meta.Partner && meta.DatePublished != "" && meta.DatePublished == storedDate {
-		fmt.Printf("(extract_course_metadata) Course %s already extracted. datePublished: %s\n", id, meta.DatePublished)
+		logx.Printf("(extract_course_metadata) Course %s already extracted. datePublished: %s\n", id, meta.DatePublished)
 		return nil
 	}
 
@@ -79,7 +80,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 		base := portal.Get(portalKey).Base
 		for mi := range course.Modules {
 			m := &course.Modules[mi]
-			fmt.Printf("(module) %s\n", strings.TrimSpace(m.Title))
+			logx.Printf("(module) %s\n", strings.TrimSpace(m.Title))
 			m.Description = textutil.CleanText(m.Description)
 			for si := range m.Steps {
 				for ai := range m.Steps[si].Activities {
@@ -103,7 +104,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 		}
 	}
 	itemSaved("course", portalKey, effectiveID, course.Title, course.ScrapedTime)
-	fmt.Printf("•-• COMPLETED: %s - %s\n", effectiveID, course.Title)
+	logx.Printf("•-• COMPLETED: %s - %s\n", effectiveID, course.Title)
 	return nil
 }
 
@@ -120,7 +121,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 	case "video":
 		html, _, err := sess.Navigate(fullURL, activitySettle)
 		if err != nil {
-			fmt.Printf("(process_video) Error: %v\n", err)
+			logx.Printf("(process_video) Error: %v\n", err)
 			return
 		}
 		vid, transcript := scrape.ParseVideo(html, noTranscript)
@@ -134,7 +135,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 
 	case "quiz":
 		if _, _, err := sess.Navigate(fullURL, activitySettle); err != nil {
-			fmt.Printf("(process_quiz) Error: %v\n", err)
+			logx.Printf("(process_quiz) Error: %v\n", err)
 			return
 		}
 		sess.ClickStartQuiz()
@@ -149,7 +150,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 	case "link":
 		html, _, err := sess.Navigate(fullURL, activitySettle)
 		if err != nil {
-			fmt.Printf("(process_link) Error: %v\n", err)
+			logx.Printf("(process_link) Error: %v\n", err)
 			return
 		}
 		a.Link = scrape.ParseActivityLink(html)
@@ -158,7 +159,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 	case "html_bundle":
 		html, _, err := sess.Navigate(fullURL, activitySettle)
 		if err != nil {
-			fmt.Printf("(process_html_bundle) Error: %v\n", err)
+			logx.Printf("(process_html_bundle) Error: %v\n", err)
 			return
 		}
 		a.Link = scrape.ParseActivityLink(html)
@@ -189,7 +190,7 @@ func maybeExternalTranscript(sess *browser.Session, a *model.Activity, noTranscr
 	}
 	if transcript := scrape.ExtractLessonContent(data, lessonID); transcript != "" {
 		a.Transcript = strPtr(transcript)
-		fmt.Printf("  •-• [+] external transcript (%d chars)\n", len(transcript))
+		logx.Printf("  •-• [+] external transcript (%d chars)\n", len(transcript))
 	}
 }
 
@@ -199,7 +200,7 @@ func processCourseLab(sess *browser.Session, base, courseID, portalKey string, a
 	templateURL := fmt.Sprintf("%s/course_templates/%s/labs/%s", base, courseID, a.ID.String())
 	html, finalURL, err := sess.Navigate(templateURL, activitySettle)
 	if err != nil || strings.Contains(finalURL, "sign_in") {
-		fmt.Printf("(process_lab) skipped %s (nav/auth)\n", a.ID.String())
+		logx.Printf("(process_lab) skipped %s (nav/auth)\n", a.ID.String())
 		return
 	}
 	labID := scrape.ParseLabReviewID(html)
@@ -208,7 +209,7 @@ func processCourseLab(sess *browser.Session, base, courseID, portalKey string, a
 	}
 	if !force {
 		if existing, _ := store.LoadLab(portalKey, labID); existing != nil && existing.Title != "" {
-			fmt.Printf("(process_lab) •-• [+] Existed: %s - %s\n", labID, existing.Title)
+			logx.Printf("(process_lab) •-• [+] Existed: %s - %s\n", labID, existing.Title)
 			return
 		}
 	}
@@ -223,12 +224,12 @@ func processCourseLab(sess *browser.Session, base, courseID, portalKey string, a
 		lab.Steps.Set(s.Number, s.Title)
 	}
 	if err := store.SaveLabEntity(lab); err != nil {
-		fmt.Printf("(process_lab) save error: %v\n", err)
+		logx.Printf("(process_lab) save error: %v\n", err)
 		return
 	}
 	_, _ = store.WriteLabMarkdown(lab, mdgen.Lab(lab, mdgen.Options{}))
 	itemSaved("lab", portalKey, labID, lab.Title, lab.ScrapedTime)
-	fmt.Printf("(process_lab) •-• [+] %s - %s (%d steps)\n", labID, lab.Title, lab.Steps.Len())
+	logx.Printf("(process_lab) •-• [+] %s - %s (%d steps)\n", labID, lab.Title, lab.Steps.Len())
 }
 
 // downloadDocument ports process_document: find the download link, resolve the
@@ -242,7 +243,7 @@ func downloadDocument(sess *browser.Session, base, courseID, portalKey string, a
 	}
 	href := scrape.ParseDocumentDownloadHref(html)
 	if href == "" {
-		fmt.Println("(process_document) [!] Download link not found.")
+		logx.Println("(process_document) [!] Download link not found.")
 		return
 	}
 	if !strings.HasPrefix(href, "http") && strings.HasPrefix(href, "/") {
@@ -255,11 +256,11 @@ func downloadDocument(sess *browser.Session, base, courseID, portalKey string, a
 	dst := filepath.Join(store.VaultRoot(), "materials", "courses", courseID, filename)
 
 	if _, err := os.Stat(dst); err == nil {
-		fmt.Printf("(process_document) •-• [+] Existed: %s\n", filename)
+		logx.Printf("(process_document) •-• [+] Existed: %s\n", filename)
 		return
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		fmt.Printf("(process_document) mkdir error: %v\n", err)
+		logx.Printf("(process_document) mkdir error: %v\n", err)
 		return
 	}
 
@@ -275,12 +276,12 @@ func downloadDocument(sess *browser.Session, base, courseID, portalKey string, a
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Printf("(process_document) download error: %v\n", err)
+		logx.Printf("(process_document) download error: %v\n", err)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("(process_document) download HTTP %d\n", resp.StatusCode)
+		logx.Printf("(process_document) download HTTP %d\n", resp.StatusCode)
 		return
 	}
 	f, err := os.Create(dst)
@@ -289,10 +290,10 @@ func downloadDocument(sess *browser.Session, base, courseID, portalKey string, a
 	}
 	defer f.Close()
 	if _, err := io.Copy(f, resp.Body); err != nil {
-		fmt.Printf("(process_document) write error: %v\n", err)
+		logx.Printf("(process_document) write error: %v\n", err)
 		return
 	}
-	fmt.Printf("(process_document) •-• [+] Saved: %s\n", filename)
+	logx.Printf("(process_document) •-• [+] Saved: %s\n", filename)
 }
 
 var cdFilenameRe = regexp.MustCompile(`filename="?([^";]+)"?`)
