@@ -24,7 +24,7 @@ class Lab(BaseEntity):
                  id: str,
                  name: str | None = None,
                  description: str | None = None,
-                 steps: dict | None = None,
+                 steps: dict[str, str] | None = None,
                  driver=None,
                  title: str | None = None,
                  portal: str | None = None):
@@ -38,7 +38,7 @@ class Lab(BaseEntity):
 
     # MARK: parse_steps
     @staticmethod
-    def parse_steps(lab_page_html) -> dict:
+    def parse_steps(lab_page_html) -> dict[str, str]:
         """
         Extract a lab's table of contents (steps) from its parsed page.
 

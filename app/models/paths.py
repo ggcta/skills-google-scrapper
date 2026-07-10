@@ -1,6 +1,7 @@
 from models.collection import Collection
 from config.settings import DEFAULT_PORTAL, portal_config
 import json
+from typing import Any
 
 class Paths(Collection):
     """
@@ -10,7 +11,7 @@ class Paths(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict | None = None,
+                 collection: dict[str, Any] | None = None,
                  driver=None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["paths"], collection, portal=portal)

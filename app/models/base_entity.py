@@ -15,8 +15,8 @@ class BaseEntity(Serialize):
     # every subclass actually setting them: a bare annotation adds nothing to
     # instance.__dict__, so hasattr()/to_dict() still behave as if the
     # attribute were never set on subclasses (e.g. Lab) that don't assign it.
-    datePublished: str | None
-    topics: list | None
+    datePublished: str | None  # pyright: ignore[reportUninitializedInstanceVariable]
+    topics: list[str] | None  # pyright: ignore[reportUninitializedInstanceVariable]
 
     def __init__(self,
                  id: str,

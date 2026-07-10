@@ -1,12 +1,13 @@
 import json
 import re
+from typing import Any
 from bs4 import BeautifulSoup
 from utils.utils import util_replace_special_chars, util_ensure_authenticated
 from config.settings import *
 from models.base_entity import BaseEntity
 
-# Constants for the extraction of the course data
-LD_JSON = "script[type='application/ld+json']"
+# LD_JSON is already provided by `from config.settings import *` (same value);
+# no need to redefine it here.
 # Partner portal path pages do not embed ld+json; they render the plan title
 # as an <h1> and each course/lab as a <ql-activity-card>.
 PARTNER_TITLE = "h1.learning-plan-title"
@@ -28,7 +29,7 @@ class Path(BaseEntity):
                  name: str | None = None,
                  description: str | None = None,
                  datePublished: str | None = None,
-                 courses: dict | None = None,
+                 courses: dict[str, dict[str, str]] | None = None,
                  driver=None,
                  title: str | None = None,
                  portal: str | None = None):
@@ -97,13 +98,13 @@ class Path(BaseEntity):
         path_data = json.loads(json_content)
 
         # ld+json enrichment: course id + clean name, keyed by lower-cased title.
-        ld_by_name: dict[str, dict] = {}
+        ld_by_name: dict[str, dict[str, str]] = {}
         for course in path_data.get('hasPart', []):
             name = course["name"].strip()
             ld_by_name[name.lower()] = {"id": course['url'].split('/')[-1], "name": name}
 
         menu = self._path_menu_activities(path_html)
-        courses_list: dict[str, dict] = {}
+        courses_list: dict[str, dict[str, str]] = {}
 
         if not menu:
             # No contents menu (unusual): fall back to the ld+json as-is. Labs
@@ -152,9 +153,9 @@ class Path(BaseEntity):
 
     # MARK: _path_menu_activities
     @staticmethod
-    def _path_menu_activities(path_html) -> list:
+    def _path_menu_activities(path_html) -> list[dict[str, Any]]:
         """Return the path's ql-contents-menu activities in order."""
-        out: list = []
+        out: list[dict[str, Any]] = []
         if path_html is None:
             return out
         menu = path_html.select_one("ql-contents-menu")
@@ -186,7 +187,7 @@ class Path(BaseEntity):
         self.description = self.description or ""
         self.datePublished = self.datePublished or ""
 
-        activities: dict[str, dict] = {}
+        activities: dict[str, dict[str, str]] = {}
         for card in path_html.select(PARTNER_ACTIVITY_CARD):
             raw_path = (card.get('path') or '').strip()
             if not raw_path:
@@ -239,7 +240,7 @@ class Path(BaseEntity):
         """
 
         # Show the Path Title
-        heading = f"{self.id} - {self.name.upper()}"
+        heading = f"{self.id} - {(self.name or '').upper()}"
         print(f"\n\033[45m[{heading:^85}]\033[0m\n")
 
         # Print out each course in the Path

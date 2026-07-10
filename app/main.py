@@ -2,6 +2,8 @@
 import sys
 import os
 import argparse
+
+from selenium.webdriver.chrome.webdriver import WebDriver
 from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS, portal_config
 
 # Ensure app modules can be imported
@@ -27,7 +29,7 @@ def _resolve_portal(raw, default_portal):
     return (inferred_portal or default_portal), ident
 
 
-def _stored_name(portal, table, ident):
+def _stored_name(portal: str, table: str, ident: str) -> str:
     """
     Return a stored item's display name from the database (or '' if unknown),
     so fetch progress lines can read "<id> - <name>" instead of a bare id.
@@ -42,13 +44,13 @@ def _stored_name(portal, table, ident):
     return ''
 
 
-def _fetch_label(portal, table, ident):
+def _fetch_label(portal: str, table: str, ident: str) -> str:
     """Format an item as "<id> - <name>" when the name is known, else "<id>"."""
     name = _stored_name(portal, table, ident)
     return f"{ident} - {name}" if name else str(ident)
 
 
-def add_portal_flags(parser):
+def add_portal_flags(parser: argparse.ArgumentParser) -> None:
     """
     Add shorthand portal-selection flags to a subparser, so callers can avoid
     the verbose ``--portal <name>`` form:
@@ -69,7 +71,7 @@ def add_portal_flags(parser):
     parser.set_defaults(portal=DEFAULT_PORTAL)
 
 
-def _fetch_and_save_lab(lid, driver, portal, force, no_md, toc_only, fetch_url=None):
+def _fetch_and_save_lab(lid: str, driver: WebDriver, portal: str, force: bool, no_md: bool, toc_only: bool, fetch_url: str | None = None) -> Lab | None:
     """
     Fetch a single lab and persist it (JSON, markdown, and the labs collection).
     Returns the Lab if fetched, or None if it was skipped (already stored).
@@ -249,7 +251,7 @@ def cmd_fetch(args):
         try:
             print("\n\033[35mLaunching browser for path extraction...\033[0m")
             driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-            
+
             for raw_pid in fetch_paths_ids:
                 portal, pid = _resolve_portal(raw_pid, default_portal)
                 try:
@@ -313,7 +315,7 @@ def cmd_fetch(args):
              # Launch browser for authenticated access
              print("\n\033[35mLaunching browser for course extraction...\033[0m")
              driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-             
+
              for raw_cid in fetch_courses_ids:
                 portal, cid = _resolve_portal(raw_cid, default_portal)
                 try:
@@ -358,7 +360,7 @@ def cmd_interactive(args):
 def cmd_search(args):
     """Handle search command"""
     from services.database import Database
-    
+
     query = args.query
     # Determine type from flags
     search_type = None
@@ -368,7 +370,7 @@ def cmd_search(args):
         search_type = 'path'
     elif args.lab:
         search_type = 'lab'
-        
+
     field = args.field
     portal = getattr(args, 'portal', DEFAULT_PORTAL)
 
@@ -376,9 +378,9 @@ def cmd_search(args):
 
     # Determine tables to search
     tables = []
-    
+
     # Shortcuts for field search if query looks like specific type? No, stick to flags.
-    
+
     if search_type:
         if search_type == 'course':
             tables.append('courses')
@@ -389,12 +391,12 @@ def cmd_search(args):
     else:
         # Search all
         tables = ['paths', 'courses', 'labs']
-    
+
     if not field:
         print(f"Searching for '{query}' in {tables}...")
     else:
         print(f"Searching for '{query}' in {tables} (field: {field})...")
-    
+
     total_results = 0
     for table in tables:
         results = db.search(table, query, field)
@@ -406,7 +408,7 @@ def cmd_search(args):
                 res_name = res.get('name') or res.get('title') or 'N/A'
                 print(f"+|-• \033[35m[{res_id:>5} - {res_name:<72}]\033[0m")
             total_results += len(results)
-            
+
     if total_results == 0:
         print("No results found.")
 
@@ -443,16 +445,16 @@ def cmd_login(args):
 def cmd_browser(args):
     """Handle browser command"""
     print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
-    
+
     profile = args.profile_folder if args.profile_folder else WEBDRIVER_PROFILE_FOLDER_NAME
-    
+
     driver = launch_browser(profile_folder=profile, headless=False, browser="chrome")
-    
+
     # Open the URL in the default web browser (PARTNERS page usually redirects to login if not logged in)
     driver.get(BASE_URL_PARTNERS)
     print("\n\033[35mDEBUG: BROWSER LAUNCHED.\033[0m")
     print("You can now log in. The script will keep running. Press Ctrl+C to exit and close browser.")
-    
+
     try:
         # Keep the script running so the browser stays open
         # We can also just input() to wait
@@ -525,13 +527,13 @@ def main():
 
     # List command
     parser_l = subparsers.add_parser('list', aliases=['l'], help='List all paths, courses, or labs')
-    
+
     # Mutually exclusive group for type
     group_type = parser_l.add_mutually_exclusive_group()
     group_type.add_argument('--paths', '-p', action='store_true', help='List all paths (default)')
     group_type.add_argument('--courses', '-c', action='store_true', help='List all courses')
     group_type.add_argument('--labs', '-l', action='store_true', help='List all labs')
-    
+
     # Reload flag
     parser_l.add_argument('--reload', '-r', action='store_true', help='Reload list from remote before listing')
     parser_l.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
@@ -541,7 +543,7 @@ def main():
     group_sort = parser_l.add_mutually_exclusive_group()
     group_sort.add_argument('--name', '-n', action='store_true', help='Sort by name (default)')
     group_sort.add_argument('--id', '-i', action='store_true', help='Sort by ID')
-    
+
     parser_l.set_defaults(func=cmd_list)
 
     # Fetch command (Scrape)
@@ -549,7 +551,7 @@ def main():
     parser_f.add_argument('--paths', '-p', nargs='+', metavar='ID', help='Fetch specific path IDs')
     parser_f.add_argument('--courses', '-c', nargs='+', metavar='ID', help='Fetch specific course IDs')
     parser_f.add_argument('--labs', '-l', nargs='+', metavar='ID', help='Fetch specific lab IDs')
-    
+
     # Flags from old course/path commands
     parser_f.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
     parser_f.add_argument('--no-md', action='store_true', help='Do not generate markdown file')

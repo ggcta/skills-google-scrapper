@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+from typing import Any
 
 from bs4 import BeautifulSoup
 import requests
@@ -14,10 +15,14 @@ class Collection(Serialize):
     Base entity for collection: Courses, Paths, Lab.
     """
 
+    # Only set inside save_json(), so it's absent until the first save;
+    # declared here (not assigned) so hasattr()/to_dict() reflect that.
+    scrapedTime: int  # pyright: ignore[reportUninitializedInstanceVariable]
+
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict | None = None,
+                 collection: dict[str, Any] | None = None,
                  portal: str = DEFAULT_PORTAL):
         self.name = name
         # Which portal this collection belongs to (public / partner).

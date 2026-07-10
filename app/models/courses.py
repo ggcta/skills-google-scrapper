@@ -1,3 +1,5 @@
+from typing import Any
+
 from models.collection import Collection
 from config.settings import DEFAULT_PORTAL, portal_config
 from models.course import Course
@@ -11,7 +13,7 @@ class Courses(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict | None = None,
+                 collection: dict[str, Any] | None = None,
                  driver=None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["courses"], collection, portal=portal)

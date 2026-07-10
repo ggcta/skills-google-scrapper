@@ -1,3 +1,5 @@
+from typing import Any
+
 from models.course import Course
 from models.collection import Collection
 from config.settings import BASE_URL
@@ -11,7 +13,7 @@ class Topics(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str = BASE_URL,
-                 collection: dict | None = None):
+                 collection: dict[str, Any] | None = None):
         super().__init__(name, url, collection)
 
     def to_dict(self):
@@ -32,23 +34,23 @@ class Topics(Collection):
             "collection": self.collection
         }
 
-    def extract_topics(self, course_collection: dict):
+    def extract_topics(self, course_collection: dict[str, Any]):
         """
         Gather all unique topics from the downloaded courses.
 
         :param courses_collection: `Courses.collection`.
         """
 
-        if not isinstance(course_collection.collection, dict):
+        if not isinstance(course_collection, dict):
             raise TypeError("The course_collection must be of type dict.")
 
-        for course_id, course_name in course_collection.collection.items():
+        for course_id, course_name in course_collection.items():
             course = Course(id=course_id)
 
             if course._json_path.exists():
                 course.load_json()
 
-                if hasattr(course, 'topics'):
+                if course.topics:
                     for topic in course.topics:
                         if topic not in self.collection:
                             self.collection[topic] = {}

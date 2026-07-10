@@ -35,7 +35,7 @@ DEFAULT_PORTAL: str = "public"
 # Entity ids are global across portals, so one copy is kept for all portals.
 MATERIALS_DIR: str = "materials"
 
-PORTALS: dict = {
+PORTALS: dict[str, dict[str, str]] = {
     "public": {
         "host": "www.skills.google",
         "base": "https://www.skills.google",
@@ -59,7 +59,7 @@ PORTALS: dict = {
 }
 
 
-def portal_config(portal: str = DEFAULT_PORTAL) -> dict:
+def portal_config(portal: str = DEFAULT_PORTAL) -> dict[str, str]:
     """Return the URL config for a portal, falling back to the default."""
     return PORTALS.get(portal, PORTALS[DEFAULT_PORTAL])
 
