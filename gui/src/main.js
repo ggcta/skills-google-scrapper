@@ -111,6 +111,17 @@ function logLine(line) {
   consoleEl.textContent += line + "\n";
   consoleEl.scrollTop = consoleEl.scrollHeight;
 }
+
+// While a browser-driving op runs (fetch / sync / login session), disable the
+// controls that would start another. The backend also rejects concurrent browser
+// ops (they share one Chrome profile), but this avoids the rejection entirely.
+// Local-only actions (browse, search, open) stay usable throughout.
+function setBrowserBusy(on) {
+  ["#fetchBtn", "#browseSyncBtn", "#loginBtn"].forEach((sel) => {
+    const b = $(sel);
+    if (b) b.disabled = on;
+  });
+}
 if (listen) {
   listen("fetch-log", (e) => logLine(e.payload));
   // Each item the binary saves arrives as a fetch-item event, so Browse/Search
@@ -118,7 +129,7 @@ if (listen) {
   listen("fetch-item", (e) => applyItemSaved(e.payload));
   listen("fetch-done", (e) => {
     setStatus(e.payload ? "Fetch complete." : "Fetch finished with errors.", e.payload ? "ok" : "");
-    $("#fetchBtn").disabled = false;
+    setBrowserBusy(false);
     // Re-list the visible read tab so newly-fetched items (e.g. labs found by
     // cascading a path) appear with their status and the counts settle.
     const active = $(".panel.active")?.dataset.panel;
@@ -162,7 +173,7 @@ $("#fetchBtn").addEventListener("click", async () => {
   const ids = $("#fetchIds").value.split(/[\s,]+/).filter(Boolean);
   if (!ids.length) { setStatus("Enter at least one ID or URL."); return; }
   consoleEl.textContent = "";
-  $("#fetchBtn").disabled = true;
+  setBrowserBusy(true);
   setStatus("Fetching…", "busy");
   if (portal === "all") {
     logLine("Note: portal is 'All' — bare IDs fetch as Public; full URLs use their own portal.");
@@ -180,7 +191,7 @@ $("#fetchBtn").addEventListener("click", async () => {
   } catch (err) {
     logLine("ERROR: " + err);
     setStatus("Fetch failed.", "");
-    $("#fetchBtn").disabled = false;
+    setBrowserBusy(false);
   }
 });
 
@@ -281,8 +292,7 @@ $("#browseBtn").addEventListener("click", async () => {
 // This is how an empty first-run database gets populated.
 $("#browseSyncBtn").addEventListener("click", async () => {
   const kind = selected("#browseKind", "kind");
-  const btn = $("#browseSyncBtn");
-  btn.disabled = true;
+  setBrowserBusy(true);
   setStatus(`Syncing ${kind} from the website… (this can take a minute)`, "busy");
   try {
     const batches = await Promise.all(
@@ -294,7 +304,7 @@ $("#browseSyncBtn").addEventListener("click", async () => {
   } catch (err) {
     setStatus("Sync failed: " + err);
   } finally {
-    btn.disabled = false;
+    setBrowserBusy(false);
   }
 });
 
@@ -326,7 +336,9 @@ $("#loginBtn").addEventListener("click", async () => {
   // instead of a modal that flashes open and shut.
   const lp = concretePortal();
   setStatus("Opening sign-in browser…", "busy");
-  $("#loginBtn").disabled = true;
+  // The sign-in browser stays open until Done, so stay busy across the whole
+  // session; only release here if launching failed.
+  setBrowserBusy(true);
   try {
     await invoke("login", { portal: lp });
     $("#loginPortal").textContent = lp;
@@ -334,8 +346,7 @@ $("#loginBtn").addEventListener("click", async () => {
     setStatus(`Browser open for ${lp}. Sign in, then click Done.`, "busy");
   } catch (err) {
     setStatus("Login failed: " + err);
-  } finally {
-    $("#loginBtn").disabled = false;
+    setBrowserBusy(false);
   }
 });
 $("#loginDone").addEventListener("click", async () => {
@@ -345,6 +356,8 @@ $("#loginDone").addEventListener("click", async () => {
     setStatus(`Signed in to ${portal}. Session saved.`, "ok");
   } catch (err) {
     setStatus("Login cleanup failed: " + err);
+  } finally {
+    setBrowserBusy(false);
   }
 });
 
