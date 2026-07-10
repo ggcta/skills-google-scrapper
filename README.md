@@ -1,20 +1,26 @@
 # Google Skills Scraper
 
+<!--TODO: The interactive version is outdated, need to update this photo.-->
+
 ![Welcome Screen](docs/assets/welcome-screen.png)
 
-Turn [Google Skills](https://www.skills.google) courses, learning
-paths, and labs into clean, well-structured **Markdown files** you can drop
-straight into Obsidian (or any Markdown-based personal knowledge base).
+Turn [Google Skills](https://www.skills.google) courses, learning paths, and labs into clean, well-structured **Markdown files** you can drop straight into Obsidian (or any Markdown-based personal knowledge base).
 
-> **v2.2.0 — renamed to Google Skills Scraper.** Formerly "Cloud Skills Boost /
-> CSB Studio"; the site itself is now [Google Skills](https://www.skills.google).
-> The CLI binary is `skills-scraper.bin` (legacy `csb.bin`/`csb` still resolve)
-> and the desktop app is **Google Skills Scraper**. Existing `data/` and
-> `csbmdvault/` folders are unchanged — no migration needed.
+> **v2.2.0 — renamed to Google Skills Scraper.** Formerly "Cloud Skills Boost / CSB Studio"; the site itself is now [Google Skills](https://www.skills.google). The CLI binary is `skills-scraper.bin` (legacy `csb.bin`/`csb` still resolve) and the desktop app is **Google Skills Scraper**. Existing `data/` and `csbmdvault/` folders are unchanged — no migration needed.
 
-> New here and not a developer? Jump to the
-> **[Getting Started guide](docs/getting-started.md)** — it walks you through
-> everything step by step.
+> New here and not a developer? Jump to the **[Getting Started guide](docs/getting-started.md)** — it walks you through everything step by step.
+
+## A Quick Example: PKB with Obsidian
+
+- Check out the sample folder for real files: [`docs/sample/`](./docs/sample/).
+
+File view, graph view, and the script in action:
+
+![Obsidian File View](docs/assets/obsidian-files.png)
+
+![Obsidian Graph View](docs/assets/obsidian-graph.png)
+
+![The script in action](docs/assets/script-in-action.png)
 
 ## What it does
 
@@ -156,14 +162,6 @@ csbmdvault/                   # your Markdown vault → open this in Obsidian
 ```
 
 Point Obsidian at the `csbmdvault/` folder to browse everything as a graph.
-
-## Example: Obsidian
-
-File view, graph view, and the script in action:
-
-![Obsidian File View](docs/assets/obsidian-files.png)
-![Obsidian Graph View](docs/assets/obsidian-graph.png)
-![The script in action](docs/assets/script-in-action.png)
 
 ## Go rewrite (in progress)
 
