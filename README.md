@@ -1,10 +1,22 @@
 # Google Skills Scraper
 
+---
+
+MAINTAINER IS NEEDED! Drop me an Issue or PR if you're interested in helping out.
+
+---
+
 <!--TODO: The interactive version is outdated, need to update this photo.-->
 
 ![Welcome Screen](docs/assets/welcome-screen.png)
 
+---
+
 Turn [Google Skills](https://www.skills.google) courses, learning paths, and labs into clean, well-structured **Markdown files** you can drop straight into Obsidian (or any Markdown-based personal knowledge base).
+
+---
+
+Update:
 
 > **v2.2.0 — renamed to Google Skills Scraper.** Formerly "Cloud Skills Boost / CSB Studio"; the site itself is now [Google Skills](https://www.skills.google). The CLI binary is `skills-scraper.bin` (legacy `csb.bin`/`csb` still resolve) and the desktop app is **Google Skills Scraper**. Existing `data/` and `csbmdvault/` folders are unchanged — no migration needed.
 
