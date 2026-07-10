@@ -235,4 +235,4 @@ bottom of the [README](../README.md).
 ---
 
 Stuck on something not covered here? Open an issue on the repository — see
-[CONTRIBUTION.md](../CONTRIBUTION.md).
+[CONTRIBUTING.md](../CONTRIBUTING.md).

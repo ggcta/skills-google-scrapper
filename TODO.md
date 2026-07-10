@@ -1,6 +1,6 @@
 # TODO
 
-Check [CONTRIBUTION](./CONTRIBUTION.md) for more.
+Check [CONTRIBUTING](./CONTRIBUTING.md) for more.
 
 ## General List
 
