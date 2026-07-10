@@ -463,6 +463,37 @@ def cmd_browser(args):
         print("Closing browser...")
         driver.quit()
 
+def cmd_mdpath(args):
+    """
+    Print the vault .md path for a single stored item, or exit non-zero if it
+    isn't fetched yet (1) or was fetched without Markdown (2). Mirrors the Go
+    `mdpath` command; the GUI uses it to open an item on double-click, and it's
+    handy standalone: `open "$(uv run app/main.py mdpath -c 53)"`.
+    """
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    if args.course:
+        cls, raw = Course, args.course
+    elif args.path:
+        cls, raw = Path, args.path
+    elif args.lab:
+        cls, raw = Lab, args.lab
+    else:
+        print("mdpath: specify the item with -p, -c, or -l <id>", file=sys.stderr)
+        sys.exit(1)
+
+    resolved_portal, ident = _resolve_portal(raw, portal)
+    entity = cls(id=ident, portal=resolved_portal)
+    entity.load_json()
+    if not entity.title:
+        print(f"not fetched yet: {cls.__name__.lower()} {ident} [{resolved_portal}]", file=sys.stderr)
+        sys.exit(1)
+    md = entity._md_path
+    if not md.exists():
+        print(f"markdown not found (fetched with --no-md?): {md}", file=sys.stderr)
+        sys.exit(2)
+    print(str(md.resolve()))
+
+
 def cmd_md(args):
     """Handle md command"""
     toc_only = args.toc
@@ -591,6 +622,14 @@ def main():
     parser_m.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
     add_portal_flags(parser_m)
     parser_m.set_defaults(func=cmd_md)
+
+    # mdpath command: print the vault .md path for one stored item.
+    parser_mdpath = subparsers.add_parser('mdpath', help='Print the vault .md path for a stored item')
+    parser_mdpath.add_argument('--course', '-c', metavar='ID', help='Course ID or URL', default=None)
+    parser_mdpath.add_argument('--path', '-p', metavar='ID', help='Path ID or URL', default=None)
+    parser_mdpath.add_argument('--lab', '-l', metavar='ID', help='Lab ID or URL', default=None)
+    add_portal_flags(parser_mdpath)
+    parser_mdpath.set_defaults(func=cmd_mdpath)
 
     # Search command
     parser_s = subparsers.add_parser('search', aliases=['s'], help='Search in database')
