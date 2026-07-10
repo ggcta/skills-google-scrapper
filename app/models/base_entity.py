@@ -5,7 +5,6 @@ from pathlib import Path as PathlibPath
 from utils.utils import util_atomic_write_text, util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
 from models.serialize import Serialize
 
-# FIX: id should be int so can be sorted in ascending/descending order
 
 class BaseEntity(Serialize):
     """

@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
 
+from tinydb.table import Document
 from typing_extensions import override
 from config.settings import BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from models.serialize import Serialize
@@ -86,13 +87,15 @@ class Collection(Serialize):
         # But TinyDB stores documents {id: ..., name: ..., type: ...}
         # We need to reconstruction the collection dict {id: name} from DB docs
 
-        docs = db.all(table_name)
+        docs: list[Document] = db.all(table_name)
         self.collection = {}
         for doc in docs:
-            doc_id = doc.get('id')
+            # 'id' is our own field (see Database.upsert/get, which always
+            # match it as str) — unrelated to TinyDB's own int Document.doc_id.
+            doc_id: str | None = doc.get('id')
             # Entities are stored with 'title'; collection listings with 'name'.
             # Accept either so both sources render.
-            doc_name = doc.get('name') or doc.get('title') or ''
+            doc_name: str = doc.get('name') or doc.get('title') or ''
             if doc_id:
                 self.collection[doc_id] = doc_name
 
@@ -174,8 +177,10 @@ class Collection(Serialize):
 
         # Sort the collection by name and convert to a list
         if sort_by == 'id':
-            # Sort by keys (id)
-            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
+            # Ids are numeric strings extracted from CloudSkillsBoost URLs
+            # (e.g. "108"); sort numerically so "11" < "108" < "110" instead
+            # of lexicographically. Falls back to string sort if non-numeric.
+            a_sorted_list = sorted(self.collection.items(), key=lambda item: (0, int(item[0])) if item[0].isdigit() else (1, item[0]))
         else:
             # Defaults to name
             a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
