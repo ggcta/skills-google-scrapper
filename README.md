@@ -12,7 +12,9 @@ Turn [Google Skills](https://www.skills.google) courses, learning paths, and lab
 
 ## A Quick Example: PKB with Obsidian
 
-- Check out the sample folder for real files: [`docs/samples/`](./docs/samples/).
+- Check out the sample folder for real files:
+  - [Google-Cloud-Applied-AI-Summit-Learning-Path](./docs/samples/output/paths/Google-Cloud-Applied-AI-Summit-Learning-Path.md).
+  - [Conversational-AI-on-Vertex-AI-and-Dialogflow-CX.md](./docs/samples/output/courses/Conversational-AI-on-Vertex-AI-and-Dialogflow-CX.md)
 
 File view, graph view, and the script in action:
 
