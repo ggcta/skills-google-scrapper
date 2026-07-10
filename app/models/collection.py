@@ -79,7 +79,8 @@ class Collection(Serialize):
         db = Database(self.portal)
         # Use plural table name
         table_name = f"{self.type.lower()}"
-        if self.type.lower() == 'path': table_name = 'paths' # just in case
+        if self.type.lower() == 'path':
+            table_name = 'paths' # just in case
 
         # Collection usually stores a dict of {id: name}
         # But TinyDB stores documents {id: ..., name: ..., type: ...}
