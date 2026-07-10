@@ -25,7 +25,8 @@ def launch_browser(profile_folder: Optional[str] = WEBDRIVER_PROFILE_FOLDER_NAME
         options = Options()
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
+        # No --no-sandbox: only for containers/root, degrades security, and
+        # triggers Chrome's "unsupported command-line flag" warning.
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-background-networking")
         options.add_argument("--disable-background-timer-throttling")
@@ -69,7 +70,8 @@ def launch_browser(profile_folder: Optional[str] = WEBDRIVER_PROFILE_FOLDER_NAME
         options = EdgeOptions()
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-gpu")
-        options.add_argument("--no-sandbox")
+        # No --no-sandbox: only for containers/root, degrades security, and
+        # triggers Chrome's "unsupported command-line flag" warning.
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-background-networking")
         options.add_argument("--disable-background-timer-throttling")
