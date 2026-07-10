@@ -1,5 +1,7 @@
 # TODO
 
+Check [CONTRIBUTION](./CONTRIBUTION.md) for more.
+
 ## General List
 
 - [x] Create the `data` folder if it does not exist to avoid the below `FileNotFoundError` error.
@@ -10,10 +12,8 @@
 - [ ] ~~Call to Gemini/LLAMA or any other LLM for helping summarize/re-formatting the transcripts.~~
   - [ ] ~~For time being, Gemini for me, is not so good so I don't use yet.~~
   - [ ] ~~LM Studio is a good choice with LLAMA 3.1, 3.2 but my machine is not suitable for running this continously.~~
-
-Check [CONTRIBUTION](CONTRIBUTION.md) for more.
-
 - [ ] TODO: Sync the data folder to a GCS bucket: `gcloud storage rsync --recursive data/ gs://csbhelper/`
+- [ ] Use `config.yaml` configuration file override the `settings.py` defaults.
 
 ## v3.0.0 — Multi-vendor + complete rebrand (planned)
 
