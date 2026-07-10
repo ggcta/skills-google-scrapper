@@ -1,8 +1,6 @@
 from datetime import datetime
 import json
 
-from bs4 import BeautifulSoup
-import requests
 from typing_extensions import override
 from config.settings import BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from models.serialize import Serialize
