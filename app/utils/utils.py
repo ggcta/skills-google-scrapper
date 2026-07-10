@@ -1,5 +1,4 @@
 import os
-import re
 import tempfile
 from html.parser import HTMLParser
 from urllib.parse import urlparse

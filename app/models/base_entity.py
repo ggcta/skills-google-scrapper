@@ -210,7 +210,6 @@ class BaseEntity(Serialize):
         - scraped_date
         """
         from datetime import datetime
-        import time
 
         front_matter_lines = ["---"]
         if hasattr(self, 'id'):
