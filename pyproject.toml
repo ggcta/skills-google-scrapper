@@ -23,3 +23,14 @@ dev = [
 # each other as top-level packages (e.g. `from models.course import Course`)
 # rather than via the repo root. Tell the checker the same thing.
 extraPaths = ["app"]
+
+# main.py and scraper.py intentionally import each other: scraper.py reuses
+# main.py's command handlers (cmd_fetch, cmd_search, ...) for its interactive
+# menu, and main.py's `interactive` command launches scraper.py. Both sides
+# already defer the import to inside a function body (not module level)
+# specifically to avoid the runtime circular-import error, so the cycle this
+# rule detects is real but deliberate and harmless. A per-file
+# `# pyright: reportImportCycles=false` comment does not suppress this
+# diagnostic (it's reported against the whole import graph, not a line), so
+# it's disabled here instead.
+reportImportCycles = false
