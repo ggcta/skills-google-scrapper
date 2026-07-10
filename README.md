@@ -186,6 +186,8 @@ command parity (`md`, `list`/`--reload`, `search`, `fetch -l/-c/-p`, `login`,
 `interactive`), with output verified byte-for-byte against the Python build. See
 [docs/rewrite-plan.md](docs/rewrite-plan.md) for the roadmap (Go CLI → Tauri GUI).
 
+![A Simple GUI](docs/assets/gui-260710.png)
+
 ## Further reading
 
 1. [Getting Started (non-technical walkthrough)](docs/getting-started.md)
