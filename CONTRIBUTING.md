@@ -5,6 +5,7 @@ Every contribution is very much welcomed!
 ## Backglog
 
 - [ ] MD to PDF conversion with styles using [Typst](https://typst.app).
+- [ ] The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
 
 ## TODOs and Future Improvements
 
