@@ -1,5 +1,7 @@
 import html
 import json
+
+from typing_extensions import override
 from config.settings import DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from pathlib import Path as PathlibPath
 from utils.utils import util_atomic_write_text, util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags
@@ -24,12 +26,12 @@ class BaseEntity(Serialize):
                  description: str | None = None,
                  title: str | None = None,
                  portal: str | None = DEFAULT_PORTAL):
-        self.id = id
-        self.title = title or name
-        self.description = description
+        self.id: str = id
+        self.title: str | None = title or name
+        self.description: str | None = description
         # Which portal this entity belongs to (public / partner). Part of the
         # entity's identity: the same id means different content per portal.
-        self.portal = portal or DEFAULT_PORTAL
+        self.portal: str = portal or DEFAULT_PORTAL
 
     @property
     def name(self):
@@ -37,7 +39,7 @@ class BaseEntity(Serialize):
         return self.title
 
     @name.setter
-    def name(self, value):
+    def name(self, value: str | None) -> None:
         self.title = value
 
     @property
@@ -79,10 +81,10 @@ class BaseEntity(Serialize):
         """
 
         return f'{self.id}.json'
-    
+
     # Properties to get the JSON and Markdown file names and paths
     @property
-    def _md_name(self):
+    def _md_name(self) -> str:
         """
         Generate the Markdown file name based on the entity name.
         """
@@ -93,7 +95,7 @@ class BaseEntity(Serialize):
 
     # Properties to get the JSON and Markdown file names and paths
     @property
-    def _json_path(self):
+    def _json_path(self) -> PathlibPath:
         """
         Get the JSON file path based on the entity type, scoped by portal.
         """
@@ -102,7 +104,7 @@ class BaseEntity(Serialize):
 
     # Properties to get the JSON and Markdown file names and paths
     @property
-    def _md_path(self):
+    def _md_path(self) -> PathlibPath:
         """
         Get the Markdown file path based on the entity type, scoped by portal.
         """
@@ -110,7 +112,8 @@ class BaseEntity(Serialize):
         return PathlibPath(OUTPUT_FOLDER_NAME) / self.portal / f'{self.type.lower()}s' / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
-    def to_dict(self):
+    @override
+    def to_dict(self) -> dict[str, str | int | None]:
         """
         Convert the entity's data to a dictionary.
         """
@@ -119,13 +122,14 @@ class BaseEntity(Serialize):
         # Convert the entity data to a dictionary, excluding private attributes
         # and adding the type and URL
         # Also exclude 'driver' and 'name' as they are not serialized directly
-        the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k not in ('driver', 'name')}
+        # `__dict__` is typed dict[str, Any] by typeshed; see Serialize.to_dict.
+        the_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_') and k not in ('driver', 'name')}  # pyright: ignore[reportAny]
         the_dict['type'] = self.type
         the_dict['url'] = self.url
-        
+
         # Add scrapedTime (epoch in milliseconds)
         the_dict['scrapedTime'] = int(time.time() * 1000)
-        
+
         return the_dict
 
     # Load the entity data from a JSON file
@@ -166,7 +170,7 @@ class BaseEntity(Serialize):
         """
         Save the entity data to the Database (TinyDB) AND a JSON file (Backup).
         """
-        
+
         # Convert the entity data to a dictionary
         entity_data = self.to_dict()
 
@@ -230,9 +234,9 @@ class BaseEntity(Serialize):
             else:
                 # No topics: emit a single bare 'topics:' line (no blank line).
                 front_matter_lines.append("topics:")
-            
+
         # Add scraped_date
-        scraped_ts = getattr(self, 'scrapedTime', None)
+        scraped_ts: int | None = getattr(self, 'scrapedTime', None)
         if scraped_ts:
              dt = datetime.fromtimestamp(scraped_ts / 1000.0)
              front_matter_lines.append(f"scraped_date: {dt.strftime('%Y-%m-%d')}")
@@ -250,7 +254,7 @@ class BaseEntity(Serialize):
         """
 
         # Convert the Path object to a dictionary
-        markdown = []
+        markdown: list[str] = []
         markdown.append(self.generate_front_matter())
 
         return "\n\n".join(markdown) + "\n"

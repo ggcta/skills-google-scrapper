@@ -1,7 +1,7 @@
 from models.collection import Collection
+from selenium.webdriver.chrome.webdriver import WebDriver
 from config.settings import DEFAULT_PORTAL, portal_config
 import json
-from typing import Any
 
 class Paths(Collection):
     """
@@ -11,11 +11,11 @@ class Paths(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict[str, Any] | None = None,
-                 driver=None,
+                 collection: dict[str, str] | None = None,
+                 driver: WebDriver | None = None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["paths"], collection, portal=portal)
-        self.driver = driver
+        self.driver: WebDriver | None = driver
 
     def fetch_paths(self, base_url: str | None = None, force: bool = False) -> bool:
         """
@@ -35,11 +35,11 @@ class Paths(Collection):
 
         api_url_paths = portal_config(self.portal)["api_paths"]
         print(f"Fetching paths from API: {api_url_paths}")
-        
+
         all_paths = {}
         page = 1
         has_more = True
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "application/json"
@@ -49,7 +49,7 @@ class Paths(Collection):
             while has_more:
                 url = f"{api_url_paths}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
-                
+
                 self.driver.get(url)
 
                 # The browser will likely display raw JSON. We can extract it from the <body> or <pre>
@@ -60,24 +60,24 @@ class Paths(Collection):
                     # Fallback to body if <pre> isn't where JSON is rendered
                     body_element = self.driver.find_element("tag name", "body")
                     json_text = body_element.text
-                
+
                 try:
                     data = json.loads(json_text)
                 except json.JSONDecodeError:
                     print(f"\nFailed to decode JSON on page {page}")
                     break
-                
+
                 items = []
                 if isinstance(data, list):
                     items = data
                 elif isinstance(data, dict):
                      items = data.get("searchResults", [])
-                
+
                 if not items:
                     # No more items
                     has_more = False
                     break
-                
+
                 # Process items
                 for item in items:
                     title = item.get("title")
@@ -87,13 +87,13 @@ class Paths(Collection):
                         # Split by '?' first to remove query params, then '/'
                         clean_path = path_url.split('?')[0]
                         path_id = clean_path.split('/')[-1]
-                        
+
                         if path_id:
                             all_paths[path_id] = title.strip()
-                
+
                 page += 1
                 # Safety break to avoid infinite loops if API changes behavior
-                if page > 50: 
+                if page > 50:
                     print("\nReached safety limit of 50 pages.")
                     break
 

@@ -1,5 +1,4 @@
-from typing import Any
-
+from selenium.webdriver.chrome.webdriver import WebDriver
 from models.collection import Collection
 from config.settings import DEFAULT_PORTAL, portal_config
 
@@ -12,11 +11,11 @@ class Labs(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict[str, Any] | None = None,
-                 driver=None,
+                 collection: dict[str, str] | None = None,
+                 driver: WebDriver | None = None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["lab"], collection, portal=portal)
-        self.driver = driver
+        self.driver: WebDriver | None = driver
 
     def fetch_labs(self, force: bool = False) -> bool:
         """
@@ -35,11 +34,11 @@ class Labs(Collection):
 
         api_url_labs = portal_config(self.portal)["api_labs"]
         print(f"Fetching labs from API: {api_url_labs}")
-        
+
         all_labs = {}
         page = 1
         has_more = True
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "application/json"
@@ -49,7 +48,7 @@ class Labs(Collection):
             while has_more:
                 url = f"{api_url_labs}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
-                
+
                 self.driver.get(url)
 
                 try:
@@ -64,18 +63,18 @@ class Labs(Collection):
                 except json.JSONDecodeError:
                     print(f"\nFailed to decode JSON on page {page}")
                     break
-                
+
                 items = []
                 if isinstance(data, list):
                     items = data
                 elif isinstance(data, dict):
                      items = data.get("searchResults", [])
-                
+
                 if not items:
                     # No more items
                     has_more = False
                     break
-                
+
                 # Process items
                 for item in items:
                     title = item.get("title")
@@ -84,12 +83,12 @@ class Labs(Collection):
                         # Extract ID from path (e.g. /catalog_lab/123?...)
                         clean_path = path_url.split('?')[0]
                         lab_id = clean_path.split('/')[-1]
-                        
+
                         if lab_id:
                             all_labs[lab_id] = title.strip()
-                
+
                 page += 1
-                if page > 100: 
+                if page > 100:
                     print("\nReached safety limit of 100 pages.")
                     break
 

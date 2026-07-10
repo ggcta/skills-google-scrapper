@@ -1,7 +1,8 @@
 # Description: This file contains the Lab class which is a subclass of BaseEntity.
 import re
 from bs4 import BeautifulSoup
-from .base_entity import BaseEntity
+from models.base_entity import BaseEntity
+from selenium.webdriver.chrome.webdriver import WebDriver
 from utils.utils import util_ensure_authenticated
 
 # Selectors for extracting a lab's data from its page.
@@ -25,7 +26,7 @@ class Lab(BaseEntity):
                  name: str | None = None,
                  description: str | None = None,
                  steps: dict[str, str] | None = None,
-                 driver=None,
+                 driver: WebDriver | None = None,
                  title: str | None = None,
                  portal: str | None = None):
         super().__init__(id=id,
@@ -33,12 +34,12 @@ class Lab(BaseEntity):
                          description=description,
                          title=title,
                          portal=portal)
-        self.steps = steps or {}
-        self.driver = driver
+        self.steps: dict[str, str] = steps or {}
+        self.driver: WebDriver | None = driver
 
     # MARK: parse_steps
     @staticmethod
-    def parse_steps(lab_page_html) -> dict[str, str]:
+    def parse_steps(lab_page_html: BeautifulSoup) -> dict[str, str]:
         """
         Extract a lab's table of contents (steps) from its parsed page.
 

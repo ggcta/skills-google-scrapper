@@ -1,6 +1,5 @@
-from typing import Any
-
 from models.collection import Collection
+from selenium.webdriver.chrome.webdriver import WebDriver
 from config.settings import DEFAULT_PORTAL, portal_config
 from models.course import Course
 
@@ -13,11 +12,11 @@ class Courses(Collection):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict[str, Any] | None = None,
-                 driver=None,
+                 collection: dict[str, str] | None = None,
+                 driver: WebDriver | None = None,
                  portal: str = DEFAULT_PORTAL):
         super().__init__(name, url or portal_config(portal)["courses"], collection, portal=portal)
-        self.driver = driver
+        self.driver: WebDriver | None = driver
 
     def fetch_courses(self, force: bool = False) -> bool:
         """
@@ -36,11 +35,11 @@ class Courses(Collection):
 
         api_url_courses = portal_config(self.portal)["api_courses"]
         print(f"Fetching courses from API: {api_url_courses}")
-        
+
         all_courses = {}
         page = 1
         has_more = True
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "application/json"
@@ -50,7 +49,7 @@ class Courses(Collection):
             while has_more:
                 url = f"{api_url_courses}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
-                
+
                 self.driver.get(url)
 
                 try:
@@ -66,18 +65,18 @@ class Courses(Collection):
                 except json.JSONDecodeError:
                     print(f"\nFailed to decode JSON on page {page}")
                     break
-                
+
                 items = []
                 if isinstance(data, list):
                     items = data
                 elif isinstance(data, dict):
                      items = data.get("searchResults", [])
-                
+
                 if not items:
                     # No more items
                     has_more = False
                     break
-                
+
                 # Process items
                 for item in items:
                     title = item.get("title")
@@ -86,12 +85,12 @@ class Courses(Collection):
                         # Extract ID from path (e.g. /course_templates/72?...)
                         clean_path = path_url.split('?')[0]
                         course_id = clean_path.split('/')[-1]
-                        
+
                         if course_id:
                             all_courses[course_id] = title.strip()
-                
+
                 page += 1
-                if page > 100: 
+                if page > 100:
                     print("\nReached safety limit of 100 pages.")
                     break
 
@@ -110,7 +109,7 @@ class Courses(Collection):
             return False
 
     # TODO: fetch_data() method to refresh all the courses' data.
-    def fetch_data(self):        
+    def fetch_data(self):
         """
         Fetch data for all courses in the collection.
         """
