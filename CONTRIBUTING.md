@@ -2,6 +2,10 @@
 
 Every contribution is very much welcomed!
 
+## Backglog
+
+- [ ] MD to PDF conversion with styles using [Typst](https://typst.app).
+
 ## TODOs and Future Improvements
 
 1. **Check if published_date is newer, then update the path data**

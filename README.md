@@ -1,20 +1,40 @@
 # Google Skills Scraper
 
+---
+
+MAINTAINER IS NEEDED! Drop me an Issue or PR if you're interested in helping out.
+
+---
+
+<!--TODO: The interactive version is outdated, need to update this photo.-->
+
 ![Welcome Screen](docs/assets/welcome-screen.png)
 
-Turn [Google Skills](https://www.skills.google) courses, learning
-paths, and labs into clean, well-structured **Markdown files** you can drop
-straight into Obsidian (or any Markdown-based personal knowledge base).
+---
 
-> **v2.2.0 — renamed to Google Skills Scraper.** Formerly "Cloud Skills Boost /
-> CSB Studio"; the site itself is now [Google Skills](https://www.skills.google).
-> The CLI binary is `skills-scraper.bin` (legacy `csb.bin`/`csb` still resolve)
-> and the desktop app is **Google Skills Scraper**. Existing `data/` and
-> `csbmdvault/` folders are unchanged — no migration needed.
+Turn [Google Skills](https://www.skills.google) courses, learning paths, and labs into clean, well-structured **Markdown files** you can drop straight into Obsidian (or any Markdown-based personal knowledge base).
 
-> New here and not a developer? Jump to the
-> **[Getting Started guide](docs/getting-started.md)** — it walks you through
-> everything step by step.
+---
+
+Update:
+
+> **v2.2.0 — renamed to Google Skills Scraper.** Formerly "Cloud Skills Boost / CSB Studio"; the site itself is now [Google Skills](https://www.skills.google). The CLI binary is `skills-scraper.bin` (legacy `csb.bin`/`csb` still resolve) and the desktop app is **Google Skills Scraper**. Existing `data/` and `csbmdvault/` folders are unchanged — no migration needed.
+
+> New here and not a developer? Jump to the **[Getting Started guide](docs/getting-started.md)** — it walks you through everything step by step.
+
+## A Quick Example: PKB with Obsidian
+
+- Check out the sample folder for real files:
+  - [Google-Cloud-Applied-AI-Summit-Learning-Path](./docs/samples/output/paths/Google-Cloud-Applied-AI-Summit-Learning-Path.md).
+  - [Conversational-AI-on-Vertex-AI-and-Dialogflow-CX.md](./docs/samples/output/courses/Conversational-AI-on-Vertex-AI-and-Dialogflow-CX.md)
+
+File view, graph view, and the script in action:
+
+![Obsidian File View](docs/assets/obsidian-files.png)
+
+![Obsidian Graph View](docs/assets/obsidian-graph.png)
+
+![The script in action](docs/assets/script-in-action.png)
 
 ## What it does
 
@@ -157,14 +177,6 @@ csbmdvault/                   # your Markdown vault → open this in Obsidian
 
 Point Obsidian at the `csbmdvault/` folder to browse everything as a graph.
 
-## Example: Obsidian
-
-File view, graph view, and the script in action:
-
-![Obsidian File View](docs/assets/obsidian-files.png)
-![Obsidian Graph View](docs/assets/obsidian-graph.png)
-![The script in action](docs/assets/script-in-action.png)
-
 ## Go rewrite (in progress)
 
 A single-binary [Go reimplementation](go/README.md) lives under `go/`. It reads
@@ -173,6 +185,8 @@ profile, so it runs interchangeably with this Python version. It already has ful
 command parity (`md`, `list`/`--reload`, `search`, `fetch -l/-c/-p`, `login`,
 `interactive`), with output verified byte-for-byte against the Python build. See
 [docs/rewrite-plan.md](docs/rewrite-plan.md) for the roadmap (Go CLI → Tauri GUI).
+
+![A Simple GUI](docs/assets/gui-260710.png)
 
 ## Further reading
 
@@ -183,7 +197,7 @@ command parity (`md`, `list`/`--reload`, `search`, `fetch -l/-c/-p`, `login`,
 5. [What the Markdown files look like](docs/output.md)
 6. [Generating prompts to reformat transcripts](docs/promt-llm.md)
 7. [Plan: re-implementing as a single binary (Go / Rust / Tauri)](docs/rewrite-plan.md)
-8. [Contributing](CONTRIBUTION.md)
+8. [Contributing](CONTRIBUTING.md)
 
 ## A note on responsible use
 
@@ -191,3 +205,7 @@ This tool automates a signed-in browser to save content **you already have
 access to** for personal offline study. Respect Google Skills's
 Terms of Service, keep your fetches reasonable, and don't redistribute scraped
 content.
+
+## LICENSE
+
+- [MIT License](./LICENSE)
