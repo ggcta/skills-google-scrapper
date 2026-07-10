@@ -1,15 +1,16 @@
 from datetime import datetime
 import json
-from typing import Any
 
 from bs4 import BeautifulSoup
 import requests
+from typing_extensions import override
 from config.settings import BASE_URL_PATHS, DATA_FOLDER_NAME, OUTPUT_FOLDER_NAME, DEFAULT_PORTAL, portal_config
 from models.serialize import Serialize
 from pathlib import Path as PathlibPath
 
 
-# Base entity for collection: Courses, Paths, Labs.
+# Base entity for collection: Courses, Paths, Labs. Always stores {id: name}.
+# Topics has a different (nested) shape and is its own class, see topics.py.
 class Collection(Serialize):
     """
     Base entity for collection: Courses, Paths, Lab.
@@ -22,14 +23,14 @@ class Collection(Serialize):
     def __init__(self,
                  name: str | None = None,
                  url: str | None = None,
-                 collection: dict[str, Any] | None = None,
+                 collection: dict[str, str] | None = None,
                  portal: str = DEFAULT_PORTAL):
         self.name = name
         # Which portal this collection belongs to (public / partner).
         self.portal = portal or DEFAULT_PORTAL
         self.url = url or portal_config(self.portal)["base"]
         self.date = str(datetime.today().date())
-        self.collection = collection or {}
+        self.collection: dict[str, str] = collection or {}
 
     @property
     def type(self):
@@ -42,7 +43,7 @@ class Collection(Serialize):
     @property
     def _json_name(self):
         return f"{self.type.lower()}.json"
-    
+
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _json_path(self):
@@ -52,24 +53,24 @@ class Collection(Serialize):
     @property
     def _md_name(self):
         return f"{self.type.lower()}.md"
-    
+
     # Properties to get the JSON and Markdown file names and paths
     @property
     def _md_path(self):
         return PathlibPath(OUTPUT_FOLDER_NAME) / self.portal / self._md_name
 
     # Convert the entity's data to a dictionary without private attributes
-    def to_dict(self):
+    @override
+    def to_dict(self) -> dict[str, object]:
         """
         Convert the entity's data to a dictionary.
         """
-        import time
-
-        collection_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        # `__dict__` is typed dict[str, Any] by typeshed; see Serialize.to_dict.
+        collection_dict = {k: v for k, v in self.__dict__.items() if not k.startswith('_')}  # pyright: ignore[reportAny]
         collection_dict['type'] = self.type
-        
+
         return collection_dict
-    
+
     # Load the collection from a JSON file
     def load_json(self):
         """
@@ -81,11 +82,11 @@ class Collection(Serialize):
         # Use plural table name
         table_name = f"{self.type.lower()}"
         if self.type.lower() == 'path': table_name = 'paths' # just in case
-        
+
         # Collection usually stores a dict of {id: name}
         # But TinyDB stores documents {id: ..., name: ..., type: ...}
         # We need to reconstruction the collection dict {id: name} from DB docs
-        
+
         docs = db.all(table_name)
         self.collection = {}
         for doc in docs:
@@ -116,12 +117,7 @@ class Collection(Serialize):
             table_name = self.type.lower()
 
             if self.collection:
-                for item_id, item_val in self.collection.items():
-                    # item_val is usually name (str) or dict?
-                    name = item_val
-                    if isinstance(item_val, dict):
-                        name = item_val.get('name', 'Unknown')
-
+                for item_id, name in self.collection.items():
                     # We need to fetch existing doc to preserve other fields if any?
                     # Or just upsert id/name/type?
                     # If we only have ID and Name in collection, we might overwrite other details if we are not careful
@@ -135,7 +131,7 @@ class Collection(Serialize):
                         'portal': self.portal
                     }
                     db.upsert(table_name, doc)
-                    
+
         except Exception as e:
             print(f"(Collection.save_json) Error syncing to DB: {e}")
 
@@ -178,30 +174,12 @@ class Collection(Serialize):
         """
 
         # Sort the collection by name and convert to a list
-        if self.collection and all(isinstance(value, str) for value in self.collection.values()):
-            # If all values are strings (id: name), sort based on param
-            if sort_by == 'id':
-                # Sort by keys (id)
-                a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
-            else:
-                # Defaults to name
-                a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
-        elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
-             # If values are dicts, we usually sort by ID (key) or Name (value['name'])
-             # Current implementation assumed sorting by keys (item[0]) for dicts in one branch??
-             # Let's check original code:
-             # elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
-             #    a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
-             
-             if sort_by == 'id':
-                 a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
-             else:
-                 # Try to find 'name' in dict, otherwise fallback to key
-                 # This assumes value is a dict with 'name' key
-                 a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1].get('name', item[0]))
-
+        if sort_by == 'id':
+            # Sort by keys (id)
+            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[0])
         else:
-            a_sorted_list = list(self.collection.items())
+            # Defaults to name
+            a_sorted_list = sorted(self.collection.items(), key=lambda item: item[1])
         if self.name:
             print(f"\n"
                   f"\033[45m[{self.name.upper():^85}]\033[0m"
@@ -221,14 +199,8 @@ class Collection(Serialize):
         """
 
         # Sort the collection by name
-        if self.collection and all(isinstance(value, str) for value in self.collection.values()):
-            # If all values are strings, sort by values
+        if self.collection:
             self.collection = dict(sorted(self.collection.items(), key=lambda item: item[1]))
-        elif self.collection and all(isinstance(value, dict) for value in self.collection.values()):
-            # If all values are dictionaries, sort by keys
-            self.collection = dict(sorted(self.collection.items(), key=lambda item: item[0]))
-        else:
-            print(f"(Collection.write_md) Warning: Mixed value types in collection or empty collection. Skipping sorting for {self.name}.")
 
         # Create the Markdown file (ensure the portal folder exists)
         self._md_path.parent.mkdir(parents=True, exist_ok=True)
