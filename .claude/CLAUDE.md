@@ -16,3 +16,8 @@
 - Always Trim Trailing Whitespace.
 - Always use EOF delimiters (the 1 extra empty line at the end of the file).
 - Always use Linux line endings (LF).
+
+## Commits
+
+- Keep commit messages clean: do NOT add AI attribution or `Co-Authored-By`
+  trailers (e.g. no `Co-Authored-By: Claude ...`).
