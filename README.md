@@ -197,7 +197,7 @@ command parity (`md`, `list`/`--reload`, `search`, `fetch -l/-c/-p`, `login`,
 5. [What the Markdown files look like](docs/output.md)
 6. [Generating prompts to reformat transcripts](docs/promt-llm.md)
 7. [Plan: re-implementing as a single binary (Go / Rust / Tauri)](docs/rewrite-plan.md)
-8. [Contributing](CONTRIBUTION.md)
+8. [Contributing](CONTRIBUTING.md)
 
 ## A note on responsible use
 
