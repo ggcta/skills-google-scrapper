@@ -8,6 +8,7 @@ Every contribution is very much welcomed!
 - [ ] The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
 - [ ] Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
 - [ ] CLI: Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
+- [ ] Shut down the browser session gracefully, even when the application is terminated.
 
 ## TODOs and Future Improvements
 
