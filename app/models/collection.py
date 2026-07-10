@@ -23,11 +23,11 @@ class Collection(Serialize):
                  url: str | None = None,
                  collection: dict[str, str] | None = None,
                  portal: str = DEFAULT_PORTAL):
-        self.name = name
+        self.name: str | None = name
         # Which portal this collection belongs to (public / partner).
-        self.portal = portal or DEFAULT_PORTAL
-        self.url = url or portal_config(self.portal)["base"]
-        self.date = str(datetime.today().date())
+        self.portal: str = portal or DEFAULT_PORTAL
+        self.url: str = url or portal_config(self.portal)["base"]
+        self.date: str | None = str(datetime.today().date())
         self.collection: dict[str, str] = collection or {}
 
     @property
