@@ -1,5 +1,6 @@
 import os
 import tempfile
+from selenium.webdriver.chrome.webdriver import WebDriver
 from typing_extensions import override
 from html.parser import HTMLParser
 from urllib.parse import urlparse
@@ -130,7 +131,7 @@ def util_strip_html_tags(text: str) -> str:
     return stripper.get_data()
 
 
-def util_ensure_authenticated(driver, url: str, entity_desc: str = "") -> bool:
+def util_ensure_authenticated(driver: WebDriver | None, url: str, entity_desc: str = "") -> bool:
     """
     Check if the current webdriver page redirected to sign-in, and prompt user until authenticated.
     Returns True if authenticated, False if aborted or webdriver missing.
@@ -143,7 +144,7 @@ def util_ensure_authenticated(driver, url: str, entity_desc: str = "") -> bool:
         print(f"\n\033[93m[!] Authentication required{msg}.\033[0m")
         print("Please sign in to the browser window if you haven't.")
         try:
-            input("Press Enter after you have signed in and the page is loaded to continue... ")
+            _ = input("Press Enter after you have signed in and the page is loaded to continue... ")
         except (KeyboardInterrupt, EOFError):
             print("\n\033[91mAborted authentication.\033[0m")
             return False
