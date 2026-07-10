@@ -2,9 +2,10 @@ import os
 import tempfile
 from html.parser import HTMLParser
 from urllib.parse import urlparse
+from pathlib import Path as PathlibPath
 
 
-def util_atomic_write_text(path, text: str, encoding: str = 'utf-8', newline: str = '\n') -> None:
+def util_atomic_write_text(path: str | PathlibPath, text: str, encoding: str = 'utf-8', newline: str = '\n') -> None:
     """
     Write text to path atomically.
 
@@ -145,7 +146,7 @@ def util_ensure_authenticated(driver, url: str, entity_desc: str = "") -> bool:
             print("\n\033[91mAborted authentication.\033[0m")
             return False
         driver.get(url)
-        
+
         if "sign_in" in driver.current_url:
             print("\n\033[91m[!] Still on sign-in page. Please ensure login is complete before pressing Enter.\033[0m")
     return True
