@@ -14,7 +14,7 @@ import re
 import sys
 from datetime import datetime
 
-from config.settings import PROJECT_ROOT
+from config.settings import LOG_FOLDER_NAME
 
 # Millisecond-precision, sortable, ISO-8601-ish (e.g. "2026-07-10 14:23:45.123").
 _ANSI = re.compile(r'\x1b\[[0-9;]*m')
@@ -29,9 +29,9 @@ def _timestamp() -> str:
 
 
 def dir_default() -> str:
-    """The log directory: the CSB_LOG_DIR override, else PROJECT_ROOT/logs."""
-    override = os.environ.get('CSB_LOG_DIR')
-    return override if override else os.path.join(PROJECT_ROOT, 'logs')
+    """The log directory, already resolved (config paths.logs / CSB_LOG_DIR /
+    default) in settings.LOG_FOLDER_NAME."""
+    return str(LOG_FOLDER_NAME)
 
 
 class _Tee:

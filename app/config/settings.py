@@ -1,15 +1,34 @@
 # Description: Configuration file for the project
 from pathlib import Path as PathlibPath
 
+from config.user_config import load as _load_user_config, resolve as _resolve
+
 # Determine the project root directory
 # This to ensure the app can work with relative paths
 PROJECT_ROOT = PathlibPath(__file__).parent.parent.parent
 
+# Optional user overrides from config.yaml (see config/user_config.py). Anything
+# unset here keeps the default below. Precedence: env var > config.yaml > default.
+_CFG = _load_user_config(PROJECT_ROOT)
+_PATHS = _CFG.get("paths") if isinstance(_CFG.get("paths"), dict) else {}
+
+
+def _path_setting(env_key: str, cfg_key: str, default_name: str) -> PathlibPath:
+    """Resolve a directory setting (env > config > default). Relative values are
+    anchored to PROJECT_ROOT; absolute values are used as-is."""
+    value = _resolve(env_key, _PATHS.get(cfg_key), default_name)
+    p = PathlibPath(value)
+    return p if p.is_absolute() else (PathlibPath(PROJECT_ROOT) / p)
+
+
 # Output: Folder for Markdown files
 # Data: Folder for JSON files.
-# You can specific path or use the relateve paths here.
-OUTPUT_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "csbmdvault"
-DATA_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "data"
+# Override via config.yaml (paths.vault / paths.data) or CSB_VAULT / CSB_DATA.
+OUTPUT_FOLDER_NAME: str = _path_setting("CSB_VAULT", "vault", "csbmdvault")
+DATA_FOLDER_NAME: str = _path_setting("CSB_DATA", "data", "data")
+
+# Per-run activity logs (config paths.logs / CSB_LOG_DIR).
+LOG_FOLDER_NAME: str = _path_setting("CSB_LOG_DIR", "logs", "logs")
 
 # Base URL for the Google Skills website
 BASE_URL: str = "https://www.skills.google"
@@ -28,7 +47,7 @@ BASE_URL_PARTNERS: str = "https://partner.skills.google/"
 # sequences (e.g. partner path 85 == public path 16). An entity's true identity
 # is therefore the pair (portal, id), never id alone. Each portal is scoped to
 # its own storage root so the two catalogs can never overwrite each other.
-DEFAULT_PORTAL: str = "public"
+DEFAULT_PORTAL: str = _resolve("CSB_PORTAL", _CFG.get("portal"), "public")
 
 # Shared, portal-agnostic folder for downloaded binaries (documents, etc.),
 # organised as materials/<type>/<id>/<files> (type = courses/labs/paths).
@@ -59,6 +78,11 @@ PORTALS: dict = {
 }
 
 
+# Guard against an unknown portal in config.yaml / CSB_PORTAL.
+if DEFAULT_PORTAL not in PORTALS:
+    DEFAULT_PORTAL = "public"
+
+
 def portal_config(portal: str = DEFAULT_PORTAL) -> dict:
     """Return the URL config for a portal, falling back to the default."""
     return PORTALS.get(portal, PORTALS[DEFAULT_PORTAL])
@@ -72,8 +96,8 @@ def portal_from_host(host: str) -> str:
             return portal
     return DEFAULT_PORTAL
 
-# Webdriver configuration
-WEBDRIVER_PROFILE_FOLDER_NAME: str = PROJECT_ROOT / '.webdriver_profiles'
+# Webdriver configuration (profile via config paths.profile / CSB_PROFILE_DIR).
+WEBDRIVER_PROFILE_FOLDER_NAME: str = _path_setting("CSB_PROFILE_DIR", "profile", ".webdriver_profiles")
 WEBDRIVER_OPTIONS_HEADLESS: bool = True
 
 # Constants for the extraction of the course data
