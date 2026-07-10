@@ -1,6 +1,7 @@
 import re
 import time
 from pathlib import Path as PathlibPath
+from typing import Any
 from models.base_entity import BaseEntity
 from models.labs import Labs
 from models.lab import Lab
@@ -42,9 +43,9 @@ class Course(BaseEntity):
                  name: str | None = None,
                  description: str | None = None,
                  datePublished: str | None = None,
-                 objectives: list | None = None,
-                 topics: list | None = None,
-                 modules: list | None = None,
+                 objectives: list[str] | None = None,
+                 topics: list[str] | None = None,
+                 modules: list[dict[str, Any]] | None = None,
                  driver=None,
                  title: str | None = None,
                  portal: str | None = None):
@@ -103,7 +104,7 @@ class Course(BaseEntity):
         if not no_md:
             self.save_markdown(toc_only=toc_only, no_transcript=no_transcript)
 
-        print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
+        print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {(self.name or '').upper()}\033[0m\n")
 
     # MARK: fetch_course_page
     def fetch_course_page(self) -> BeautifulSoup | None:
@@ -296,6 +297,10 @@ class Course(BaseEntity):
             video_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
             video_element = video_html.select_one(QL_YOUTUBE_VIDEO)
+            if not video_element:
+                print(f"(process_video) [!] Video element not found: {url}")
+                return
+
             video_id = video_element.get("videoId") or video_element.get("videoid")
             if video_id:
                 activity['videoId'] = video_id
@@ -391,7 +396,7 @@ class Course(BaseEntity):
             print(f"(process_lab) Error: {error}")
 
     # MARK: fetch_external_course_content
-    def fetch_external_course_content(self, url: str) -> dict | None:
+    def fetch_external_course_content(self, url: str) -> dict[str, Any] | None:
         """
         Fetch external course content using __fetchCourse() JS function.
         Caches the result by base URL (without hash).
@@ -430,7 +435,7 @@ class Course(BaseEntity):
             return None
 
     # MARK: _extract_lesson_content
-    def _extract_lesson_content(self, course_data: dict, lesson_id: str) -> str | None:
+    def _extract_lesson_content(self, course_data: dict[str, Any], lesson_id: str) -> str | None:
         """
         Extract content for a specific lesson from the full course data.
         """
@@ -464,7 +469,7 @@ class Course(BaseEntity):
             return None
 
     # MARK: _parse_lesson_item
-    def _parse_lesson_item(self, item: dict) -> str | None:
+    def _parse_lesson_item(self, item: dict[str, Any]) -> str | None:
         """
         Parse a single item from the lesson data into Markdown/HTML.
         """
@@ -761,7 +766,6 @@ class Course(BaseEntity):
                 rcd = query_params.get('response-content-disposition', [None])[0]
                 if rcd:
                     # Simple regex to extract filename
-                    import re
                     match = re.search(r'filename="?([^";]+)"?', rcd)
                     if match:
                         filename = match.group(1)

@@ -17,3 +17,9 @@ dependencies = [
 dev = [
     "basedpyright>=1.39.9",
 ]
+
+[tool.basedpyright]
+# main.py/scraper.py append 'app/' to sys.path at runtime, so modules import
+# each other as top-level packages (e.g. `from models.course import Course`)
+# rather than via the repo root. Tell the checker the same thing.
+extraPaths = ["app"]
