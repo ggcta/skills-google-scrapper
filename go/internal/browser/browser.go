@@ -114,7 +114,9 @@ func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-gpu", true),
-		chromedp.Flag("no-sandbox", true),
+		// No --no-sandbox: it's only needed in containers/as root, degrades
+		// security, and makes Chrome show an "unsupported command-line flag"
+		// warning that can spook corporate sign-in. The desktop sandbox works.
 		chromedp.Flag("disable-dev-shm-usage", true),
 		chromedp.Flag("disable-background-networking", true),
 		chromedp.Flag("disable-background-timer-throttling", true),
