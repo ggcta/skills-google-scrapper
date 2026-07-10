@@ -279,10 +279,8 @@ fn finish_login(state: State<LoginState>) -> Result<(), String> {
     Ok(())
 }
 
-/// Reveal the Markdown vault in the OS file manager.
-#[tauri::command]
-fn open_vault() -> Result<(), String> {
-    let vault = repo_root().join("csbmdvault");
+/// Open a file or folder with the OS default handler.
+fn os_open(path: &str) -> Result<(), String> {
     let opener = if cfg!(target_os = "macos") {
         "open"
     } else if cfg!(target_os = "windows") {
@@ -291,10 +289,36 @@ fn open_vault() -> Result<(), String> {
         "xdg-open"
     };
     Command::new(opener)
-        .arg(vault)
+        .arg(path)
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Reveal the Markdown vault in the OS file manager.
+#[tauri::command]
+fn open_vault() -> Result<(), String> {
+    let vault = repo_root().join("csbmdvault");
+    os_open(&vault.to_string_lossy())
+}
+
+/// Open a stored item's Markdown file in the OS default app. Resolves the path
+/// via `skills-scraper mdpath`, so the GUI never reimplements the vault layout or
+/// filename sanitization. Returns the binary's error (e.g. "not fetched yet…")
+/// on failure, for the frontend to surface.
+#[tauri::command]
+fn open_md(portal: String, kind: String, id: String) -> Result<(), String> {
+    let args = vec![
+        "mdpath".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, false).into(),
+        id,
+    ];
+    let path = run_csb(&args)?.trim().to_string();
+    if path.is_empty() {
+        return Err("Markdown path not found.".into());
+    }
+    os_open(&path)
 }
 
 fn main() {
@@ -307,7 +331,8 @@ fn main() {
             fetch,
             login,
             finish_login,
-            open_vault
+            open_vault,
+            open_md
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -124,6 +124,8 @@ table { width: 100%; border-collapse: collapse; background: var(--surface); }
 td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
 tr:last-child td { border-bottom: 0; }
 tr:hover td { background: var(--surface-2); }
+/* Fetched rows can be double-clicked to open their Markdown. */
+tr.openable { cursor: pointer; }
 .cell-id { font-family: var(--mono); color: var(--muted); width: 90px; }
 .cell-type { color: var(--muted); width: 90px; text-transform: capitalize; }
 .cell-portal { width: 96px; }

@@ -190,6 +190,16 @@ function renderRows(tableSel, countSel, items) {
   tbody.innerHTML = "";
   for (const it of items) {
     const tr = document.createElement("tr");
+    // Carry what a double-click needs to open (or explain) this row's Markdown.
+    tr.dataset.id = it.id;
+    tr.dataset.portal = it.portal;
+    tr.dataset.kind = String(it.type).toLowerCase(); // path / course / lab
+    tr.dataset.name = it.name;
+    tr.dataset.fetched = it.fetched ? "1" : "";
+    tr.title = it.fetched
+      ? "Double-click to open its Markdown"
+      : "Not fetched yet — fetch it to open its Markdown";
+    if (it.fetched) tr.classList.add("openable");
     tr.innerHTML =
       `<td class="cell-id">${it.id}</td>` +
       `<td>${escapeHtml(it.name)}</td>` +
@@ -223,6 +233,29 @@ function renderBrowse() {
 function renderSearch() {
   renderRows("#searchTable", "#searchCount", sortItems(searchItems, selected("#searchSort", "sort")));
 }
+
+// Double-click a row to open its Markdown in the OS default app. If the item
+// isn't fetched yet, say so instead. Delegated on the tbody so it keeps working
+// across re-renders.
+async function onRowOpen(tr) {
+  if (!tr) return;
+  const { id, portal, kind, name } = tr.dataset;
+  if (tr.dataset.fetched !== "1") {
+    setStatus(`“${name}” isn’t fetched yet — fetch it first to open its Markdown.`);
+    return;
+  }
+  setStatus(`Opening “${name}”…`, "busy");
+  try {
+    await invoke("open_md", { portal, kind, id });
+    setStatus(`Opened “${name}”.`, "ok");
+  } catch (err) {
+    setStatus("Could not open Markdown: " + err);
+  }
+}
+["#browseTable", "#searchTable"].forEach((sel) => {
+  const tbody = $(`${sel} tbody`);
+  if (tbody) tbody.addEventListener("dblclick", (e) => onRowOpen(e.target.closest("tr")));
+});
 
 $("#browseBtn").addEventListener("click", async () => {
   const kind = selected("#browseKind", "kind");
