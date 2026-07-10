@@ -7,8 +7,20 @@ import (
 	"os"
 	"strings"
 
+	"csb/internal/config"
 	"csb/internal/portal"
 )
+
+// defaultPortal is the portal assumed when no -A/-B/--portal flag is given:
+// CSB_PORTAL env > config portal > portal.Default. An unknown value falls back
+// to the built-in default.
+func defaultPortal() string {
+	p := config.Resolve("CSB_PORTAL", config.Get().Portal, portal.Default)
+	if _, ok := portal.Registry[p]; !ok {
+		return portal.Default
+	}
+	return p
+}
 
 // Run dispatches a command. Returns a process exit code.
 func Run(args []string) int {
@@ -115,7 +127,7 @@ func (p parsed) value(names ...string) (string, bool) {
 // parseArgs scans args. valueFlagNames lists flags that consume the next token
 // as their value; everything else is treated as a boolean flag or positional.
 func parseArgs(args []string, valueFlagNames map[string]bool) parsed {
-	p := parsed{portal: portal.Default, bools: map[string]bool{}, values: map[string]string{}}
+	p := parsed{portal: defaultPortal(), bools: map[string]bool{}, values: map[string]string{}}
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch a {

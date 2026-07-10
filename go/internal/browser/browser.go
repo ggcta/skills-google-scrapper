@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"csb/internal/config"
 	"github.com/chromedp/chromedp"
 )
 
@@ -211,12 +212,13 @@ func (s *Session) run(timeout time.Duration, actions ...chromedp.Action) error {
 }
 
 // DefaultProfileDir returns the shared profile path under the CWD, or a throwaway
-// (empty) when the CWD can't be determined.
+// (empty) when the CWD can't be determined. Overridable via CSB_PROFILE_DIR env
+// or config paths.profile.
 func DefaultProfileDir() string {
 	if _, err := os.Getwd(); err != nil {
 		return ""
 	}
-	return ProfileDirName
+	return config.Resolve("CSB_PROFILE_DIR", config.Get().Paths.Profile, ProfileDirName)
 }
 
 // quietErrorf drops chromedp's noisy "unhandled node event" CDP messages (which

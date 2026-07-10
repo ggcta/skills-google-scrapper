@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"csb/internal/config"
 )
 
 // TimeLayout is the per-line timestamp: ISO-8601-ish, sortable, millisecond
@@ -30,13 +32,10 @@ var (
 	ansiRe  = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 )
 
-// Dir resolves the log directory: the CSB_LOG_DIR override, else "logs" (under
-// the current working directory, matching how the data/vault roots resolve).
+// Dir resolves the log directory: CSB_LOG_DIR env > config paths.logs > "logs"
+// (relative to the working directory, matching how the data/vault roots resolve).
 func Dir() string {
-	if v := os.Getenv("CSB_LOG_DIR"); v != "" {
-		return v
-	}
-	return "logs"
+	return config.Resolve("CSB_LOG_DIR", config.Get().Paths.Logs, "logs")
 }
 
 // Init opens a fresh per-run log file under dir (Dir() when dir is empty) and

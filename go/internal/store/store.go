@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"csb/internal/config"
 	"csb/internal/model"
 	"csb/internal/textutil"
 )
@@ -17,20 +18,15 @@ import (
 // fetched), so no Markdown path can be resolved for it.
 var ErrNotStored = errors.New("item not stored")
 
-// DataRoot is the JSON/database root (override with CSB_DATA).
+// DataRoot is the JSON/database root: CSB_DATA env > config paths.data > "data".
 func DataRoot() string {
-	if v := os.Getenv("CSB_DATA"); v != "" {
-		return v
-	}
-	return "data"
+	return config.Resolve("CSB_DATA", config.Get().Paths.Data, "data")
 }
 
-// VaultRoot is the Markdown output root (override with CSB_VAULT).
+// VaultRoot is the Markdown output root: CSB_VAULT env > config paths.vault >
+// "csbmdvault".
 func VaultRoot() string {
-	if v := os.Getenv("CSB_VAULT"); v != "" {
-		return v
-	}
-	return "csbmdvault"
+	return config.Resolve("CSB_VAULT", config.Get().Paths.Vault, "csbmdvault")
 }
 
 func jsonPath(portalKey, typePlural, id string) string {
