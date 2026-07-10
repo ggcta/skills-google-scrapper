@@ -8,8 +8,8 @@ PROJECT_ROOT = PathlibPath(__file__).parent.parent.parent
 # Output: Folder for Markdown files
 # Data: Folder for JSON files.
 # You can specific path or use the relateve paths here.
-OUTPUT_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "csbmdvault"
-DATA_FOLDER_NAME: str = PathlibPath (PROJECT_ROOT) / "data"
+OUTPUT_FOLDER_NAME: PathlibPath = PathlibPath (PROJECT_ROOT) / "csbmdvault"
+DATA_FOLDER_NAME: PathlibPath = PathlibPath (PROJECT_ROOT) / "data"
 
 # Base URL for the Google Skills website
 BASE_URL: str = "https://www.skills.google"
@@ -73,7 +73,7 @@ def portal_from_host(host: str) -> str:
     return DEFAULT_PORTAL
 
 # Webdriver configuration
-WEBDRIVER_PROFILE_FOLDER_NAME: str = PROJECT_ROOT / '.webdriver_profiles'
+WEBDRIVER_PROFILE_FOLDER_NAME: PathlibPath = PROJECT_ROOT / '.webdriver_profiles'
 WEBDRIVER_OPTIONS_HEADLESS: bool = True
 
 # Constants for the extraction of the course data
