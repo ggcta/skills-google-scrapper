@@ -205,3 +205,7 @@ This tool automates a signed-in browser to save content **you already have
 access to** for personal offline study. Respect Google Skills's
 Terms of Service, keep your fetches reasonable, and don't redistribute scraped
 content.
+
+## LICENSE
+
+- [MIT License](./LICENSE)
