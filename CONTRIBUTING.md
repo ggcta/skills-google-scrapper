@@ -6,6 +6,8 @@ Every contribution is very much welcomed!
 
 - [ ] MD to PDF conversion with styles using [Typst](https://typst.app).
 - [ ] The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
+- [ ] Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
+- [ ] CLI: Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
 
 ## TODOs and Future Improvements
 
