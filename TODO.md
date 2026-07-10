@@ -13,7 +13,7 @@ Check [CONTRIBUTING](./CONTRIBUTING.md) for more.
   - [ ] ~~For time being, Gemini for me, is not so good so I don't use yet.~~
   - [ ] ~~LM Studio is a good choice with LLAMA 3.1, 3.2 but my machine is not suitable for running this continously.~~
 - [ ] TODO: Sync the data folder to a GCS bucket: `gcloud storage rsync --recursive data/ gs://csbhelper/`
-- [ ] Use `config.yaml` configuration file override the `settings.py` defaults.
+- [x] Use `config.yaml` configuration file override the `settings.py` defaults. Copy `config.example.yaml` → `config.yaml` (or `config/config.yaml`). Read by both the Python app and the Go binary; precedence is env var > config.yaml > default.
 
 ## v3.0.0 — Multi-vendor + complete rebrand (planned)
 

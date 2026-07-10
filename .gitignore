@@ -5,6 +5,9 @@
 .env
 /.venv
 /node_modules
+# User preferences (copy config.example.yaml → config.yaml; machine-specific).
+/config.yaml
+/config/config.yaml
 # Activity logs (default location; override with CSB_LOG_DIR / --log-dir).
 /logs/
 csbmdvault/

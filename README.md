@@ -177,6 +177,25 @@ csbmdvault/                   # your Markdown vault → open this in Obsidian
 
 Point Obsidian at the `csbmdvault/` folder to browse everything as a graph.
 
+## Configuration (optional)
+
+Don't like the default locations? Copy **`config.example.yaml`** to
+**`config.yaml`** (or `config/config.yaml`) and set only the keys you care
+about — for example, point the vault straight at your Obsidian folder:
+
+```yaml
+paths:
+  vault: /Users/me/Obsidian/Google Skills
+portal: partner        # make partner the default portal
+```
+
+Both the Python app and the Go binary read the same file. Precedence is
+**environment variable → `config.yaml` → built-in default**, and CLI flags still
+win over everything. Every key is optional; relative paths resolve against the
+project root, absolute paths are used as-is. See `config.example.yaml` for the
+full list (`paths.data` / `vault` / `logs` / `profile`, and `portal`) with the
+matching `CSB_*` environment variables.
+
 ## Go rewrite (in progress)
 
 A single-binary [Go reimplementation](go/README.md) lives under `go/`. It reads

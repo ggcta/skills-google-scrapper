@@ -1,0 +1,19 @@
+# config.yaml — user preferences for the Google Skills Scraper.
+#
+# Copy this file to `config.yaml` (or `config/config.yaml`) and uncomment the
+# keys you want to change. Every key is OPTIONAL — anything you leave out keeps
+# its default. Both the Python app and the Go binary read this same file.
+#
+# Precedence:  environment variable  >  config.yaml  >  built-in default
+# CLI flags (e.g. -A/-B, --headless, --log-dir) still win over everything.
+#
+# Relative paths are resolved against the project root; absolute paths are used
+# as-is — handy for pointing the vault straight at your Obsidian folder.
+
+# paths:
+#   data: data                    # JSON backups + local database   (env: CSB_DATA)
+#   vault: csbmdvault             # Markdown output, open in Obsidian (env: CSB_VAULT)
+#   logs: logs                    # per-run activity logs            (env: CSB_LOG_DIR)
+#   profile: .webdriver_profiles  # reusable Chrome sign-in profile  (env: CSB_PROFILE_DIR)
+
+# portal: public                  # default portal: public | partner (env: CSB_PORTAL)
