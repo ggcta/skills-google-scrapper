@@ -12,7 +12,7 @@ Turn [Google Skills](https://www.skills.google) courses, learning paths, and lab
 
 ## A Quick Example: PKB with Obsidian
 
-- Check out the sample folder for real files: [`docs/sample/`](./docs/sample/).
+- Check out the sample folder for real files: [`docs/samples/`](./docs/samples/).
 
 File view, graph view, and the script in action:
 
