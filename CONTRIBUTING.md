@@ -2,13 +2,20 @@
 
 Every contribution is very much welcomed!
 
+> [!important]
+> - severity: `#cri`(tical), `#hig`(h), `#med`(ium)
+> - category: `#ftr`, `#fix`, `#rfr`(refactor), `#enh`(ancement)
+> - components:
+>    - `cor`(e): all the components or core engine (Go/Python)
+>    - `gui`: the graphical user interface (Rust/Tauri)
+
 ## Backglog
 
-- [ ] MD to PDF conversion with styles using [Typst](https://typst.app).
-- [ ] The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
-- [ ] Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
-- [ ] CLI: Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
-- [ ] Shut down the browser session gracefully, even when the application is terminated.
+- [ ] #cri #cor #ftr Shut down the browser session gracefully, even when the application is terminated.
+- [ ] #hig #cor #ftr Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
+- [ ] #hig #cor #ftr Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
+- [ ] #hig #gui #ftr The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
+- [ ] #med #cor #ftr MD to PDF conversion with styles using [Typst](https://typst.app).
 
 ## TODOs and Future Improvements
 
