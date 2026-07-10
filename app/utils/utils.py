@@ -1,5 +1,6 @@
 import os
 import tempfile
+from typing_extensions import override
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 from pathlib import Path as PathlibPath
@@ -65,10 +66,11 @@ class HTMLStripper(HTMLParser):
     def __init__(self):
         super().__init__()
         self.reset()
-        self.fed = []
+        self.fed: list[str] = []
 
-    def handle_data(self, d):
-        self.fed.append(d)
+    @override
+    def handle_data(self, data: str) -> None:
+        self.fed.append(data)
 
     def get_data(self):
         return ''.join(self.fed)
