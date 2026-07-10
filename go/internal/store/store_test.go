@@ -1,10 +1,44 @@
 package store
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"csb/internal/model"
+	"csb/internal/textutil"
 )
+
+// TestMarkdownPathForID checks the resolver errors for an unfetched item and,
+// once stored, returns an absolute vault path whose filename is the sanitized
+// title (the same rule the writer uses), so the GUI opens the right file.
+func TestMarkdownPathForID(t *testing.T) {
+	data := t.TempDir()
+	vault := t.TempDir()
+	t.Setenv("CSB_DATA", data)
+	t.Setenv("CSB_VAULT", vault)
+
+	if _, err := MarkdownPathForID("public", "courses", "53"); !errors.Is(err, ErrNotStored) {
+		t.Fatalf("want ErrNotStored for unfetched item, got %v", err)
+	}
+
+	c := &model.Course{ID: model.FlexString("53"), Title: "Data: A/B Course", Portal: "public"}
+	if err := SaveCourseEntity(c); err != nil {
+		t.Fatalf("SaveCourseEntity: %v", err)
+	}
+	got, err := MarkdownPathForID("public", "courses", "53")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if !filepath.IsAbs(got) {
+		t.Fatalf("path not absolute: %s", got)
+	}
+	want := filepath.Join(vault, "public", "courses", textutil.ReplaceSpecialChars("Data: A/B Course")+".md")
+	if got != want {
+		t.Fatalf("path = %s, want %s", got, want)
+	}
+}
 
 // TestWriteFileAtomic verifies writeFile creates parent dirs, writes the exact
 // bytes, overwrites an existing file, and leaves no stray temp files behind (so

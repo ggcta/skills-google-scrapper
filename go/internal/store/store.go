@@ -5,12 +5,17 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 
 	"csb/internal/model"
 	"csb/internal/textutil"
 )
+
+// ErrNotStored means the item has no stored data yet (i.e. it hasn't been
+// fetched), so no Markdown path can be resolved for it.
+var ErrNotStored = errors.New("item not stored")
 
 // DataRoot is the JSON/database root (override with CSB_DATA).
 func DataRoot() string {
@@ -35,6 +40,51 @@ func jsonPath(portalKey, typePlural, id string) string {
 func mdPath(portalKey, typePlural, title string) string {
 	name := textutil.ReplaceSpecialChars(title) + ".md"
 	return filepath.Join(VaultRoot(), portalKey, typePlural, name)
+}
+
+// MarkdownPathForID resolves the absolute vault .md path for a stored item
+// (table is paths/courses/labs). It returns ErrNotStored when the item hasn't
+// been fetched yet. It does NOT check that the .md file exists on disk — an item
+// fetched with --no-md has a valid path but no file — so the caller decides
+// what a missing file means.
+func MarkdownPathForID(portalKey, table, id string) (string, error) {
+	var title string
+	switch table {
+	case "courses":
+		c, err := LoadCourse(portalKey, id)
+		if err != nil {
+			return "", err
+		}
+		if c != nil {
+			title = c.Title
+		}
+	case "paths":
+		p, err := LoadPath(portalKey, id)
+		if err != nil {
+			return "", err
+		}
+		if p != nil {
+			title = p.Title
+		}
+	case "labs":
+		l, err := LoadLab(portalKey, id)
+		if err != nil {
+			return "", err
+		}
+		if l != nil {
+			title = l.Title
+		}
+	default:
+		return "", errors.New("unknown table: " + table)
+	}
+	if title == "" {
+		return "", ErrNotStored
+	}
+	p := mdPath(portalKey, table, title)
+	if abs, err := filepath.Abs(p); err == nil {
+		return abs, nil
+	}
+	return p, nil
 }
 
 func loadJSON(path string, v any) error {

@@ -26,6 +26,8 @@ func Run(args []string) int {
 		return cmdFetch(rest)
 	case "md":
 		return cmdMD(rest)
+	case "mdpath":
+		return cmdMDPath(rest)
 	case "search", "s":
 		return cmdSearch(rest)
 	case "login":
@@ -51,6 +53,7 @@ Commands:
   list, l        List stored paths, courses, or labs
   fetch, f       Fetch (scrape) courses/paths/labs into Markdown + JSON
   md             (Re)generate Markdown from stored data (no browser)
+  mdpath         Print the vault .md path for a stored item (-p/-c/-l <id>)
   search, s      Search the local database
   login          Sign in to a portal (opens a browser)
   interactive, i Launch the interactive menu
