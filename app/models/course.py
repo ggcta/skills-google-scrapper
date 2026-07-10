@@ -13,6 +13,7 @@ from config.settings import QL_IFRAME, OUTPUT_FOLDER_NAME, MATERIALS_DIR
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.webdriver import WebDriver
 from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags, util_ensure_authenticated
 
 # TODO: Convert these constants to Enums
@@ -46,7 +47,7 @@ class Course(BaseEntity):
                  objectives: list[str] | None = None,
                  topics: list[str] | None = None,
                  modules: list[dict[str, Any]] | None = None,
-                 driver=None,
+                 driver: WebDriver | None = None,
                  title: str | None = None,
                  portal: str | None = None):
         super().__init__(id=id,
@@ -329,7 +330,7 @@ class Course(BaseEntity):
         """
 
         print(f"(process_lab) •-> Lab: {activity['id']:>6} - {activity['title']}")
-        
+
         # Force use of Template URL to ensure consistent HTML structure (and access to outline)
         # Session URL might be different or require enrollment context which changes structure.
         # Template URL (Catalog view) usually exposes the outline.
@@ -452,11 +453,11 @@ class Course(BaseEntity):
                 return None
 
             content_parts = []
-            
+
             # (REMOVED) Add lesson title if available - requested by user to be removed
             # if 'title' in target_lesson:
             #     content_parts.append(f"### {target_lesson['title']}")
-            
+
             items = target_lesson.get('items', [])
             for item in items:
                 parsed_item = self._parse_lesson_item(item)
@@ -833,7 +834,7 @@ class Course(BaseEntity):
         self.load_json()
 
         # The data structure will be simplified from the original course's json.
-        course = {
+        course: dict[str, object] = {
             "id": self.id,
             "title": f'{self.name}'
             }
