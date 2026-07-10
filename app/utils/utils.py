@@ -21,7 +21,7 @@ def util_atomic_write_text(path: str | PathlibPath, text: str, encoding: str = '
     fd, tmp = tempfile.mkstemp(dir=directory, prefix='.tmp-')
     try:
         with os.fdopen(fd, 'w', encoding=encoding, newline=newline) as f:
-            f.write(text)
+            _ = f.write(text)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, path)
