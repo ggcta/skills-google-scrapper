@@ -82,8 +82,9 @@ Fetch options (fetch):
   -p/-c/-l <ids>      Paths / courses / labs to fetch (comma or space separated)
   --all [kind]        Fetch the whole catalog (paths|courses|labs|all); reloads first
   -f, --force         Re-fetch items even if already stored
+  -s, --signin        Open the sign-in page and wait before fetching
   -t, --toc           Table-of-contents only (skip step bodies)
-  --no-transcript     Fetch full pages but skip video transcripts
+  --md-no-transcript  Keep transcripts in the JSON but omit them from the Markdown
   --no-md             Write JSON only, skip Markdown
   --headless          Run Chrome without a visible window
   --log-dir PATH      Directory for the per-run activity log (default ./logs,

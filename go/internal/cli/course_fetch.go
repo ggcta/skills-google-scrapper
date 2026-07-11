@@ -92,7 +92,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 			m.Description = textutil.CleanText(m.Description)
 			for si := range m.Steps {
 				for ai := range m.Steps[si].Activities {
-					processActivity(sess, base, effectiveID, portalKey, &m.Steps[si].Activities[ai], noTranscript, force)
+					processActivity(sess, base, effectiveID, portalKey, &m.Steps[si].Activities[ai], force)
 				}
 			}
 		}
@@ -118,7 +118,9 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 
 // processActivity ports process_step's per-type dispatch, enriching the activity
 // in place with transcripts, links, quiz items, video ids, or documents.
-func processActivity(sess *browser.Session, base, courseID, portalKey string, a *model.Activity, noTranscript, force bool) {
+// Transcripts are always fetched into the model (#12); whether they render into
+// Markdown is decided later at generation time.
+func processActivity(sess *browser.Session, base, courseID, portalKey string, a *model.Activity, force bool) {
 	// Fix session hrefs back to the template.
 	if a.Href != "" && strings.Contains(a.Href, "/course_sessions/") {
 		a.Href = sessionHrefRe.ReplaceAllString(a.Href, "/course_templates/"+courseID)
@@ -132,7 +134,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 			logx.Printf("(process_video) Error: %v\n", err)
 			return
 		}
-		vid, transcript := scrape.ParseVideo(html, noTranscript)
+		vid, transcript := scrape.ParseVideo(html)
 		if vid != "" {
 			a.VideoID = vid
 		}
@@ -162,7 +164,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 			return
 		}
 		a.Link = scrape.ParseActivityLink(html)
-		maybeExternalTranscript(sess, a, false) // link always tries (Python does)
+		maybeExternalTranscript(sess, a)
 
 	case "html_bundle":
 		html, _, err := sess.Navigate(fullURL, activitySettle)
@@ -171,7 +173,7 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 			return
 		}
 		a.Link = scrape.ParseActivityLink(html)
-		maybeExternalTranscript(sess, a, noTranscript)
+		maybeExternalTranscript(sess, a)
 
 	case "document":
 		downloadDocument(sess, base, courseID, portalKey, a)
@@ -179,11 +181,9 @@ func processActivity(sess *browser.Session, base, courseID, portalKey string, a 
 }
 
 // maybeExternalTranscript fetches Rise/Storage lesson content for storage.google
-// links, matching process_link / process_html_bundle.
-func maybeExternalTranscript(sess *browser.Session, a *model.Activity, noTranscript bool) {
-	if noTranscript {
-		return
-	}
+// links, matching process_link / process_html_bundle. Transcripts are always
+// fetched into the model (#12); Markdown rendering is decided later.
+func maybeExternalTranscript(sess *browser.Session, a *model.Activity) {
 	if a.Link == "" || !strings.Contains(a.Link, "storage.googleapis.com") || !strings.Contains(a.Link, "#/lessons/") {
 		return
 	}

@@ -95,15 +95,18 @@ func interactiveFetch(prompt func(string) string, yesNo func(string) bool, worki
 	}
 	args := []string{portalFlag(working), flag}
 	args = append(args, splitIDs(ids)...)
+	if yesNo("Sign in first (open the sign-in page before fetching)?") {
+		args = append(args, "--signin")
+	}
 	if yesNo("Force re-fetch items that already exist?") {
 		args = append(args, "--force")
 	}
-	depth := strings.ToLower(prompt("Content depth? [F]ull (default) / [t]oc only / full but [n]o transcripts: "))
+	depth := strings.ToLower(prompt("Content depth? [F]ull (default) / [t]oc only / full but [n]o transcript in markdown: "))
 	switch depth {
 	case "t", "toc":
 		args = append(args, "--toc")
 	case "n", "no", "no-transcript":
-		args = append(args, "--no-transcript")
+		args = append(args, "--md-no-transcript")
 	}
 	if yesNo("Skip generating markdown files?") {
 		args = append(args, "--no-md")

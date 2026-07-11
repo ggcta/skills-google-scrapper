@@ -133,8 +133,9 @@ func ParseCourseOutline(pageHTML string) ([]model.Module, error) {
 }
 
 // ParseVideo ports process_video: extract the YouTube id and joined transcript
-// from <ql-youtube-video>.
-func ParseVideo(pageHTML string, noTranscript bool) (videoID, transcript string) {
+// from <ql-youtube-video>. The transcript is always extracted into the data (#12);
+// whether it renders into Markdown is decided later at generation time.
+func ParseVideo(pageHTML string) (videoID, transcript string) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(pageHTML))
 	if err != nil {
 		return "", "(No video transcript.)"
@@ -143,9 +144,6 @@ func ParseVideo(pageHTML string, noTranscript bool) (videoID, transcript string)
 	videoID, _ = v.Attr("videoId")
 	if videoID == "" {
 		videoID, _ = v.Attr("videoid")
-	}
-	if noTranscript {
-		return videoID, "(No video transcript.)"
 	}
 	tData, ok := v.Attr("transcript")
 	if !ok || tData == "" {

@@ -74,7 +74,12 @@ func cmdFetch(args []string) int {
 	force := p.has("--force", "-f")
 	noMD := p.has("--no-md")
 	tocOnly := p.has("--toc", "-t")
-	noTranscript := p.has("--no-transcript")
+	// #12: transcripts are always fetched into the JSON; this flag only controls
+	// whether they are rendered into the Markdown. The old --no-transcript name is
+	// still accepted as an alias.
+	noTranscript := p.has("--md-no-transcript", "--no-transcript")
+	// #11: proactively open the sign-in page and wait for the user before fetching.
+	signin := p.has("--signin", "-s")
 	headless := p.has("--headless")
 	emitProgress = p.has("--emit-progress")
 
@@ -116,10 +121,15 @@ func cmdFetch(args []string) int {
 
 	// Browser-launch gate (backlog #7/#8): don't spend a browser at all when every
 	// requested item is already complete and we're not forcing a re-fetch. --all
-	// always needs the browser (it reloads catalogs from the site).
-	if !all && !force && !fetchNeedsBrowser(p.portal, pathIDs, courseIDs, labIDs) {
+	// always needs the browser (it reloads catalogs from the site); --signin (#11)
+	// also needs it so the user can sign in.
+	if !all && !force && !signin && !fetchNeedsBrowser(p.portal, pathIDs, courseIDs, labIDs) {
 		fmt.Println("All requested items are already complete (use --force to re-fetch).")
 		return 0
+	}
+
+	if signin && headless {
+		fmt.Fprintln(os.Stderr, "warning: --signin needs a visible browser window to sign in; drop --headless.")
 	}
 
 	// A Ctrl+C (or SIGTERM) cancels this context, which aborts any in-flight
@@ -139,6 +149,24 @@ func cmdFetch(args []string) int {
 		return 1
 	}
 	defer sess.Close()
+
+	// #11: proactive sign-in. Open the sign-in page up front and wait for the user
+	// (Enter on the CLI, Continue in the GUI) before fetching, reusing the same
+	// session. If already signed in, the site redirects away from /users/sign_in
+	// and this returns immediately without prompting.
+	if signin {
+		signInURL := portal.Get(p.portal).Base + "/users/sign_in"
+		logx.Printf("\nOpening sign-in page: %s\n", signInURL)
+		html, finalURL, err := sess.Navigate(signInURL, 1500*time.Millisecond)
+		if err != nil {
+			logx.Errf("error opening sign-in page: %v\n", err)
+			return 1
+		}
+		if _, err := ensureAuthenticated(sess, signInURL, html, finalURL, 1500*time.Millisecond, ""); err != nil {
+			logx.Errf("sign-in aborted: %v\n", err)
+			return 1
+		}
+	}
 
 	// Hidden bulk mode: `fetch --all [paths|courses|labs|all]` refreshes the
 	// catalog(s) from the site then fetches every item. Default kind is paths

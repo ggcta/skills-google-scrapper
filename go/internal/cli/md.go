@@ -17,7 +17,7 @@ func cmdMD(args []string) int {
 	})
 	opts := mdgen.Options{
 		TOCOnly:      p.has("--toc", "-t"),
-		NoTranscript: p.has("--no-transcript"),
+		NoTranscript: p.has("--md-no-transcript", "--no-transcript"),
 	}
 
 	courseIDs, hasC := p.value("-c", "--course")
