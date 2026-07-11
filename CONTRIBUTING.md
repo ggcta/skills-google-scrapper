@@ -77,6 +77,8 @@ Sublime Text sample:
 - [x] #hig #cor #ftr #6 Check an item's completeness in case users interupts the fetching process before starting a fetch or finishing it. Either by checking the scrapedTime attribute or if the json files already exist or any other mechanism.
 - [x] #hig #cor #ftr #7 Fetch: Check for #6 and only spun up browser session if the item is not complete or not already fetched. Else, don't involve the browser. Why: Because spun up the browser, fetch an item's metadata takes time.
 - [x] #hig #cor #ftr #8 Fetch: Regarding #6, #7, spun up/use the browser session for fetching an existing/completed item only if the `--force` flag is provided.
+- [ ] #cri #core #ftr #9 Core: DB layer, a consistent and persistent database layer for storing and retrieving course data, acts as a Single Source of Truth for the whole app.
+- [ ] #med #cor #ftr #10 Course: Many courses come with a single resource .pdf file at the very end of the course. This files has been downloaded, but all the links within the pdf are not downloaded yet. These links should be downloaded and save to the same material folder as the pdf (which is the course folder under materials/courses/<course_id>).
 
 ---
 
