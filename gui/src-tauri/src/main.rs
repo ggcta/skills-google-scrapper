@@ -67,6 +67,12 @@ const BUSY_MSG: &str = "A browser task is already running — wait for it to fin
 #[derive(Clone)]
 struct FetchState(Arc<Mutex<Option<u32>>>);
 
+/// Holds the running fetch's stdin so `continue_fetch` can send a newline when
+/// the binary asks for sign-in (@@AUTH_REQUIRED), letting the user log in in the
+/// visible browser and resume the same session. Cleared when the fetch ends.
+#[derive(Clone)]
+struct FetchStdin(Arc<Mutex<Option<std::process::ChildStdin>>>);
+
 /// Candidate directories to search for the repo root / skills-scraper binary: an explicit
 /// CSB_PROJECT_ROOT, then every ancestor of the working dir, then every ancestor
 /// of the app executable (so it works no matter where the app is launched from).
@@ -270,6 +276,7 @@ async fn fetch(
     app: AppHandle,
     guard: State<'_, BrowserGuard>,
     fetch_state: State<'_, FetchState>,
+    fetch_stdin: State<'_, FetchStdin>,
     portal: String,
     kind: String,
     ids: Vec<String>,
@@ -280,6 +287,7 @@ async fn fetch(
 ) -> Result<(), String> {
     let guard = guard.inner().clone();
     let fetch_state = fetch_state.inner().clone();
+    let fetch_stdin = fetch_stdin.inner().clone();
     if !guard.try_acquire() {
         return Err(BUSY_MSG.into());
     }
@@ -318,6 +326,7 @@ async fn fetch(
     let mut child = match Command::new(&bin)
         .args(&args)
         .current_dir(repo_root())
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -332,8 +341,10 @@ async fn fetch(
         }
     };
 
-    // Record the PID so stop_fetch can signal it (Ctrl+C style).
+    // Record the PID so stop_fetch can signal it (Ctrl+C style), and the stdin so
+    // continue_fetch can answer an @@AUTH_REQUIRED sign-in prompt.
     *fetch_state.0.lock().unwrap() = Some(child.id());
+    *fetch_stdin.0.lock().unwrap() = child.stdin.take();
 
     // Forward stderr lines on their own thread (progress is printed there).
     if let Some(err) = child.stderr.take() {
@@ -350,18 +361,23 @@ async fn fetch(
     std::thread::spawn(move || {
         if let Some(out) = child.stdout.take() {
             for line in BufReader::new(out).lines().map_while(Result::ok) {
-                // "@@ITEM {json}" markers become a structured fetch-item event
-                // (raw JSON, parsed on the frontend); everything else is a log line.
+                // Structured markers: @@ITEM → fetch-item (live badge), and
+                // @@AUTH_REQUIRED → fetch-auth-required (prompt the user to sign
+                // in in the visible browser, then continue_fetch). Everything else
+                // is a normal console log line.
                 if let Some(json) = line.strip_prefix("@@ITEM ") {
                     let _ = app.emit("fetch-item", json.to_string());
+                } else if let Some(url) = line.strip_prefix("@@AUTH_REQUIRED ") {
+                    let _ = app.emit("fetch-auth-required", url.to_string());
                 } else {
                     let _ = app.emit("fetch-log", line);
                 }
             }
         }
         let ok = child.wait().map(|s| s.success()).unwrap_or(false);
-        // Clear the PID right after reaping, before anything can reuse it.
+        // Clear the PID + stdin right after reaping, before anything can reuse them.
         *fetch_state.0.lock().unwrap() = None;
+        *fetch_stdin.0.lock().unwrap() = None;
         let _ = app.emit("fetch-done", ok);
         guard.release(); // released when the browser op truly finishes
     });
@@ -392,6 +408,17 @@ fn stop_fetch(fetch_state: State<FetchState>) -> Result<(), String> {
             Ok(())
         }
         None => Err("No fetch is running.".into()),
+    }
+}
+
+/// Answer a fetch's @@AUTH_REQUIRED prompt: write a newline to its stdin (the
+/// user has signed in in the visible browser), so the binary reloads and resumes
+/// the same session.
+#[tauri::command]
+fn continue_fetch(fetch_stdin: State<FetchStdin>) -> Result<(), String> {
+    match fetch_stdin.0.lock().unwrap().as_mut() {
+        Some(stdin) => stdin.write_all(b"\n").map_err(|e| e.to_string()),
+        None => Err("No fetch is waiting for sign-in.".into()),
     }
 }
 
@@ -511,6 +538,7 @@ fn main() {
         .manage(LoginState(Mutex::new(None)))
         .manage(BrowserGuard(Arc::new(AtomicBool::new(false))))
         .manage(FetchState(Arc::new(Mutex::new(None))))
+        .manage(FetchStdin(Arc::new(Mutex::new(None))))
         // Closing the window must not orphan a browser. SIGTERM any running
         // fetch and any open login subprocess so the Go binary shuts Chrome down
         // cleanly and releases the profile lock (otherwise the next run launches
@@ -531,6 +559,7 @@ fn main() {
             search_items,
             fetch,
             stop_fetch,
+            continue_fetch,
             login,
             finish_login,
             open_vault,

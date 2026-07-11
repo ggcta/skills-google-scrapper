@@ -51,7 +51,7 @@
           <button type="button" class="toggle" data-opt="force">Force re-fetch</button>
           <button type="button" class="toggle" data-opt="toc">TOC only</button>
           <button type="button" class="toggle" data-opt="noTranscript">No transcripts</button>
-          <button type="button" class="toggle active" data-opt="headless">Headless</button>
+          <button type="button" class="toggle" data-opt="headless">Headless</button>
         </div>
         <div class="row">
           <button class="btn primary" id="fetchBtn">Fetch</button>
@@ -116,6 +116,17 @@
         <p>A browser window is opening. Sign in to Google Skills, then click Done.</p>
         <div class="modal-actions">
           <button class="btn primary" id="loginDone">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth-required modal (fetch hit a sign-in redirect) -->
+    <div class="modal-backdrop" id="authModal" hidden>
+      <div class="modal">
+        <h2>Sign-in required</h2>
+        <p>The site asked you to sign in. Sign in to Google Skills in the browser window that opened, then click Continue — the fetch resumes in the same session.</p>
+        <div class="modal-actions">
+          <button class="btn primary" id="authContinue">Continue</button>
         </div>
       </div>
     </div>

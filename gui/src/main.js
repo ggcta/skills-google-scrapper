@@ -127,10 +127,17 @@ if (listen) {
   // Each item the binary saves arrives as a fetch-item event, so Browse/Search
   // badges flip to "✓ fetched" live while a fetch is running.
   listen("fetch-item", (e) => applyItemSaved(e.payload));
+  // The fetch hit a sign-in redirect: prompt the user to sign in in the visible
+  // browser window, then resume the same session via continue_fetch.
+  listen("fetch-auth-required", () => {
+    $("#authModal").hidden = false;
+    setStatus("Sign in in the browser window, then click Continue.", "busy");
+  });
   listen("fetch-done", (e) => {
     setStatus(e.payload ? "Fetch complete." : "Fetch finished with errors.", e.payload ? "ok" : "");
     setBrowserBusy(false);
     $("#stopBtn").hidden = true;
+    $("#authModal").hidden = true;
     // Re-list the visible read tab so newly-fetched items (e.g. labs found by
     // cascading a path) appear with their status and the counts settle.
     const active = $(".panel.active")?.dataset.panel;
@@ -378,6 +385,18 @@ $("#loginDone").addEventListener("click", async () => {
     setStatus("Login cleanup failed: " + err);
   } finally {
     setBrowserBusy(false);
+  }
+});
+
+// Continue a fetch that paused for sign-in: the user has signed in in the
+// browser, so resume the same session.
+$("#authContinue").addEventListener("click", async () => {
+  $("#authModal").hidden = true;
+  setStatus("Resuming fetch…", "busy");
+  try {
+    await invoke("continue_fetch");
+  } catch (err) {
+    setStatus("Could not resume: " + err);
   }
 });
 
