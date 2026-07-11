@@ -103,9 +103,10 @@ class Course(BaseEntity):
         if not self.extract_course_outline(course_html):
             return
 
-        # Process course modules if not toc_only
+        # Process course modules if not toc_only. Transcripts are always fetched
+        # into the data (#12); no_transcript only affects the Markdown below.
         if not toc_only:
-            self.process_modules(no_transcript=no_transcript, force=force)
+            self.process_modules(force=force)
 
         # Save the course data
         self.save_json()
@@ -235,7 +236,7 @@ class Course(BaseEntity):
             return False
 
     # MARK: process_modules
-    def process_modules(self, no_transcript: bool = False, force: bool = False) -> None:
+    def process_modules(self, force: bool = False) -> None:
         """
         Process each module in the course.
 
@@ -251,10 +252,10 @@ class Course(BaseEntity):
                 module['description'] = self.clean_text(module.get("description", ""))
 
             for step in module['steps']:
-                self.process_step(step, no_transcript=no_transcript, force=force)
+                self.process_step(step, force=force)
 
     # MARK: process_step
-    def process_step(self, step, no_transcript: bool = False, force: bool = False) -> None:
+    def process_step(self, step, force: bool = False) -> None:
         """
         Process each step in a module.
 
@@ -273,7 +274,7 @@ class Course(BaseEntity):
             activity_full_url = f"{self.base_url}{activity['href']}"
 
             if activity_type == "video":
-                self.process_video(activity, activity_full_url, no_transcript=no_transcript)
+                self.process_video(activity, activity_full_url)
             elif activity_type == "lab":
                 self.process_lab(activity, activity_full_url, force=force)
             elif activity_type == "quiz":
@@ -281,14 +282,15 @@ class Course(BaseEntity):
             elif activity_type == "link":
                 self.process_link(activity, activity_full_url)
             elif activity_type == "html_bundle":
-                self.process_html_bundle(activity, activity_full_url, no_transcript=no_transcript)
+                self.process_html_bundle(activity, activity_full_url)
             elif activity_type == "document":
                 self.process_document(activity, activity_full_url)
 
     # MARK: process_video
-    def process_video(self, activity, url, no_transcript: bool = False) -> None:
+    def process_video(self, activity, url) -> None:
         """
-        Process a video activity.
+        Process a video activity. The transcript is always fetched into the data
+        (#12); whether it renders into Markdown is decided at generation time.
         """
 
         print(f"(process_video) •-> Vid: {activity['id']:>6} - {activity['title']}")
@@ -309,13 +311,10 @@ class Course(BaseEntity):
             if video_id:
                 activity['videoId'] = video_id
 
-            if not no_transcript:
-                transcript_data = video_element.get("transcript", None)
-                if transcript_data:
-                    transcript_json = json.loads(transcript_data)
-                    activity['transcript'] = " ".join(map(lambda item: item['text'], transcript_json))
-                else:
-                    activity['transcript'] = '(No video transcript.)'
+            transcript_data = video_element.get("transcript", None)
+            if transcript_data:
+                transcript_json = json.loads(transcript_data)
+                activity['transcript'] = " ".join(map(lambda item: item['text'], transcript_json))
             else:
                 activity['transcript'] = '(No video transcript.)'
 
@@ -661,9 +660,10 @@ class Course(BaseEntity):
             print(f"(process_link) Error: {error}")
 
     # MARK: process_html_bundle
-    def process_html_bundle(self, activity, url, no_transcript: bool = False) -> None:
+    def process_html_bundle(self, activity, url) -> None:
         """
-        Process a html_bundle activity.
+        Process a html_bundle activity. External lesson transcripts are always
+        fetched into the data (#12); Markdown rendering is decided later.
         """
 
         print(f"(process_html_bundle) •-> HTM: {activity['id']:>6} - {activity['title']}")
@@ -686,7 +686,7 @@ class Course(BaseEntity):
                 activity['link'] = iframe_tag['src'] if iframe_tag else None
 
             # Special handling for Google Storage HTML5 courses
-            if not no_transcript and activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
+            if activity.get('link') and 'storage.googleapis.com' in activity['link'] and '#/lessons/' in activity['link']:
                 target_url = activity['link']
                 print(f"(process_html_bundle) Detected external course content: {target_url}")
 

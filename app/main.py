@@ -15,7 +15,7 @@ from models.paths import Paths
 from models.courses import Courses
 from models.labs import Labs
 from services.launch_browser import launch_browser
-from utils.utils import util_portal_and_id
+from utils.utils import util_portal_and_id, util_ensure_authenticated
 from utils.completeness import item_complete, path_complete, course_complete
 
 
@@ -228,12 +228,39 @@ def _section_needs_browser(ids, kind, default_portal, force):
     return False
 
 
+def _proactive_signin(portal, headless):
+    """
+    Backlog #11: open the sign-in page and wait for the user before fetching.
+    Launches a browser, navigates to <base>/users/sign_in, and loops until the
+    user has signed in (util_ensure_authenticated). The session is saved to the
+    browser profile, so the subsequent per-section fetches reuse it. If already
+    signed in, the site redirects away and this returns immediately.
+    """
+    if headless:
+        print("warning: --signin needs a visible browser window to sign in; drop --headless.")
+    sign_in_url = portal_config(portal)["base"] + "/users/sign_in"
+    driver = None
+    try:
+        print("\n\033[35mLaunching browser to sign in...\033[0m")
+        driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+        print(f"Opening sign-in page: {sign_in_url}")
+        driver.get(sign_in_url)
+        util_ensure_authenticated(driver, sign_in_url, "")
+    except Exception as e:
+        print(f"(signin) Error during sign-in: {e}")
+    finally:
+        if driver:
+            print("Closing sign-in browser...")
+            driver.quit()
+
+
 def cmd_fetch(args):
     """Handle fetch (scrape) command"""
     force = args.force
     no_md = args.no_md
     toc_only = args.toc
     no_transcript = args.no_transcript
+    signin = getattr(args, 'signin', False)
     default_portal = getattr(args, 'portal', DEFAULT_PORTAL)
     headless = getattr(args, 'headless', False)
 
@@ -258,6 +285,11 @@ def cmd_fetch(args):
     if not (fetch_paths_ids or fetch_courses_ids or fetch_labs_ids):
         print("Please specify items to fetch using -p <id>, -c <id>, or -l <id>.")
         return
+
+    # #11: proactively sign in before fetching. The session persists in the
+    # browser profile, so the per-section fetches below reuse it.
+    if signin:
+        _proactive_signin(default_portal, headless)
 
     # --- Paths ---
     if fetch_paths_ids and _section_needs_browser(fetch_paths_ids, 'paths', default_portal, force):
@@ -683,9 +715,14 @@ def main():
     
     # Flags from old course/path commands
     parser_f.add_argument('--force', '-f', action='store_true', help='Force re-extraction even if data exists')
+    parser_f.add_argument('--signin', '-s', action='store_true',
+                          help='Open the sign-in page and wait before fetching')
     parser_f.add_argument('--no-md', action='store_true', help='Do not generate markdown file')
     parser_f.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
-    parser_f.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
+    # #12: transcripts are always fetched into the JSON; this flag only omits them
+    # from the generated Markdown. The old --no-transcript name stays as an alias.
+    parser_f.add_argument('--md-no-transcript', '--no-transcript', dest='no_transcript', action='store_true',
+                          help='Keep transcripts in the JSON but omit them from the Markdown')
     parser_f.add_argument('--headless', action='store_true', help='Run the browser headless (no visible window)')
     parser_f.add_argument('--log-dir', default=None, metavar='PATH',
                           help='Directory for the per-run activity log (default PROJECT_ROOT/logs, or CSB_LOG_DIR)')
@@ -719,7 +756,8 @@ def main():
     parser_m.add_argument('--lab', '-l', help='List of lab IDs (comma-separated)', default=None)
     parser_m.add_argument('--path', '-p', help='List of path IDs (comma-separated)', default=None)
     parser_m.add_argument('--toc', '-t', action='store_true', help='Table of content only (structure only)')
-    parser_m.add_argument('--no-transcript', action='store_true', help='Skip video transcripts (courses only)')
+    parser_m.add_argument('--md-no-transcript', '--no-transcript', dest='no_transcript', action='store_true',
+                          help='Omit transcripts from the generated Markdown')
     add_portal_flags(parser_m)
     parser_m.set_defaults(func=cmd_md)
 
