@@ -281,6 +281,7 @@ async fn fetch(
     kind: String,
     ids: Vec<String>,
     force: bool,
+    signin: bool,
     toc: bool,
     no_transcript: bool,
     headless: bool,
@@ -301,11 +302,18 @@ async fn fetch(
     if force {
         args.push("--force".into());
     }
+    // #11: open the sign-in page and wait (the fetch-auth-required event drives
+    // the modal; Continue answers it via continue_fetch).
+    if signin {
+        args.push("--signin".into());
+    }
     if toc {
         args.push("--toc".into());
     }
+    // #12: transcripts are always fetched into the JSON; this only omits them from
+    // the generated Markdown.
     if no_transcript {
-        args.push("--no-transcript".into());
+        args.push("--md-no-transcript".into());
     }
     if headless {
         args.push("--headless".into());

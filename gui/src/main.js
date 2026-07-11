@@ -194,6 +194,7 @@ $("#fetchBtn").addEventListener("click", async () => {
       kind: selected("#fetchKind", "kind"),
       ids,
       force: toggleOn("force"),
+      signin: toggleOn("signin"),
       toc: toggleOn("toc"),
       noTranscript: toggleOn("noTranscript"),
       headless: toggleOn("headless"),
