@@ -11,11 +11,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"csb/internal/config"
 	"github.com/chromedp/chromedp"
 )
+
+// shutdownGrace bounds the graceful browser close so a wedged Chrome can't hang
+// the process; after it, the hard allocator cancel takes over.
+const shutdownGrace = 5 * time.Second
 
 // ProfileDirName is the default reusable profile folder (matches the Python
 // WEBDRIVER_PROFILE_FOLDER_NAME), resolved under the current working directory.
@@ -39,23 +44,49 @@ var NavTimeout = 45 * time.Second
 // transparently relaunches it, reusing the same on-disk profile so the sign-in
 // carries over.
 type Session struct {
-	Ctx    context.Context
-	parent context.Context
-	opts   Options
-	cancel []func()
+	Ctx context.Context
+	// interrupt is canceled on Ctrl+C / SIGTERM (or a GUI teardown). It drives
+	// Interrupted() and triggers a GRACEFUL close — it is deliberately NOT the
+	// allocator parent, so a signal never hard-kills Chrome.
+	interrupt context.Context
+	opts      Options
+	mu        sync.Mutex
+	cancel    []func()
 }
 
-// Close tears down the browser and allocator.
+// Close shuts the browser down gracefully and tears down the allocator. It first
+// asks Chrome to close via CDP (chromedp.Cancel → Browser.close) and waits, so
+// the profile records a clean exit (no "Chrome didn't shut down correctly") and
+// the SingletonLock is released properly; a wedged Chrome falls back to the hard
+// allocator cancel after shutdownGrace. Idempotent and safe from any goroutine.
 func (s *Session) Close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cancel == nil {
+		return
+	}
+	if s.Ctx != nil && s.Ctx.Err() == nil {
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			_ = chromedp.Cancel(s.Ctx) // graceful: Browser.close + wait
+		}()
+		select {
+		case <-done:
+		case <-time.After(shutdownGrace):
+		}
+	}
 	for i := len(s.cancel) - 1; i >= 0; i-- {
 		s.cancel[i]()
 	}
 	s.cancel = nil
 }
 
-// start launches a fresh browser and wires up s.Ctx / s.cancel.
+// start launches a fresh browser and wires up s.Ctx / s.cancel. The allocator is
+// rooted at Background (not the interrupt context) so a termination signal is
+// handled by a graceful Close rather than a hard process kill.
 func (s *Session) start() error {
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(s.parent, allocFlags(s.opts)...)
+	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), allocFlags(s.opts)...)
 	ctx, cancelCtx := chromedp.NewContext(allocCtx, chromedp.WithErrorf(quietErrorf))
 	// Force the browser process to actually start so profile/allocator errors
 	// surface here rather than on first navigate.
@@ -103,10 +134,10 @@ func (s *Session) waitProfileReleased(max time.Duration) {
 // alive reports whether the session context is still usable.
 func (s *Session) alive() bool { return s.Ctx != nil && s.Ctx.Err() == nil }
 
-// Interrupted reports whether the parent context has been canceled (e.g. the
+// Interrupted reports whether the interrupt context has been canceled (e.g. the
 // user pressed Ctrl+C). Long fetch loops check this to stop cleanly between
 // items and avoid persisting a half-scraped one.
-func (s *Session) Interrupted() bool { return s.parent != nil && s.parent.Err() != nil }
+func (s *Session) Interrupted() bool { return s.interrupt != nil && s.interrupt.Err() != nil }
 
 // allocFlags mirrors the Chrome flags used by the Python launcher.
 func allocFlags(o Options) []chromedp.ExecAllocatorOption {
@@ -158,11 +189,23 @@ func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 	return flags
 }
 
-// Launch starts Chrome and returns a Session.
-func Launch(parent context.Context, o Options) (*Session, error) {
-	s := &Session{parent: parent, opts: o}
+// Launch starts Chrome and returns a Session. interrupt (usually a
+// signal.NotifyContext) is watched: when it fires — Ctrl+C, SIGTERM, or a GUI
+// teardown — the browser is closed GRACEFULLY (Browser.close), not killed, so
+// Chrome exits cleanly and releases the profile lock. Pass context.Background()
+// for a browser with no interrupt.
+func Launch(interrupt context.Context, o Options) (*Session, error) {
+	s := &Session{interrupt: interrupt, opts: o}
 	if err := s.start(); err != nil {
 		return nil, err
+	}
+	if interrupt != nil {
+		// On interrupt, close gracefully from here so an in-flight navigation
+		// (blocking the caller) is aborted promptly by the browser closing.
+		go func() {
+			<-interrupt.Done()
+			s.Close()
+		}()
 	}
 	return s, nil
 }
