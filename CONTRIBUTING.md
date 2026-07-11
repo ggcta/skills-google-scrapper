@@ -15,12 +15,14 @@ Every contribution is very much welcomed!
 - No magic, no hidden side effects.
 - Plain and simple.
 
-## Coding
+## Coding Guidelines
 
 - Always use Linux line endings (LF), NO QUESTION!
 - Always use Spaces instead of Tabs for indentation.
 - Always Trim Trailing Whitespace (configure your editor accordingly).
 - Always use EOF delimiters (the 1 extra empty line or `\n` at the end of the file).
+- DO NOT USE MULTIPLE STATEMENTS for a single line.
+- Markdown: DO NOT USE MULTIPLE LINES for a single paragraph or block of text.
 
 `.gitattributes`:
 
