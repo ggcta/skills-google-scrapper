@@ -114,6 +114,14 @@ func cmdFetch(args []string) int {
 	}
 	defer logx.Close()
 
+	// Browser-launch gate (backlog #7/#8): don't spend a browser at all when every
+	// requested item is already complete and we're not forcing a re-fetch. --all
+	// always needs the browser (it reloads catalogs from the site).
+	if !all && !force && !fetchNeedsBrowser(p.portal, pathIDs, courseIDs, labIDs) {
+		fmt.Println("All requested items are already complete (use --force to re-fetch).")
+		return 0
+	}
+
 	// A Ctrl+C (or SIGTERM) cancels this context, which aborts any in-flight
 	// browser navigation and lets the fetch loops stop cleanly between items.
 	// Because every completed item is written atomically as it finishes, an
@@ -178,6 +186,22 @@ func cmdFetch(args []string) int {
 		logx.Errf("\nInterrupted — stopped cleanly; completed items are saved.\n")
 	}
 	return rc
+}
+
+// fetchNeedsBrowser reports whether any explicitly requested item (-p/-c/-l) is
+// not yet complete, i.e. whether launching the browser is worthwhile. It is only
+// consulted for a non-forced, non-bulk run; deep path completeness means a path
+// whose cascade was interrupted still counts as needing the browser.
+func fetchNeedsBrowser(defaultPortal, pathIDs, courseIDs, labIDs string) bool {
+	for kind, ids := range map[string]string{"paths": pathIDs, "courses": courseIDs, "labs": labIDs} {
+		for _, raw := range splitIDs(ids) {
+			pk, id := resolvePortal(raw, defaultPortal)
+			if !itemComplete(pk, kind, id) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // labelFor renders an item as "<id> - <name>" when the name is known locally, or
@@ -285,8 +309,8 @@ func resolvePortal(raw, defaultPortal string) (string, string) {
 // lab's catalog URL is used; partner labs from a path pass their focus URL.
 func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD, tocOnly bool) error {
 	if !force {
-		if existing, _ := store.LoadLab(portalKey, id); existing != nil && existing.Title != "" {
-			logx.Printf("•-• [+] Existed: %s - %s\n", id, existing.Title)
+		if existing, _ := store.LoadLab(portalKey, id); existing != nil && existing.ScrapedTime > 0 {
+			logx.Printf("•-• [+] Already complete: %s - %s\n", id, existing.Title)
 			return nil
 		}
 	}

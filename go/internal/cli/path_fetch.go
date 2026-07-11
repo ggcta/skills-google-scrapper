@@ -16,6 +16,12 @@ import (
 // every course (which fetches its own labs) and standalone lab in the plan,
 // inheriting the flags and portal.
 func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly, noTranscript bool) error {
+	// Skip before any navigation when the path and its whole cascade are already
+	// done (backlog #6/#7); --force re-fetches (#8).
+	if !force && pathComplete(portalKey, id) {
+		logx.Printf("•-• [+] Path %s already complete.\n", labelFor(portalKey, "paths", id))
+		return nil
+	}
 	pathURL := portal.Get(portalKey).Paths + "/" + id
 	logx.Printf("Processing Path %s...\n", id)
 	html, finalURL, err := sess.Navigate(pathURL, 1500*time.Millisecond)

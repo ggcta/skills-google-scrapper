@@ -27,6 +27,13 @@ var sessionHrefRe = regexp.MustCompile(`/course_sessions/[^/]+`)
 
 // fetchCourse ports Course.extract_transcript end to end.
 func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOnly, noTranscript bool) error {
+	// Skip before any navigation when the course is already fully scraped
+	// (backlog #6/#7); --force re-fetches (#8). This is a local check (no browser),
+	// distinct from the online datePublished freshness check further below.
+	if !force && courseComplete(portalKey, id) {
+		logx.Printf("•-• [+] Course %s already complete.\n", labelFor(portalKey, "courses", id))
+		return nil
+	}
 	courseURL := portal.Get(portalKey).Courses + "/" + id
 	logx.Printf("(fetch_course_page) Fetching: %s\n", courseURL)
 	html, finalURL, err := sess.Navigate(courseURL, activitySettle)
