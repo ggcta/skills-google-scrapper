@@ -2,6 +2,8 @@
 
 Check [CONTRIBUTING](./CONTRIBUTING.md) for more.
 
+TODO: Migrate to CONTRIBUTING.md and sunset this TODO list.
+
 ## General List
 
 - [x] Create the `data` folder if it does not exist to avoid the below `FileNotFoundError` error.
