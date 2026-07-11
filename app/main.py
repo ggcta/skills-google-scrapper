@@ -422,6 +422,12 @@ def cmd_login(args):
     portal = getattr(args, 'portal', DEFAULT_PORTAL)
     url = portal_config(portal)["base"]
 
+    # Treat SIGTERM like Ctrl+C so a wrapping GUI can close the sign-in browser
+    # without orphaning Chrome (which would keep the profile locked). SIGINT
+    # already raises KeyboardInterrupt, caught below.
+    import signal
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
+
     print(f"\n\033[35mLaunching browser to sign in to the '{portal}' portal...\033[0m")
     print(f"Opening: {url}")
 
