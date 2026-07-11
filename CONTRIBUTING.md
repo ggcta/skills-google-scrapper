@@ -17,9 +17,29 @@ Every contribution is very much welcomed!
 
 ## Coding
 
-- Always Trim Trailing Whitespace.
-- Always use EOF delimiters (the 1 extra empty line at the end of the file).
 - Always use Linux line endings (LF), NO QUESTION!
+- Always use Spaces instead of Tabs for indentation.
+- Always Trim Trailing Whitespace (configure your editor accordingly).
+- Always use EOF delimiters (the 1 extra empty line or `\n` at the end of the file).
+
+`.gitattributes`:
+
+```yaml
+# Auto detect text files and perform LF normalization
+* text=auto eol=lf
+
+```
+
+Sublime Text sample:
+
+```json
+{
+  "default_line_ending": "unix",
+  "translate_tabs_to_spaces": true,
+  "draw_white_space": ["selection", "trailing", "isolated"],
+	"trim_automatic_white_space": true,
+}
+```
 
 ## Backglog
 
