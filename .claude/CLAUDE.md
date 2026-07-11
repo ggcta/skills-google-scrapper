@@ -13,7 +13,7 @@
 - No magic, no hidden side effects.
 - Plain and simple.
 
-## Coding
+## Coding Guidelines
 
 - Always use Linux line endings (LF), NO QUESTION!
 - Always use Spaces instead of Tabs for indentation.
@@ -36,11 +36,11 @@ Sublime Text sample:
 {
   "default_line_ending": "unix",
   "translate_tabs_to_spaces": true,
-  "draw_white_space": ["selection", "trailing", "isolated"],
-	"trim_automatic_white_space": true,
-	"show_line_endings": true,
-	// Not a must but recommended, utf-8 everywhere
-	"show_encoding": true,
+  "draw_white_space": ["all_tabs", "selection", "trailing", "isolated"],
+  "trim_automatic_white_space": true,
+  "show_line_endings": true,
+  // Not a must but recommended, utf-8 everywhere
+  "show_encoding": true,
 }
 
 ```
