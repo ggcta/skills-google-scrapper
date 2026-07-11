@@ -422,12 +422,6 @@ def cmd_login(args):
     portal = getattr(args, 'portal', DEFAULT_PORTAL)
     url = portal_config(portal)["base"]
 
-    # Treat SIGTERM like Ctrl+C so a wrapping GUI can close the sign-in browser
-    # without orphaning Chrome (which would keep the profile locked). SIGINT
-    # already raises KeyboardInterrupt, caught below.
-    import signal
-    signal.signal(signal.SIGTERM, signal.default_int_handler)
-
     print(f"\n\033[35mLaunching browser to sign in to the '{portal}' portal...\033[0m")
     print(f"Opening: {url}")
 
@@ -653,6 +647,12 @@ def main():
     if not args.command:
         parser.print_help()
         sys.exit(1)
+
+    # Backlog #1: treat SIGTERM like Ctrl+C for every command, so a wrapping GUI
+    # (or `kill`) unwinds through each command's `finally: driver.quit()` and
+    # shuts the browser down instead of orphaning it. SIGINT already does this.
+    import signal
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
 
     # Migrate any legacy (pre-portal) data into the public scope before running.
     from services.migration import migrate_to_portal_layout
