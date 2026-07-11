@@ -16,6 +16,7 @@ from models.courses import Courses
 from models.labs import Labs
 from services.launch_browser import launch_browser
 from utils.utils import util_portal_and_id
+from utils.completeness import item_complete, path_complete, course_complete
 
 
 def _resolve_portal(raw, default_portal):
@@ -211,6 +212,22 @@ def _collect_all_ids(kind, portal, headless):
             driver.quit()
     return out
 
+def _section_needs_browser(ids, kind, default_portal, force):
+    """
+    Browser-launch gate (backlog #7/#8): report whether this fetch section needs
+    the browser at all — True when forcing, or when any requested id is not yet
+    complete. When it returns False, cmd_fetch skips the section without ever
+    launching the browser.
+    """
+    if force:
+        return True
+    for raw in ids:
+        portal, ident = _resolve_portal(raw, default_portal)
+        if not item_complete(portal, kind, ident):
+            return True
+    return False
+
+
 def cmd_fetch(args):
     """Handle fetch (scrape) command"""
     force = args.force
@@ -243,16 +260,21 @@ def cmd_fetch(args):
         return
 
     # --- Paths ---
-    if fetch_paths_ids:
+    if fetch_paths_ids and _section_needs_browser(fetch_paths_ids, 'paths', default_portal, force):
         print(f"\nProcessing Paths: {fetch_paths_ids}")
         driver = None
         try:
             print("\n\033[35mLaunching browser for path extraction...\033[0m")
             driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-            
+
             for raw_pid in fetch_paths_ids:
                 portal, pid = _resolve_portal(raw_pid, default_portal)
                 try:
+                    # Skip before navigating when the path and its whole cascade
+                    # are already done (backlog #6/#7); --force re-fetches (#8).
+                    if not force and path_complete(portal, pid):
+                        print(f"•-• [+] Path {_fetch_label(portal, 'paths', pid)} already complete.")
+                        continue
                     print(f"Processing Path {_fetch_label(portal, 'paths', pid)} [{portal}]...")
                     p = Path(id=pid, driver=driver, portal=portal)
                     # Load existing to see if we need to fetch?
@@ -304,9 +326,12 @@ def cmd_fetch(args):
             if driver:
                 print("Closing browser...")
                 driver.quit()
+    elif fetch_paths_ids:
+        print(f"\nProcessing Paths: {fetch_paths_ids}")
+        print("All requested paths are already complete (use --force to re-fetch).")
 
     # --- Courses ---
-    if fetch_courses_ids:
+    if fetch_courses_ids and _section_needs_browser(fetch_courses_ids, 'courses', default_portal, force):
         print(f"\nProcessing Courses: {fetch_courses_ids}")
         driver = None
         try:
@@ -317,6 +342,11 @@ def cmd_fetch(args):
              for raw_cid in fetch_courses_ids:
                 portal, cid = _resolve_portal(raw_cid, default_portal)
                 try:
+                    # Skip before navigating when already fully scraped
+                    # (backlog #6/#7); --force re-fetches (#8).
+                    if not force and course_complete(portal, cid):
+                        print(f"•-• [+] Course {_fetch_label(portal, 'courses', cid)} already complete.")
+                        continue
                     print(f"Processing Course {_fetch_label(portal, 'courses', cid)} [{portal}]...")
                     c = Course(id=cid, driver=driver, portal=portal)
                     # extract_transcript fetches page, extracts metadata, outline, modules, saves json/md.
@@ -328,9 +358,12 @@ def cmd_fetch(args):
             if driver:
                 print("Closing browser...")
                 driver.quit()
+    elif fetch_courses_ids:
+        print(f"\nProcessing Courses: {fetch_courses_ids}")
+        print("All requested courses are already complete (use --force to re-fetch).")
 
     # --- Labs ---
-    if fetch_labs_ids:
+    if fetch_labs_ids and _section_needs_browser(fetch_labs_ids, 'labs', default_portal, force):
         print(f"\nProcessing Labs: {fetch_labs_ids}")
         driver = None
         try:
@@ -349,6 +382,9 @@ def cmd_fetch(args):
             if driver:
                 print("Closing browser...")
                 driver.quit()
+    elif fetch_labs_ids:
+        print(f"\nProcessing Labs: {fetch_labs_ids}")
+        print("All requested labs are already complete (use --force to re-fetch).")
 
 def cmd_interactive(args):
     """Handle interactive command by launching the interactive menu."""

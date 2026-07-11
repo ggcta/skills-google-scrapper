@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags, util_ensure_authenticated
+from utils.completeness import course_complete
 
 # TODO: Convert these constants to Enums
 # Constants for the extraction of the course data
@@ -78,6 +79,14 @@ class Course(BaseEntity):
 
         # Load the course data from JSON
         self.load_json()
+
+        # Skip before navigating when already fully scraped (backlog #6/#7);
+        # --force re-fetches (#8). Completeness is read from the per-item JSON
+        # (see utils.completeness), distinct from the online datePublished
+        # freshness check in extract_course_metadata below.
+        if not force and course_complete(self.portal, self.id):
+            print(f"(extract_transcript) •-• [+] Course {self.id} already complete.")
+            return
 
         # Fetch and parse the course page
         course_html = self.fetch_course_page()

@@ -3,6 +3,7 @@ import re
 from bs4 import BeautifulSoup
 from .base_entity import BaseEntity
 from utils.utils import util_ensure_authenticated
+from utils.completeness import lab_complete
 
 # Selectors for extracting a lab's data from its page.
 # The sidebar outline (LAB_CONTENT_OUTLINE) was removed in a site update;
@@ -97,10 +98,12 @@ class Lab(BaseEntity):
             print("(Lab.fetch_data) Error: Webdriver is required to fetch lab data.")
             return False
 
-        # Skip if the lab already exists locally, unless forced.
+        # Skip if the lab is already fully scraped, unless forced (backlog #6/#7).
+        # Completeness is read from the per-item JSON (see utils.completeness), so
+        # a fetch interrupted before the lab was saved is correctly re-fetched.
         self.load_json()
-        if self.name and not force:
-            print(f"(Lab.fetch_data) •-• [+] Existed: {self.id} - {self.name}")
+        if not force and lab_complete(self.portal, self.id):
+            print(f"(Lab.fetch_data) •-• [+] Already complete: {self.id} - {self.name}")
             return False
 
         target_url = fetch_url or self.url
