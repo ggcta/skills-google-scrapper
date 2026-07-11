@@ -300,8 +300,9 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 	if err != nil {
 		return err
 	}
-	if strings.Contains(finalURL, "sign_in") {
-		return fmt.Errorf("authentication required — run 'skills-scraper login%s' first", portalFlagHint(portalKey))
+	html, err = ensureAuthenticated(sess, target, html, finalURL, 1500*time.Millisecond, "lab "+id)
+	if err != nil {
+		return err
 	}
 
 	lc, err := scrape.ParseLabHTML(html)
@@ -327,11 +328,4 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 	itemSaved("lab", portalKey, id, lab.Title, lab.ScrapedTime)
 	logx.Printf("•-• [+] %s - %s (%d steps)\n", id, lab.Title, lab.Steps.Len())
 	return nil
-}
-
-func portalFlagHint(portalKey string) string {
-	if portalKey == "partner" {
-		return " -B"
-	}
-	return ""
 }

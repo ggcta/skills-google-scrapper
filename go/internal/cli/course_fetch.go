@@ -33,8 +33,9 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 	if err != nil {
 		return err
 	}
-	if strings.Contains(finalURL, "sign_in") {
-		return fmt.Errorf("authentication required — run 'skills-scraper login%s' first", portalFlagHint(portalKey))
+	html, err = ensureAuthenticated(sess, courseURL, html, finalURL, activitySettle, "course "+id)
+	if err != nil {
+		return err
 	}
 
 	// Stored publish date, for the skip check.

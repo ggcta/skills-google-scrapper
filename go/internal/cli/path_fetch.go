@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -23,8 +22,9 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 	if err != nil {
 		return err
 	}
-	if strings.Contains(finalURL, "sign_in") {
-		return fmt.Errorf("authentication required — run 'skills-scraper login%s' first", portalFlagHint(portalKey))
+	html, err = ensureAuthenticated(sess, pathURL, html, finalURL, 1500*time.Millisecond, "path "+id)
+	if err != nil {
+		return err
 	}
 
 	pc, err := scrape.ParsePathHTML(html, portalKey)
