@@ -41,6 +41,14 @@ Sublime Text sample:
 }
 ```
 
+## Components
+
+- core:
+  - `app/`, Python: the very first version, supports both CLI and Interactive modes.
+  - `go/`, Go: the Go version of the CLI, supports both CLI and Interactive modes.
+- gui:
+  - `gui/`, Rust/Tauri: the graphical user interface, targets non-development users.
+
 ## Backglog
 
 ### Rules
