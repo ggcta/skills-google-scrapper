@@ -79,8 +79,8 @@ Sublime Text sample:
 - [x] #hig #cor #ftr #8 Fetch: Regarding #6, #7, spun up/use the browser session for fetching an existing/completed item only if the `--force` flag is provided.
 - [x] #cri #core #ftr #9 Core: DB layer, a consistent and persistent database layer for storing and retrieving course data, acts as a Single Source of Truth for the whole app.
 - [ ] #med #cor #ftr #10 Course: Many courses come with a single resource .pdf file at the very end of the course. This files has been downloaded, but all the links within the pdf are not downloaded yet. These links should be downloaded and save to the same material folder as the pdf (which is the course folder under materials/courses/<course_id>).
-- [ ] #hig #cor #ftr #11 Fetch: Allow to specify `-s`/`--signin` to sign in with a Google account before fetching: (https://www.skills.google/users/sign_in). Ask user to press Continue (GUI) or Enter (CLI) to proceed after they log in.
-- [ ] #hig #cor #ftr #12 Fetch: Rename `--no-transcript` to `--md-no-transcript` indicating that the transcript should not be generated into markdown file. However, transcript will be fetched every time the course is fetched, just saving to .json data file only, and ready to be rendered into markdown file later with the `md` command.
+- [x] #hig #cor #ftr #11 Fetch: Allow to specify `-s`/`--signin` to sign in with a Google account before fetching: (https://www.skills.google/users/sign_in). Ask user to press Continue (GUI) or Enter (CLI) to proceed after they log in.
+- [x] #hig #cor #ftr #12 Fetch: Rename `--no-transcript` to `--md-no-transcript` indicating that the transcript should not be generated into markdown file. However, transcript will be fetched every time the course is fetched, just saving to .json data file only, and ready to be rendered into markdown file later with the `md` command.
 
 ---
 
