@@ -2,20 +2,50 @@
 
 Every contribution is very much welcomed!
 
+## Project Overview
+
+- A Google Skills Scrapper.
+- The original code base was built in Python #A.
+- The current code base is developed in Go #B for the core and with Tauri for the GUI #C.
+- For every change made to either the #A or #B or #C, ensure to cascade the change to the other components.
+
+## Principles
+
+- Keep it simple, stupid (KISS).
+- No magic, no hidden side effects.
+- Plain and simple.
+
+## Coding
+
+- Always Trim Trailing Whitespace.
+- Always use EOF delimiters (the 1 extra empty line at the end of the file).
+- Always use Linux line endings (LF), NO QUESTION!
+
+## Backglog
+
+### Rules
+
 > [!important]
 > - severity: `#cri`(tical), `#hig`(h), `#med`(ium)
 > - category: `#ftr`, `#fix`, `#rfr`(refactor), `#enh`(ancement)
 > - components:
 >    - `cor`(e): all the components or core engine (Go/Python)
+>    - `cli`: the CLI components (Go/Python)
 >    - `gui`: the graphical user interface (Rust/Tauri)
 
-## Backglog
+### Backlog
 
 - [ ] #cri #cor #ftr Shut down the browser session gracefully, even when the application is terminated.
 - [ ] #hig #cor #ftr Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
 - [ ] #hig #cor #ftr Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
 - [ ] #hig #gui #ftr The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
 - [ ] #med #cor #ftr MD to PDF conversion with styles using [Typst](https://typst.app).
+
+---
+
+THE FOLLOWING PART ARE OUTDATED, A LEGACY PART THAT SHOULD BE UPDATED
+
+---
 
 ## TODOs and Future Improvements
 
