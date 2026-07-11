@@ -60,9 +60,10 @@ impl BrowserGuard {
 
 const BUSY_MSG: &str = "A browser task is already running — wait for it to finish.";
 
-/// Tracks the PID of the running `fetch` subprocess (if any) so `stop_fetch` can
-/// signal it. Cleared as soon as the subprocess is reaped. The inner Arc is
-/// cloned into the fetch completion thread to clear it there.
+/// Tracks the PID of the running browser-driving subprocess (a `fetch` or a
+/// `sync`, if any) so `stop_fetch` and the window-close teardown can signal it.
+/// Cleared as soon as the subprocess is reaped. Single-flight (BrowserGuard)
+/// guarantees at most one at a time.
 #[derive(Clone)]
 struct FetchState(Arc<Mutex<Option<u32>>>);
 
@@ -166,6 +167,28 @@ fn run_csb(args: &[String]) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
+/// Like run_csb but records the child PID into `pid` while it runs, so a
+/// browser-driving call (Sync) can be SIGTERM'd by the window-close teardown
+/// instead of orphaning Chrome. The PID is cleared as soon as the child is reaped.
+fn run_csb_tracked(args: &[String], pid: &Arc<Mutex<Option<u32>>>) -> Result<String, String> {
+    let bin = resolve_csb()?;
+    let child = Command::new(&bin)
+        .args(args)
+        .current_dir(repo_root())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
+    *pid.lock().unwrap() = Some(child.id());
+    let out = child.wait_with_output();
+    *pid.lock().unwrap() = None; // cleared right after reaping, before PID reuse
+    let out = out.map_err(|e| e.to_string())?;
+    if !out.status.success() {
+        return Err(String::from_utf8_lossy(&out.stderr).into_owned());
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
 // list_items reads the local database only (no browser), so it needs no guard —
 // it's async purely to keep the blocking subprocess call off the UI thread.
 #[tauri::command]
@@ -190,11 +213,14 @@ async fn list_items(portal: String, kind: String) -> Result<Vec<Item>, String> {
 #[tauri::command]
 async fn sync_items(
     guard: State<'_, BrowserGuard>,
+    fetch_state: State<'_, FetchState>,
     portal: String,
     kind: String,
 ) -> Result<Vec<Item>, String> {
-    // Browser op: hold the single-flight guard for the whole reload.
+    // Browser op: hold the single-flight guard for the whole reload, and track
+    // the child PID so a window close mid-sync tears Chrome down (backlog #1).
     let guard = guard.inner().clone();
+    let fetch_state = fetch_state.inner().clone();
     if !guard.try_acquire() {
         return Err(BUSY_MSG.into());
     }
@@ -206,7 +232,8 @@ async fn sync_items(
         "--headless".into(),
         "--json".into(),
     ];
-    let joined = tauri::async_runtime::spawn_blocking(move || run_csb(&args)).await;
+    let joined =
+        tauri::async_runtime::spawn_blocking(move || run_csb_tracked(&args, &fetch_state.0)).await;
     guard.release(); // release on every path, before propagating any error
     let out = joined.map_err(|e| format!("sync task failed: {e}"))??;
     serde_json::from_str(&out).map_err(|e| e.to_string())
