@@ -55,16 +55,16 @@ func SaveCourseEntity(c *model.Course) error {
 		return err
 	}
 
+	// Compact ledger row (backlog #9): full data is in the per-item JSON above;
+	// the DB is only an index (catalog + list/search + last-known status).
+	// Identical schema to the lab/path rows and Python's _ledger_row.
 	return UpsertDoc(c.PortalKey(), "courses", map[string]any{
-		"id":            c.ID.String(),
-		"title":         c.Title,
-		"name":          c.Title,
-		"description":   c.Description,
-		"datePublished": derefStr(c.DatePublished),
-		"topics":        derefSlice(c.Topics),
-		"type":          "Course",
-		"portal":        c.PortalKey(),
-		"url":           c.URL(),
+		"id":          c.ID.String(),
+		"title":       c.Title,
+		"name":        c.Title,
+		"type":        "Course",
+		"portal":      c.PortalKey(),
+		"scrapedTime": c.ScrapedTime,
 	})
 }
 
@@ -107,13 +107,14 @@ func SavePathEntity(p *model.Path) error {
 		return err
 	}
 
+	// Compact ledger row (backlog #9); see SaveCourseEntity.
 	return UpsertDoc(p.PortalKey(), "paths", map[string]any{
-		"id":     p.ID.String(),
-		"title":  p.Title,
-		"name":   p.Title,
-		"type":   "Path",
-		"portal": p.PortalKey(),
-		"url":    p.URL(),
+		"id":          p.ID.String(),
+		"title":       p.Title,
+		"name":        p.Title,
+		"type":        "Path",
+		"portal":      p.PortalKey(),
+		"scrapedTime": p.ScrapedTime,
 	})
 }
 

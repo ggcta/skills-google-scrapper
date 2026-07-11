@@ -42,6 +42,8 @@ func Run(args []string) int {
 		return cmdMDPath(rest)
 	case "search", "s":
 		return cmdSearch(rest)
+	case "reindex":
+		return cmdReindex(rest)
 	case "login":
 		return cmdLogin(rest)
 	case "interactive", "i":
@@ -67,6 +69,7 @@ Commands:
   md             (Re)generate Markdown from stored data (no browser)
   mdpath         Print the vault .md path for a stored item (-p/-c/-l <id>)
   search, s      Search the local database
+  reindex        Rebuild the database.json index from the per-item JSON files
   login          Sign in to a portal (opens a browser)
   interactive, i Launch the interactive menu
 

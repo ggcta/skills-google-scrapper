@@ -54,14 +54,17 @@ func SaveLabEntity(lab *model.Lab) error {
 		return err
 	}
 
-	// DB doc carries both title and name so list/search find it either way.
+	// Compact ledger row (backlog #9): the full data lives in the per-item JSON
+	// above; the DB is only an index for the catalog + list/search + last-known
+	// status. scrapedTime is carried so the ledger retains status even if the
+	// per-item file is later deleted. Kept in step with Python's _ledger_row.
 	return UpsertDoc(lab.PortalKey(), "labs", map[string]any{
-		"id":     lab.ID.String(),
-		"title":  lab.Title,
-		"name":   lab.Title,
-		"type":   "Lab",
-		"portal": lab.PortalKey(),
-		"url":    lab.URL(),
+		"id":          lab.ID.String(),
+		"title":       lab.Title,
+		"name":        lab.Title,
+		"type":        "Lab",
+		"portal":      lab.PortalKey(),
+		"scrapedTime": lab.ScrapedTime,
 	})
 }
 
