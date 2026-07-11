@@ -1,14 +1,11 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"csb/internal/browser"
@@ -121,7 +118,7 @@ func cmdFetch(args []string) int {
 	// browser navigation and lets the fetch loops stop cleanly between items.
 	// Because every completed item is written atomically as it finishes, an
 	// interrupt never corrupts the database or loses already-fetched items.
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := browserSignalContext()
 	defer stop()
 
 	logx.Println("\nLaunching browser...")

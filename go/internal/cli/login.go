@@ -2,11 +2,8 @@ package cli
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/chromedp/chromedp"
 
@@ -23,7 +20,7 @@ func cmdLogin(args []string) int {
 	p := parseArgs(args, nil)
 	url := portal.Get(p.portal).Base
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := browserSignalContext()
 	defer stop()
 
 	fmt.Printf("\nLaunching browser to sign in to the '%s' portal...\n", p.portal)

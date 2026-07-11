@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -94,7 +93,10 @@ func cmdList(args []string) int {
 // API and upserts id/name into the database (ports Collection.fetch_*). It owns
 // its browser session; callers that already have one use reloadListWith.
 func reloadList(portalKey, table string, headless bool) error {
-	sess, err := browser.Launch(context.Background(), browser.Options{
+	// Signal-aware context so Ctrl+C / SIGTERM during a reload tears Chrome down.
+	ctx, stop := browserSignalContext()
+	defer stop()
+	sess, err := browser.Launch(ctx, browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
 	})
