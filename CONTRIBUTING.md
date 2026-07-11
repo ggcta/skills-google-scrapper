@@ -69,7 +69,7 @@ Sublime Text sample:
 
 ### Backlog
 
-- [ ] #cri #cor #ftr #1 Shut down the browser session gracefully, even when the application (gui/cli) is terminated.
+- [x] #cri #cor #ftr #1 Shut down the browser session gracefully, even when the application (gui/cli) is terminated.
 - [ ] #hig #cor #ftr #2 Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
 - [ ] #hig #cor #ftr #3 Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
 - [ ] #hig #gui #ftr #4 The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
