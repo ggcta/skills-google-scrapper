@@ -2,7 +2,7 @@
 import sys
 import os
 import argparse
-from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS, portal_config
+from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS, portal_config, DATA_FOLDER_NAME
 
 # Ensure app modules can be imported
 # Add 'app' directory to sys.path so we can import 'models' directly
@@ -476,6 +476,70 @@ def cmd_login(args):
 
     print(f"Done. Your '{portal}' session is saved to the browser profile.")
 
+def cmd_reindex(args):
+    """
+    Rebuild the TinyDB ledger (database.json) from the per-item JSON files — the
+    single source of truth (backlog #9). Recovers the index after the DB is lost
+    and normalizes legacy rows to the compact ledger schema. Never modifies the
+    per-item files. Mirrors the Go `reindex` command.
+    """
+    import glob
+    import json
+    from services.database import Database
+
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    db = Database(portal)
+    type_name = {'paths': 'Path', 'courses': 'Course', 'labs': 'Lab'}
+    total = 0
+
+    for table_name in ('paths', 'courses', 'labs'):
+        kind = type_name[table_name]
+        # Existing rows, so catalog-only stubs (ids with no file) survive.
+        prior = {str(d.get('id')): d for d in db.all(table_name) if d.get('id') is not None}
+
+        rows = {}
+        fetched = 0
+        item_dir = os.path.join(str(DATA_FOLDER_NAME), portal, table_name)
+        for path in glob.glob(os.path.join(item_dir, '*.json')):
+            item_id = os.path.splitext(os.path.basename(path))[0]
+            try:
+                with open(path, encoding='utf-8') as handle:
+                    data = json.load(handle)
+            except (ValueError, OSError):
+                continue  # skip an unreadable file rather than abort the reindex
+            title = data.get('title') or data.get('name') or ''
+            rows[item_id] = {
+                'id': item_id, 'name': title, 'title': title,
+                'type': kind, 'portal': portal,
+                'scrapedTime': data.get('scrapedTime'),
+            }
+            fetched += 1
+
+        # Preserve catalog-only stubs (in the DB, no file), keeping any last-known
+        # scrapedTime so a deleted data file doesn't erase the status.
+        for item_id, doc in prior.items():
+            if item_id in rows:
+                continue
+            name = doc.get('name') or doc.get('title') or ''
+            row = {'id': item_id, 'name': name, 'title': name,
+                   'type': kind, 'portal': portal}
+            if doc.get('scrapedTime') is not None:
+                row['scrapedTime'] = doc.get('scrapedTime')
+            rows[item_id] = row
+
+        # Replace the table wholesale, ordered by numeric id when possible.
+        def _order_key(i):
+            return (0, int(i)) if i.isdigit() else (1, i)
+
+        table = db.db.table(table_name)
+        table.truncate()
+        if rows:
+            table.insert_multiple([rows[i] for i in sorted(rows, key=_order_key)])
+        print(f"Reindexed {fetched} {table_name} from files [{portal}]")
+        total += fetched
+
+    print(f"Reindex complete: {total} fetched items indexed [{portal}]")
+
 def cmd_browser(args):
     """Handle browser command"""
     print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
@@ -676,6 +740,13 @@ def main():
     parser_s.add_argument('--field', '-f', help='Limit search to specific field', default=None)
     add_portal_flags(parser_s)
     parser_s.set_defaults(func=cmd_search)
+
+    # Reindex command: rebuild database.json from the per-item JSON files (#9).
+    parser_reindex = subparsers.add_parser(
+        'reindex',
+        help='Rebuild the database.json index from the per-item JSON files')
+    add_portal_flags(parser_reindex)
+    parser_reindex.set_defaults(func=cmd_reindex)
 
     # Parse arguments
     args = parser.parse_args()

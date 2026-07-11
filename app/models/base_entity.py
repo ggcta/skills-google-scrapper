@@ -128,63 +128,58 @@ class BaseEntity(Serialize):
         
         return the_dict
 
-    # Load the entity data from a JSON file
+    # Load the entity data from its per-item JSON file
     def load_json(self):
         """
-        Load the entity data from the Database (TinyDB).
-        If the entity doesn't exist, load an empty {}.
+        Load the entity data from its per-item JSON file — the single source of
+        truth (backlog #9). Full entity data lives in
+        data/<portal>/<type>s/<id>.json; the TinyDB is only a derived ledger.
+        If the file doesn't exist, the entity stays empty (i.e. not fetched).
         """
-        from services.database import Database
-        import logging
+        current_portal = self.portal
+        try:
+            with open(self._json_path, encoding='utf-8') as handle:
+                data = json.load(handle)
+        except (FileNotFoundError, ValueError, OSError):
+            # No per-item file: nothing fetched yet — leave the entity as-is.
+            return
 
-        db = Database(self.portal)
-        # Use plural table name
-        table_name = f"{self.type.lower()}s"
-        if self.type.lower().endswith('s'):
-            table_name = self.type.lower()
+        self.__dict__.update(data)
+        # Backward compatibility: migrate 'name' to 'title' on load
+        if 'name' in self.__dict__:
+            self.title = self.__dict__.pop('name')
+        # Never let stored data change which portal we're operating in
+        # (legacy records may not carry a portal at all).
+        self.portal = data.get('portal', current_portal)
 
-        data = db.get(table_name, self.id)
-
-        if data:
-            current_portal = self.portal
-            self.__dict__.update(data)
-            # Backward compatibility: migrate 'name' to 'title' on load
-            if 'name' in self.__dict__:
-                self.title = self.__dict__.pop('name')
-            # Never let stored data change which portal we're operating in
-            # (legacy records may not carry a portal at all).
-            self.portal = data.get('portal', current_portal)
-        else:
-            # If not found in DB, we could try file system as fallback?
-            # For now, let's assume DB is source of truth.
-            # But during migration or mixed state, file might exist.
-            # Plan said: "Update load_json to fetch data from Database service (TinyDB) instead of file system."
-            # So we strictly use DB.
-            pass
+    def _ledger_row(self, entity_data):
+        """
+        The compact index row stored in the TinyDB ledger. The full data lives in
+        the per-item JSON file (the SSOT); this row only powers the browse
+        catalog, list/search, and the last-known fetch status. Kept in step with
+        the Go core's ledger schema (see go/internal/store/save.go).
+        """
+        return {
+            'id': str(self.id),
+            'name': self.title,
+            'title': self.title,
+            'type': self.type,
+            'portal': self.portal,
+            'scrapedTime': entity_data.get('scrapedTime'),
+        }
 
     def save_json(self):
         """
-        Save the entity data to the Database (TinyDB) AND a JSON file (Backup).
+        Save the entity: write the full per-item JSON file (the SSOT), then upsert
+        a compact ledger row into the TinyDB index (backlog #9).
         """
-        
+
         # Convert the entity data to a dictionary
         entity_data = self.to_dict()
 
-        # 1. UPSERT to Database
-        try:
-            from services.database import Database
-            db = Database(self.portal)
-            # Use plural table name (e.g. 'Course' -> 'courses')
-            table_name = f"{self.type.lower()}s"
-            if self.type.lower().endswith('s'):
-                table_name = self.type.lower()
-
-            db.upsert(table_name, entity_data)
-        except Exception as e:
-            print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
-
-        # 2. SAVE to individual JSON file (Backup), written atomically so a
-        # Ctrl+C or crash can never leave a truncated backup on disk.
+        # 1. SAVE the full per-item JSON file (the single source of truth),
+        # written atomically so a Ctrl+C or crash can never leave a truncated
+        # file on disk.
         try:
             payload = json.dumps(entity_data, ensure_ascii=False, indent=2)
             util_atomic_write_text(self._json_path, payload)
@@ -195,6 +190,20 @@ class BaseEntity(Serialize):
             print(f"(BaseEntity.save_json) Error decoding JSON from file: {self._json_path}")
         except Exception as e:
             print(f"(BaseEntity.save_json) An unexpected error occurred: {e}")
+
+        # 2. UPSERT the compact ledger row into the TinyDB index (catalog +
+        # list/search + status). Full data is in the file above, not here.
+        try:
+            from services.database import Database
+            db = Database(self.portal)
+            # Use plural table name (e.g. 'Course' -> 'courses')
+            table_name = f"{self.type.lower()}s"
+            if self.type.lower().endswith('s'):
+                table_name = self.type.lower()
+
+            db.upsert(table_name, self._ledger_row(entity_data))
+        except Exception as e:
+            print(f"(BaseEntity.save_json) Error syncing to DB: {e}")
 
     def generate_front_matter(self) -> str:
         """
