@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 /// A list/search row, matching `skills-scraper --json` output. The fetch-status
 /// fields must be declared here or they'd be silently dropped on the round-trip
@@ -59,6 +59,12 @@ impl BrowserGuard {
 }
 
 const BUSY_MSG: &str = "A browser task is already running — wait for it to finish.";
+
+/// Tracks the PID of the running `fetch` subprocess (if any) so `stop_fetch` can
+/// signal it. Cleared as soon as the subprocess is reaped. The inner Arc is
+/// cloned into the fetch completion thread to clear it there.
+#[derive(Clone)]
+struct FetchState(Arc<Mutex<Option<u32>>>);
 
 /// Candidate directories to search for the repo root / skills-scraper binary: an explicit
 /// CSB_PROJECT_ROOT, then every ancestor of the working dir, then every ancestor
@@ -236,6 +242,7 @@ async fn search_items(portal: String, query: String, kind: String) -> Result<Vec
 async fn fetch(
     app: AppHandle,
     guard: State<'_, BrowserGuard>,
+    fetch_state: State<'_, FetchState>,
     portal: String,
     kind: String,
     ids: Vec<String>,
@@ -245,6 +252,7 @@ async fn fetch(
     headless: bool,
 ) -> Result<(), String> {
     let guard = guard.inner().clone();
+    let fetch_state = fetch_state.inner().clone();
     if !guard.try_acquire() {
         return Err(BUSY_MSG.into());
     }
@@ -297,6 +305,9 @@ async fn fetch(
         }
     };
 
+    // Record the PID so stop_fetch can signal it (Ctrl+C style).
+    *fetch_state.0.lock().unwrap() = Some(child.id());
+
     // Forward stderr lines on their own thread (progress is printed there).
     if let Some(err) = child.stderr.take() {
         let app2 = app.clone();
@@ -322,11 +333,39 @@ async fn fetch(
             }
         }
         let ok = child.wait().map(|s| s.success()).unwrap_or(false);
+        // Clear the PID right after reaping, before anything can reuse it.
+        *fetch_state.0.lock().unwrap() = None;
         let _ = app.emit("fetch-done", ok);
         guard.release(); // released when the browser op truly finishes
     });
 
     Ok(())
+}
+
+/// Send SIGTERM to a subprocess so the Go binary handles it gracefully (Ctrl+C
+/// style: it closes Chrome and keeps already-saved items). No-op on non-unix.
+fn sigterm(pid: u32) {
+    #[cfg(unix)]
+    unsafe {
+        libc::kill(pid as libc::pid_t, libc::SIGTERM);
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = pid;
+    }
+}
+
+/// Stop the running fetch the way Ctrl+C does on the CLI. Completion still
+/// arrives via `fetch-done`. No-op with a message if nothing is running.
+#[tauri::command]
+fn stop_fetch(fetch_state: State<FetchState>) -> Result<(), String> {
+    match *fetch_state.0.lock().unwrap() {
+        Some(pid) => {
+            sigterm(pid);
+            Ok(())
+        }
+        None => Err("No fetch is running.".into()),
+    }
 }
 
 /// Open a visible browser to sign in; the child is held until finish_login. Only
@@ -444,11 +483,27 @@ fn main() {
     tauri::Builder::default()
         .manage(LoginState(Mutex::new(None)))
         .manage(BrowserGuard(Arc::new(AtomicBool::new(false))))
+        .manage(FetchState(Arc::new(Mutex::new(None))))
+        // Closing the window must not orphan a browser. SIGTERM any running
+        // fetch and any open login subprocess so the Go binary shuts Chrome down
+        // cleanly and releases the profile lock (otherwise the next run launches
+        // on a locked profile and loads without the signed-in session).
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                if let Some(pid) = *window.state::<FetchState>().0.lock().unwrap() {
+                    sigterm(pid);
+                }
+                if let Some(child) = window.state::<LoginState>().0.lock().unwrap().as_ref() {
+                    sigterm(child.id());
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             list_items,
             sync_items,
             search_items,
             fetch,
+            stop_fetch,
             login,
             finish_login,
             open_vault,

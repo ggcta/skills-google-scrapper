@@ -130,6 +130,7 @@ if (listen) {
   listen("fetch-done", (e) => {
     setStatus(e.payload ? "Fetch complete." : "Fetch finished with errors.", e.payload ? "ok" : "");
     setBrowserBusy(false);
+    $("#stopBtn").hidden = true;
     // Re-list the visible read tab so newly-fetched items (e.g. labs found by
     // cascading a path) appear with their status and the counts settle.
     const active = $(".panel.active")?.dataset.panel;
@@ -174,6 +175,8 @@ $("#fetchBtn").addEventListener("click", async () => {
   if (!ids.length) { setStatus("Enter at least one ID or URL."); return; }
   consoleEl.textContent = "";
   setBrowserBusy(true);
+  $("#stopBtn").hidden = false;
+  $("#stopBtn").disabled = false;
   setStatus("Fetching…", "busy");
   if (portal === "all") {
     logLine("Note: portal is 'All' — bare IDs fetch as Public; full URLs use their own portal.");
@@ -192,6 +195,23 @@ $("#fetchBtn").addEventListener("click", async () => {
     logLine("ERROR: " + err);
     setStatus("Fetch failed.", "");
     setBrowserBusy(false);
+    $("#stopBtn").hidden = true;
+  }
+});
+
+// Stop mirrors Ctrl+C on the CLI: SIGTERM the fetch subprocess so it stops
+// cleanly (already-fetched items are kept). The fetch-done event then hides this
+// button and re-enables the controls when the process actually exits.
+$("#stopBtn").addEventListener("click", async () => {
+  $("#stopBtn").disabled = true;
+  setStatus("Stopping…", "busy");
+  logLine("Stopping… (finishing safely, like Ctrl+C — completed items are kept)");
+  try {
+    await invoke("stop_fetch");
+  } catch (err) {
+    logLine("Stop failed: " + err);
+    setStatus("Stop failed: " + err);
+    $("#stopBtn").disabled = false;
   }
 });
 
