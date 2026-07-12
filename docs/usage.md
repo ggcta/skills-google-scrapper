@@ -159,6 +159,31 @@ Opens a browser at the portal's home page. Log in, then press **Enter** to close
 it. Your session is saved to the reusable Chrome profile, so later fetches are
 already authenticated. Run it again whenever pages start returning empty.
 
+### `pdf` — generate a styled PDF
+
+Implemented in the Go core (and the GUI's **Generate PDF** button). Python parity
+is on the backlog.
+
+```bash
+skills-scraper pdf -c 159 -B                 # one course (partner)
+skills-scraper pdf -p 91                       # a path + all its courses & labs
+skills-scraper pdf -c 159 --theme humanist
+skills-scraper pdf --list-themes               # available themes
+```
+
+Renders a stored item's Markdown to a PDF next to its vault `.md`, via Typst
+(using Pandoc: `pandoc --pdf-engine=typst`). A path **cascades** to its courses
+and labs — one command, the whole set. If an item isn't fully fetched you get a
+warning (the PDF may be missing sections); `--force` silences it.
+
+Themes live in `theme/<name>/` (a `theme.yaml` manifest + a Typst
+`template.typ`). The default is **humanist** — Inter headings, Lora body, a
+terracotta accent, a title band, contents, and running headers. Pick one with
+`--theme <name>`. Requires `pandoc` and `typst` on your PATH.
+
+In the GUI, open the **Browse** tab, click an item to select it, pick a theme,
+and click **Generate PDF** (you're warned first if it isn't fully fetched).
+
 ### `browser` (aliases `b`, `w`) — reusable browser
 
 ```bash

@@ -73,7 +73,7 @@ Sublime Text sample:
 - [x] #hig #cor #ftr #2 Allow to login/open the browser, and then re-use the browser session for subsequent requests (fetching).
 - [x] #hig #cor #ftr #3 Handle `https://www.skills.google/users/sign_in` if the user is not already signed in.
 - [x] #hig #gui #ftr #4 The GUI is freezing when some browser-activity is performed. Decouple browser-activity from the GUI thread.
-- [ ] #med #cor #ftr #5 MD to PDF conversion with styles using [Typst](https://typst.app).
+- [x] #med #cor #ftr #5 MD to PDF conversion with styles using [Typst](https://typst.app). Go core + GUI: a `pdf` command (on-demand `-p/-c/-l <ids>`, batch cascade like `fetch`, `--theme`, warns when an item isn't fully fetched) rendering via `pandoc --pdf-engine=typst` with selectable themes under `theme/<name>/` (flagship `humanist`); the GUI Browse tab gains a theme picker + 'Generate PDF'. Python parity is #15.
 - [x] #hig #cor #ftr #6 Check an item's completeness in case users interupts the fetching process before starting a fetch or finishing it. Either by checking the scrapedTime attribute or if the json files already exist or any other mechanism.
 - [x] #hig #cor #ftr #7 Fetch: Check for #6 and only spun up browser session if the item is not complete or not already fetched. Else, don't involve the browser. Why: Because spun up the browser, fetch an item's metadata takes time.
 - [x] #hig #cor #ftr #8 Fetch: Regarding #6, #7, spun up/use the browser session for fetching an existing/completed item only if the `--force` flag is provided.
@@ -83,6 +83,7 @@ Sublime Text sample:
 - [x] #hig #cor #ftr #12 Fetch: Rename `--no-transcript` to `--md-no-transcript` indicating that the transcript should not be generated into markdown file. However, transcript will be fetched every time the course is fetched, just saving to .json data file only, and ready to be rendered into markdown file later with the `md` command.
 - [x] #hig #gui #ftr #13 GUI: Rename the 'Sign in' button to 'Browser' — it opens a browser the user can log in and browse in, and that stays open; subsequent fetch/sync tasks reuse that same browser (via a `browser` command that advertises a Chrome remote-debugging endpoint, which fetches connect to) so the site never re-challenges for sign-in. If reuse is impossible (endpoint unresponsive), the GUI asks the user to acknowledge closing it.
 - [x] #hig #cor #ftr #14 Python: cascade backlog #13 to the Python app — a persistent, reusable browser via Selenium `debuggerAddress`, sharing the `browser` command + endpoint-file contract with the Go core.
+- [ ] #med #cor #ftr #15 Python: cascade backlog #5 PDF generation — a `pdf` command (single + batch cascade, `--theme`, completeness warning) rendering via `pandoc --pdf-engine=typst`, sharing the `theme/<name>/` manifest + template contract with the Go core.
 
 ---
 
