@@ -375,28 +375,55 @@ def cmd_fetch(args):
                     courses_collection = Courses(portal=portal)
                     courses_collection.load_json()
 
-                    for activity in p.courses.values():
-                        a_id = activity['id']
+                    # Partner path fix: activities may be session deep-links whose
+                    # trailing id is a video/quiz id, not the catalog id. The
+                    # fetch resolves the real id (via the target page's canonical);
+                    # capture it so the stored path can be rewritten with correct
+                    # ids. Iterate in order and rebuild p.courses.
+                    corrected_courses = {}
+                    path_changed = False
+                    for a_id, activity in list(p.courses.items()):
                         a_name = activity['name']
                         a_type = (activity.get('type') or 'course').lower()
+                        a_url = activity.get('url')
+                        resolved_id = a_id
                         try:
                             if 'lab' in a_type:
                                 print(f"\nPath {pid} > Lab {a_id} - {a_name} [{portal}]")
                                 # Partner labs live at a parent-referencing focus URL.
-                                if _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only,
-                                                       fetch_url=activity.get('url')):
-                                    print(f"Lab {a_id} updated.")
+                                lab_obj = _fetch_and_save_lab(a_id, driver, portal, force, no_md, toc_only,
+                                                              fetch_url=a_url)
+                                if lab_obj is not None:
+                                    resolved_id = lab_obj.id
+                                    print(f"Lab {resolved_id} updated.")
                             else:
                                 print(f"\nPath {pid} > Course {a_id} - {a_name} [{portal}]")
-                                courses_collection.collection[a_id] = a_name
                                 c = Course(id=a_id, name=a_name, driver=driver, portal=portal)
-                                c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only, no_transcript=no_transcript)
-                                print(f"Course {a_id} updated.")
+                                resolved_id = c.extract_transcript(force=force, no_md=no_md, toc_only=toc_only,
+                                                                   no_transcript=no_transcript, fetch_url=a_url) or a_id
+                                courses_collection.collection[resolved_id] = a_name
+                                print(f"Course {resolved_id} updated.")
                         except Exception as e:
                             print(f"Failed to fetch {a_type} {a_id} in path {pid}: {e}")
 
+                        entry = dict(activity)
+                        if resolved_id != a_id:
+                            path_changed = True
+                            entry['id'] = resolved_id
+                            marker = "catalog_lab" if 'lab' in a_type else "course_templates"
+                            entry['url'] = f"{p.base_url}/{marker}/{resolved_id}"
+                        corrected_courses[resolved_id] = entry
+
                     # Persist the course names discovered in this path.
                     courses_collection.save_json()
+
+                    # Rewrite the path with corrected ids if any activity resolved.
+                    if path_changed:
+                        p.courses = corrected_courses
+                        p.save_json()
+                        if not no_md:
+                            p.save_markdown(toc_only=toc_only)
+                        print(f"Path {pid} course/lab ids corrected to catalog ids.")
 
                 except Exception as e:
                     print(f"Failed to fetch path {pid}: {e}")

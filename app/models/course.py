@@ -70,9 +70,15 @@ class Course(BaseEntity):
             del the_dict['external_course_data']
         return the_dict
 
-    def extract_transcript(self, force=False, no_md=False, toc_only=False, no_transcript=False) -> None:
+    def extract_transcript(self, force=False, no_md=False, toc_only=False, no_transcript=False, fetch_url=None) -> str:
         """
         Main method to extract the transcript of a course.
+
+        fetch_url, when given, is the path's stored activity URL. Partner path
+        fix: a session deep-link (…/course_sessions/…) has no catalog id, so it is
+        navigated to resolve the real course_templates id from the target page's
+        canonical URL before fetching. Returns the resolved course id, so the
+        caller can correct the path's stored ref.
         """
 
         print("\nTranscript Extracting is starting...\n")
@@ -86,22 +92,28 @@ class Course(BaseEntity):
         # freshness check in extract_course_metadata below.
         if not force and course_complete(self.portal, self.id):
             print(f"(extract_transcript) •-• [+] Course {self.id} already complete.")
-            return
+            return self.id
+
+        # Resolve a partner session deep-link to the real course id before fetching.
+        if fetch_url and '/course_sessions/' in fetch_url and not re.search(r'/course_templates/\d+', fetch_url):
+            real_id = self._resolve_session_course_id(fetch_url)
+            if real_id and real_id != self.id:
+                self.id = real_id
 
         # Fetch and parse the course page
         course_html = self.fetch_course_page()
         if not course_html:
-            return
+            return self.id
 
         # Extract course metadata
         if not self.extract_course_metadata(course_html, force=force):
             # Sync with DB in case it's missing there, even if local file is up to date
             self.save_json()
-            return
+            return self.id
 
         # Extract course outline
         if not self.extract_course_outline(course_html):
-            return
+            return self.id
 
         # Process course modules if not toc_only. Transcripts are always fetched
         # into the data (#12); no_transcript only affects the Markdown below.
@@ -114,6 +126,29 @@ class Course(BaseEntity):
             self.save_markdown(toc_only=toc_only, no_transcript=no_transcript)
 
         print(f"(extract_transcript) \033[34m•-• COMPLETED: {self.id} - {self.name.upper()}\033[0m\n")
+        return self.id
+
+    # MARK: _resolve_session_course_id
+    def _resolve_session_course_id(self, fetch_url: str):
+        """
+        Navigate a partner session deep-link and return the real course_templates
+        id from the resolved (redirected) URL or the page canonical (partner path
+        fix). Returns None if it can't be resolved.
+        """
+        try:
+            self.driver.get(fetch_url)
+            if not util_ensure_authenticated(self.driver, fetch_url, f"course session {self.id}"):
+                return None
+            match = re.search(r'/course_templates/(\d+)', self.driver.current_url or '')
+            if not match:
+                soup = BeautifulSoup(self.driver.page_source, "html.parser")
+                link = soup.select_one("link[rel='canonical']") or soup.select_one("meta[property='og:url']")
+                href = ((link.get('href') or link.get('content')) if link else '') or ''
+                match = re.search(r'/course_templates/(\d+)', href)
+            return match.group(1) if match else None
+        except Exception as error:
+            print(f"(_resolve_session_course_id) could not resolve session link: {error}")
+            return None
 
     # MARK: fetch_course_page
     def fetch_course_page(self) -> BeautifulSoup | None:
