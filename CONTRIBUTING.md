@@ -84,6 +84,7 @@ Sublime Text sample:
 - [x] #hig #gui #ftr #13 GUI: Rename the 'Sign in' button to 'Browser' — it opens a browser the user can log in and browse in, and that stays open; subsequent fetch/sync tasks reuse that same browser (via a `browser` command that advertises a Chrome remote-debugging endpoint, which fetches connect to) so the site never re-challenges for sign-in. If reuse is impossible (endpoint unresponsive), the GUI asks the user to acknowledge closing it.
 - [x] #hig #cor #ftr #14 Python: cascade backlog #13 to the Python app — a persistent, reusable browser via Selenium `debuggerAddress`, sharing the `browser` command + endpoint-file contract with the Go core.
 - [ ] #med #cor #ftr #15 Python: cascade backlog #5 PDF generation — a `pdf` command (single + batch cascade, `--theme`, completeness warning) rendering via `pandoc --pdf-engine=typst`, sharing the `theme/<name>/` manifest + template contract with the Go core.
+- [ ] #med #cor #ftr #16 Extra: Generate command or download materials for course with link to html file, for example the course id 1743 (Deploy the Gemini Enterprise app to Transform Enterprises) comes with link likes this "https://storage.googleapis.com/cloud-training/cls-html5-courses/P-DLGITD-I/content/index.html", so the user can download the course materials via the `gcloud storage cp -r` command. (Ex: the current folder means to storage these html files: `gcloud storage cp --recursive 'gs://cloud-training/cls-html5-courses/*' .`)
 
 ---
 
