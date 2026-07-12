@@ -532,6 +532,90 @@ async fn open_md(portal: String, kind: String, id: String) -> Result<(), String>
     os_open(&path)
 }
 
+/// List available PDF theme names (backlog #5) for the Browse theme picker.
+#[tauri::command]
+async fn list_themes() -> Result<Vec<String>, String> {
+    let out = tauri::async_runtime::spawn_blocking(|| {
+        run_csb(&["pdf".into(), "--list-themes".into()])
+    })
+    .await
+    .map_err(|e| format!("list-themes task failed: {e}"))??;
+    Ok(out
+        .lines()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect())
+}
+
+/// PDF-readiness of an item: "none" | "incomplete" | "complete" (backlog #5), so
+/// the GUI can warn before generating without reimplementing completeness.
+#[tauri::command]
+async fn pdf_status(portal: String, kind: String, id: String) -> Result<String, String> {
+    let args = vec![
+        "pdf-status".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, false).into(),
+        id,
+    ];
+    let out = tauri::async_runtime::spawn_blocking(move || run_csb(&args))
+        .await
+        .map_err(|e| format!("pdf-status task failed: {e}"))??;
+    Ok(out.trim().to_string())
+}
+
+/// Generate a styled PDF for an item (backlog #5). A path cascades to its
+/// courses + labs. --force silences the binary's incompleteness warning because
+/// the GUI already warns the user up front (via pdf_status).
+#[tauri::command]
+async fn generate_pdf(
+    portal: String,
+    kind: String,
+    id: String,
+    theme: String,
+) -> Result<(), String> {
+    let mut args = vec![
+        "pdf".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, false).into(),
+        id,
+        "--force".into(),
+    ];
+    if !theme.is_empty() {
+        args.push("--theme".into());
+        args.push(theme);
+    }
+    tauri::async_runtime::spawn_blocking(move || run_csb(&args))
+        .await
+        .map_err(|e| format!("generate-pdf task failed: {e}"))??;
+    Ok(())
+}
+
+/// Open a stored item's generated PDF in the OS default app (backlog #5).
+/// Resolves the .pdf sibling of the vault .md via `mdpath`, so the GUI never
+/// reimplements the vault layout or filename sanitization.
+#[tauri::command]
+async fn open_pdf(portal: String, kind: String, id: String) -> Result<(), String> {
+    let args = vec![
+        "mdpath".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, false).into(),
+        id,
+    ];
+    let md = tauri::async_runtime::spawn_blocking(move || run_csb(&args))
+        .await
+        .map_err(|e| format!("mdpath task failed: {e}"))??
+        .trim()
+        .to_string();
+    if md.is_empty() {
+        return Err("PDF path not found.".into());
+    }
+    let pdf = match md.strip_suffix(".md") {
+        Some(stripped) => format!("{stripped}.pdf"),
+        None => format!("{md}.pdf"),
+    };
+    os_open(&pdf)
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(BrowserSession(Mutex::new(None)))
@@ -563,7 +647,11 @@ fn main() {
             close_browser,
             browser_status,
             open_vault,
-            open_md
+            open_md,
+            list_themes,
+            pdf_status,
+            generate_pdf,
+            open_pdf
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

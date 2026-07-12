@@ -79,6 +79,9 @@
           </div>
           <button class="btn" id="browseBtn">Refresh</button>
           <button class="btn ghost" id="browseSyncBtn" title="Fetch the catalog from the website (opens a headless browser; slower). Needed on first run.">⟳ Sync</button>
+          <label>Theme</label>
+          <select id="pdfTheme" class="select" title="PDF theme"></select>
+          <button class="btn" id="genPdfBtn" title="Select a row, then generate its PDF" disabled>Generate PDF</button>
           <span class="count" id="browseCount"></span>
         </div>
         <div class="table-wrap"><table id="browseTable"><tbody></tbody></table></div>
@@ -130,6 +133,18 @@
         <div class="modal-actions">
           <button class="btn" id="staleCancel">Cancel</button>
           <button class="btn primary" id="staleContinue">Close &amp; continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PDF: item not fully fetched — confirm before generating -->
+    <div class="modal-backdrop" id="pdfIncompleteModal" hidden>
+      <div class="modal">
+        <h2>Not fully fetched</h2>
+        <p id="pdfIncompleteText">This item isn’t fully fetched yet — the PDF may be missing sections. Generate anyway?</p>
+        <div class="modal-actions">
+          <button class="btn" id="pdfIncompleteCancel">Cancel</button>
+          <button class="btn primary" id="pdfIncompleteContinue">Generate anyway</button>
         </div>
       </div>
     </div>

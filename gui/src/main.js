@@ -285,6 +285,7 @@ function escapeHtml(s) {
 
 function renderBrowse() {
   renderRows("#browseTable", "#browseCount", sortItems(browseItems, selected("#browseSort", "sort")));
+  clearPdfSelection(); // rows are rebuilt, so drop any Generate-PDF target
 }
 function renderSearch() {
   renderRows("#searchTable", "#searchCount", sortItems(searchItems, selected("#searchSort", "sort")));
@@ -429,6 +430,95 @@ $("#authContinue").addEventListener("click", async () => {
 
 $("#vaultBtn").addEventListener("click", async () => {
   try { await invoke("open_vault"); } catch (err) { setStatus("Could not open vault: " + err); }
+});
+
+// --- PDF generation (backlog #5) ---
+// Single-click a Browse row to target it, pick a theme, then Generate PDF. If
+// the item isn't fully fetched we warn first; a path cascades to its sub-items.
+let selectedItem = null;
+
+function clearPdfSelection() {
+  selectedItem = null;
+  $$("#browseTable tr.selected").forEach((tr) => tr.classList.remove("selected"));
+  const btn = $("#genPdfBtn");
+  if (btn) btn.disabled = true;
+}
+
+$("#browseTable tbody").addEventListener("click", (e) => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  $$("#browseTable tr.selected").forEach((r) => r.classList.remove("selected"));
+  tr.classList.add("selected");
+  selectedItem = { ...tr.dataset }; // id, portal, kind, name, fetched
+  $("#genPdfBtn").disabled = false;
+});
+
+// Fill the theme picker once at startup (empty → generate uses the default).
+(async () => {
+  try {
+    const themes = await invoke("list_themes");
+    const sel = $("#pdfTheme");
+    sel.innerHTML = "";
+    for (const t of themes) {
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      sel.appendChild(opt);
+    }
+  } catch (_) {
+    /* leave the picker empty; the binary falls back to the default theme */
+  }
+})();
+
+async function runGeneratePdf() {
+  if (!selectedItem) return;
+  const { id, portal: pk, kind, name } = selectedItem;
+  const theme = $("#pdfTheme").value || "";
+  setStatus(`Generating PDF for “${name}”…`, "busy");
+  try {
+    await invoke("generate_pdf", { portal: pk, kind, id, theme });
+    setStatus(`PDF generated for “${name}”. Opening…`, "ok");
+    try {
+      await invoke("open_pdf", { portal: pk, kind, id });
+    } catch (_) {
+      /* opening is best-effort — the file is already written */
+    }
+  } catch (err) {
+    setStatus("PDF generation failed: " + err);
+  }
+}
+
+$("#genPdfBtn").addEventListener("click", async () => {
+  if (!selectedItem) { setStatus("Select an item in the table first."); return; }
+  const { id, portal: pk, kind, name } = selectedItem;
+  setStatus(`Checking “${name}”…`, "busy");
+  let status;
+  try {
+    status = await invoke("pdf_status", { portal: pk, kind, id });
+  } catch (err) {
+    setStatus("Could not check status: " + err);
+    return;
+  }
+  if (status === "none") {
+    setStatus(`“${name}” isn’t fetched yet — fetch it first.`);
+    return;
+  }
+  if (status === "incomplete") {
+    $("#pdfIncompleteText").textContent =
+      `“${name}” isn’t fully fetched yet — the PDF may be missing sections. Generate anyway?`;
+    $("#pdfIncompleteModal").hidden = false;
+    return;
+  }
+  runGeneratePdf();
+});
+
+$("#pdfIncompleteCancel").addEventListener("click", () => {
+  $("#pdfIncompleteModal").hidden = true;
+  setStatus("PDF canceled.");
+});
+$("#pdfIncompleteContinue").addEventListener("click", () => {
+  $("#pdfIncompleteModal").hidden = true;
+  runGeneratePdf();
 });
 
 setStatus("Ready.");

@@ -152,6 +152,16 @@ tr.openable { cursor: pointer; }
 /* Filter row: compact inline labels */
 .filters label { width: auto; }
 
+/* PDF theme picker */
+.select {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.select:focus { outline: none; border-color: var(--accent); }
+/* The Browse row currently selected as the Generate PDF target. */
+tr.selected td { background: rgba(59,110,245,.12); }
+tr.selected td.cell-id { box-shadow: inset 3px 0 0 var(--accent); }
+
 /* Modal */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.45);
