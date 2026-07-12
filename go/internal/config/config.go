@@ -9,6 +9,7 @@
 //   - $CSB_CONFIG (explicit path)
 //   - ./config.yaml
 //   - ./config/config.yaml
+//
 // relative to the working directory. All keys are optional.
 package config
 
@@ -28,6 +29,7 @@ type Config struct {
 		Vault   string `yaml:"vault"`   // Markdown output (open in Obsidian)
 		Logs    string `yaml:"logs"`    // per-run activity logs
 		Profile string `yaml:"profile"` // reusable Chrome sign-in profile
+		Themes  string `yaml:"themes"`  // PDF theme folder (backlog #5)
 	} `yaml:"paths"`
 	Portal string `yaml:"portal"` // default portal: public | partner
 }

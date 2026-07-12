@@ -38,6 +38,10 @@ func Run(args []string) int {
 		return cmdFetch(rest)
 	case "md":
 		return cmdMD(rest)
+	case "pdf":
+		return cmdPDF(rest)
+	case "pdf-status":
+		return cmdPDFStatus(rest)
 	case "mdpath":
 		return cmdMDPath(rest)
 	case "search", "s":
@@ -71,6 +75,7 @@ Commands:
   list, l        List stored paths, courses, or labs
   fetch, f       Fetch (scrape) courses/paths/labs into Markdown + JSON
   md             (Re)generate Markdown from stored data (no browser)
+  pdf            Generate a styled PDF from stored data (-p/-c/-l <ids>)
   mdpath         Print the vault .md path for a stored item (-p/-c/-l <id>)
   search, s      Search the local database
   reindex        Rebuild the database.json index from the per-item JSON files
@@ -99,7 +104,15 @@ List options (list):
   -r, --reload        Refresh the catalog from the website first (opens Chrome)
   -i, --id            Sort by id instead of name
   --headless          Reload without a visible browser window
-  --json              Machine-readable output (used by the GUI)`)
+  --json              Machine-readable output (used by the GUI)
+
+PDF options (pdf):
+  -p/-c/-l <ids>      Paths / courses / labs to render (a path cascades to its
+                      courses + labs)
+  --theme NAME        Theme folder under theme/ (default: humanist)
+  --list-themes       List available themes and exit
+  -f, --force         Silence the "not fully fetched" warning
+  --toc               Structure only; --md-no-transcript omits transcripts`)
 }
 
 // flagSet is a tiny argument scanner shared by the commands. It recognises the
