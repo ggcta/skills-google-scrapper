@@ -521,4 +521,67 @@ $("#pdfIncompleteContinue").addEventListener("click", () => {
   runGeneratePdf();
 });
 
+// --- Item management: right-click a Browse row (backlog #17) ---
+let ctxTarget = null; // dataset snapshot of the right-clicked row
+const rowMenu = $("#rowMenu");
+const hideRowMenu = () => { rowMenu.hidden = true; };
+
+$("#browseTable tbody").addEventListener("contextmenu", (e) => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  e.preventDefault();
+  ctxTarget = { ...tr.dataset }; // id, portal, kind, name
+  rowMenu.style.left = `${e.clientX}px`;
+  rowMenu.style.top = `${e.clientY}px`;
+  rowMenu.hidden = false;
+});
+document.addEventListener("click", hideRowMenu);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") hideRowMenu(); });
+window.addEventListener("blur", hideRowMenu);
+
+$("#ctxDelete").addEventListener("click", () => {
+  if (!ctxTarget) return;
+  $("#deleteText").textContent =
+    `Delete “${ctxTarget.name}” (${ctxTarget.kind} ${ctxTarget.id})? This removes it from the database and its files. This cannot be undone.`;
+  $("#deleteModal").hidden = false;
+});
+$("#deleteCancel").addEventListener("click", () => { $("#deleteModal").hidden = true; });
+$("#deleteConfirm").addEventListener("click", async () => {
+  $("#deleteModal").hidden = true;
+  if (!ctxTarget) return;
+  const { id, portal: pk, kind, name } = ctxTarget;
+  setStatus(`Deleting “${name}”…`, "busy");
+  try {
+    await invoke("delete_item", { portal: pk, kind, id });
+    setStatus(`Deleted “${name}”.`, "ok");
+    $("#browseBtn").click(); // refresh the list
+  } catch (err) {
+    setStatus("Delete failed: " + err);
+  }
+});
+
+$("#ctxRename").addEventListener("click", () => {
+  if (!ctxTarget) return;
+  $("#renameInput").value = ctxTarget.name || "";
+  $("#renameModal").hidden = false;
+  $("#renameInput").focus();
+});
+$("#renameCancel").addEventListener("click", () => { $("#renameModal").hidden = true; });
+$("#renameConfirm").addEventListener("click", async () => {
+  const name = $("#renameInput").value.trim();
+  if (!name) { setStatus("Enter a new name."); return; }
+  $("#renameModal").hidden = true;
+  if (!ctxTarget) return;
+  const { id, portal: pk, kind } = ctxTarget;
+  setStatus(`Renaming to “${name}”…`, "busy");
+  try {
+    await invoke("rename_item", { portal: pk, kind, id, name });
+    setStatus(`Renamed to “${name}”.`, "ok");
+    $("#browseBtn").click(); // refresh the list
+  } catch (err) {
+    setStatus("Rename failed: " + err);
+  }
+});
+$("#renameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#renameConfirm").click(); });
+
 setStatus("Ready.");

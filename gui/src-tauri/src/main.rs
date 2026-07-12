@@ -616,6 +616,48 @@ async fn open_pdf(portal: String, kind: String, id: String) -> Result<(), String
     os_open(&pdf)
 }
 
+/// Delete a stored item — ledger row + per-item JSON + vault .md/.pdf (backlog
+/// #17). --yes skips the binary's prompt; the GUI shows its own confirm modal.
+#[tauri::command]
+async fn delete_item(portal: String, kind: String, id: String) -> Result<(), String> {
+    let args = vec![
+        "db".into(),
+        "rm".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, false).into(),
+        id,
+        "--yes".into(),
+    ];
+    tauri::async_runtime::spawn_blocking(move || run_csb(&args))
+        .await
+        .map_err(|e| format!("delete task failed: {e}"))??;
+    Ok(())
+}
+
+/// Rename a stored item — updates the ledger row and per-item JSON title, and
+/// drops the stale vault .md/.pdf (backlog #17).
+#[tauri::command]
+async fn rename_item(
+    portal: String,
+    kind: String,
+    id: String,
+    name: String,
+) -> Result<(), String> {
+    let args = vec![
+        "db".into(),
+        "set".into(),
+        portal_flag(&portal).into(),
+        kind_flag(&kind, false).into(),
+        id,
+        "--name".into(),
+        name,
+    ];
+    tauri::async_runtime::spawn_blocking(move || run_csb(&args))
+        .await
+        .map_err(|e| format!("rename task failed: {e}"))??;
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(BrowserSession(Mutex::new(None)))
@@ -651,7 +693,9 @@ fn main() {
             list_themes,
             pdf_status,
             generate_pdf,
-            open_pdf
+            open_pdf,
+            delete_item,
+            rename_item
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

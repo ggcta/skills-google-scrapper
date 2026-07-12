@@ -137,6 +137,36 @@
       </div>
     </div>
 
+    <!-- Item management: right-click context menu on Browse rows (#17) -->
+    <div class="context-menu" id="rowMenu" hidden>
+      <button class="ctx-item" id="ctxRename">Rename…</button>
+      <button class="ctx-item ctx-danger" id="ctxDelete">Delete</button>
+    </div>
+
+    <!-- Delete-confirm modal (#17) -->
+    <div class="modal-backdrop" id="deleteModal" hidden>
+      <div class="modal">
+        <h2>Delete item?</h2>
+        <p id="deleteText">This removes the item from the database and its files. This cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn" id="deleteCancel">Cancel</button>
+          <button class="btn danger" id="deleteConfirm">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rename modal (#17) -->
+    <div class="modal-backdrop" id="renameModal" hidden>
+      <div class="modal">
+        <h2>Rename item</h2>
+        <input id="renameInput" type="text" placeholder="New name" />
+        <div class="modal-actions">
+          <button class="btn" id="renameCancel">Cancel</button>
+          <button class="btn primary" id="renameConfirm">Rename</button>
+        </div>
+      </div>
+    </div>
+
     <!-- PDF: item not fully fetched — confirm before generating -->
     <div class="modal-backdrop" id="pdfIncompleteModal" hidden>
       <div class="modal">
