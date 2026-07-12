@@ -1,0 +1,14 @@
+# Humanist — the flagship PDF theme (backlog #5).
+#
+# Professional, humanist, modern. Rendered with Typst via Pandoc:
+#   pandoc <md> --pdf-engine=typst --template=template.typ -o <pdf>
+# The engine key lets other engines (pandoc-latex, html) be added later without
+# changing the pdf command.
+
+name: humanist
+description: >
+  Professional, humanist, modern — Inter headings, Lora body serif, Fira Code,
+  terracotta accent. A clean editorial layout with a title band, contents, and
+  running headers.
+engine: typst-pandoc
+template: template.typ

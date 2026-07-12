@@ -1,0 +1,305 @@
+@include-when-export url(https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap&subset=vietnamese);
+@include-when-export url(https://fonts.googleapis.com/css?family=Taviraj:400,400i,700,700i&display=swap&subset=vietnamese);
+
+
+/*===========================================================================*/
+/*monospace fonts for the source code mode.*/
+/*===========================================================================*/
+
+#typora-source {
+  font-family: "Iosevka";
+  font-size: inherit.
+  --monospace: "Iosevka"; /* for code blocks and inline code inside source code mode */
+}
+
+/*===========================================================================*/
+/*Monospace font to Iosevka*/
+/*===========================================================================*/
+
+pre,
+code,
+tt {
+    font-size: .875em;
+    line-height: 1.714285em;
+    font-family: Iosevka;
+}
+/* some fixes */
+
+/*===========================================================================*/
+/*body fonts*/
+/*===========================================================================*/
+
+html,
+body {
+    font-family: Lora, Cabin, Lora, Taviraj, serif;
+}
+
+/*===========================================================================*/
+/* heading fonts*/
+/*===========================================================================*/
+
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: "Comfortaa", "Lobster Two", "Pattaya";
+    font-style: normal;
+    font-weight: normal;
+}
+
+h2 {
+    font-size: 1.5000em;
+}
+
+h3 {
+    font-size: 1.3750em;
+}
+
+h4 {
+    font-size: 1.2500em;
+}
+
+h5 {
+    font-size: 1.1500em;
+}
+
+/*===========================================================================*/
+/* List paragraph fonts*/
+/*===========================================================================*/
+
+li p {
+    margin: 0px 0px;
+}
+
+/*===========================================================================*/
+/*Bigger write width*/
+/*===========================================================================*/
+
+#write {
+    max-width: 60em;
+}
+
+blockquote {
+    color: #000;
+}
+
+/*===========================================================================*/
+/*Smaller margins*/
+/*===========================================================================*/
+
+ul,
+ol {
+    margin: 0 0 0 0;
+}
+
+blockquote,
+p,
+h2,
+h3,
+h4,
+h5 {
+    margin-top: 1em;
+    margin-bottom: 1em
+}
+
+/*===========================================================================*/
+/*Smaller code block bottom margin*/
+/*===========================================================================*/
+
+.md-fences {
+    margin-left: 2em;
+    margin-bottom: 1em;
+    padding-left: 1ch;
+    padding-right: 1ch;
+}
+
+p,
+blockquote,
+.md-fences {
+    margin-bottom: 1em;
+}
+
+/*===========================================================================*/
+/* TABLE SETTINGS*/
+/*===========================================================================*/
+
+table {
+/*    margin-bottom: 1.5em;*/
+    /*24 / 16*/
+/*    font-size: 1em;*/
+    /* width: 100%; */
+/*    border: 1px solid #dfe2e5;*/
+}
+thead th,
+tfoot th {
+/*    padding: .25em .25em .25em .4em;*/
+    font-family: "Comfortaa";
+    text-transform: none;
+}
+th {
+/*    text-align: left;*/
+    border: 1px solid #dfe2e5;
+}
+td {
+/*    vertical-align: top;*/
+/*    padding: .25em .25em .25em .4em;*/
+    border: 1px solid #dfe2e5;
+}
+
+/*===========================================================================*/
+/*Auto Numbering for Headings*/
+/*===========================================================================*/
+
+/** initialize css counter */
+#write {
+    counter-reset: h1;
+}
+
+@media print {
+  h1 {
+    page-break-before: always;
+  }
+  h1:first-of-type {
+    page-break-before: avoid;
+  }
+}
+
+h1 {
+    counter-reset: h2
+}
+
+h2 {
+    counter-reset: h3
+}
+
+h3 {
+    counter-reset: h4
+}
+
+h4 {
+    counter-reset: h5
+}
+
+h5 {
+    counter-reset: h6
+}
+
+/** put counter result into headings */
+#write h1:before {
+    counter-increment: h1;
+    content: counter(h1) ". "
+}
+
+#write h2:before {
+    counter-increment: h2;
+    content: counter(h1) "." counter(h2) ". "
+}
+
+#write h3:before,
+h3.md-focus.md-heading:before /** override the default style for focused headings */ {
+    counter-increment: h3;
+    content: counter(h1) "." counter(h2) "." counter(h3) ". "
+}
+
+#write h4:before,
+h4.md-focus.md-heading:before {
+    counter-increment: h4;
+    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) ". "
+}
+
+#write h5:before,
+h5.md-focus.md-heading:before {
+    counter-increment: h5;
+    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) ". "
+}
+
+#write h6:before,
+h6.md-focus.md-heading:before {
+    counter-increment: h6;
+    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) ". "
+}
+
+/** override the default style for focused headings */
+#write>h3.md-focus:before,
+#write>h4.md-focus:before,
+#write>h5.md-focus:before,
+#write>h6.md-focus:before,
+h3.md-focus:before,
+h4.md-focus:before,
+h5.md-focus:before,
+h6.md-focus:before {
+    color: inherit;
+    border: inherit;
+    border-radius: inherit;
+    position: inherit;
+    left:initial;
+    float: none;
+    top:initial;
+    font-size: inherit;
+    padding-left: inherit;
+    padding-right: inherit;
+    vertical-align: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+}
+
+/*===========================================================================*/
+/*Auto numbering Typora outline*/
+/*===========================================================================*/
+
+.sidebar-content {
+    counter-reset: h1
+}
+ 
+.outline-h1 {
+    counter-reset: h2
+}
+ 
+.outline-h2 {
+    counter-reset: h3
+}
+ 
+.outline-h3 {
+    counter-reset: h4
+}
+ 
+.outline-h4 {
+    counter-reset: h5
+}
+ 
+.outline-h5 {
+    counter-reset: h6
+}
+ 
+.outline-h1>.outline-item>.outline-label:before {
+    counter-increment: h1;
+    content: counter(h1) ". "
+}
+ 
+.outline-h2>.outline-item>.outline-label:before {
+    counter-increment: h2;
+    content: counter(h1) "." counter(h2) ". "
+}
+ 
+.outline-h3>.outline-item>.outline-label:before {
+    counter-increment: h3;
+    content: counter(h1) "." counter(h2) "." counter(h3) ". "
+}
+ 
+.outline-h4>.outline-item>.outline-label:before {
+    counter-increment: h4;
+    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) ". "
+}
+ 
+.outline-h5>.outline-item>.outline-label:before {
+    counter-increment: h5;
+    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) ". "
+}
+ 
+.outline-h6>.outline-item>.outline-label:before {
+    counter-increment: h6;
+    content: counter(h1) "." counter(h2) "." counter(h3) "." counter(h4) "." counter(h5) "." counter(h6) ". "
+}

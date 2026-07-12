@@ -1,0 +1,25 @@
+/*===========================================================================*/
+/*mermaid-theme*/
+/*===========================================================================*/
+
+:root {
+    /*Mermaid*/
+    /*or base, dark, forest, neutral, night */
+    --mermaid-theme: neutral;
+    --mermaid-font-family: Lora, Raleway, verdana, arial, sans-serif;
+    --mermaid-sequence-numbers: on;
+    --mermaid-flowchart-curve: basis;
+    --mermaid-gantt-left-padding: 75;
+}
+
+/*===========================================================================*/
+/* Outline Settings*/
+/*===========================================================================*/
+
+.outline-item {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    cursor: pointer;
+    font-family: Lora;
+    font-size: small;
+}
