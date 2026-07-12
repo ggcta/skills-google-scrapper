@@ -139,11 +139,20 @@ func cmdFetch(args []string) int {
 	ctx, stop := browserSignalContext()
 	defer stop()
 
-	logx.Println("\nLaunching browser...")
-	sess, err := browser.Launch(ctx, browser.Options{
+	// Reuse the persistent "browser" window if one is open and reachable (backlog
+	// #13): connect to that already-signed-in Chrome instead of launching our own,
+	// so the site doesn't re-challenge for sign-in. Otherwise launch as usual.
+	launchOpts := browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
-	})
+	}
+	if ws, ok := browser.LoadEndpoint(); ok && browser.EndpointAlive(ws) {
+		logx.Println("\nReusing the open browser...")
+		launchOpts = browser.Options{RemoteWS: ws}
+	} else {
+		logx.Println("\nLaunching browser...")
+	}
+	sess, err := browser.Launch(ctx, launchOpts)
 	if err != nil {
 		logx.Errf("error launching browser: %v\n", err)
 		return 1

@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,13 @@ type Options struct {
 	ProfileDir string
 	// Headless runs Chrome with --headless=new when true.
 	Headless bool
+	// RemoteWS, when set, connects to an already-running Chrome at this DevTools
+	// websocket URL instead of launching a new one (backlog #13). Such a session
+	// is "borrowed": Close detaches without terminating that shared browser.
+	RemoteWS string
+	// DebugPort, when > 0, launches Chrome with a fixed --remote-debugging-port so
+	// other processes can later reuse it via RemoteWS.
+	DebugPort int
 }
 
 // NavTimeout bounds a single navigation/evaluation so a page that hangs (e.g. a
@@ -52,6 +60,10 @@ type Session struct {
 	opts      Options
 	mu        sync.Mutex
 	cancel    []func()
+	// borrowed is true when this session connected to an already-running Chrome
+	// (opts.RemoteWS): Close must NOT terminate that shared browser, and a lost
+	// connection must NOT spawn a colliding replacement.
+	borrowed bool
 }
 
 // Close shuts the browser down gracefully and tears down the allocator. It first
@@ -65,7 +77,10 @@ func (s *Session) Close() {
 	if s.cancel == nil {
 		return
 	}
-	if s.Ctx != nil && s.Ctx.Err() == nil {
+	// A borrowed session (backlog #13) connected to a browser it does not own, so
+	// it must only detach (cancel the local contexts below) — never chromedp.Cancel,
+	// which sends Browser.close and would kill the shared Chrome.
+	if !s.borrowed && s.Ctx != nil && s.Ctx.Err() == nil {
 		done := make(chan struct{})
 		go func() {
 			defer close(done)
@@ -86,9 +101,19 @@ func (s *Session) Close() {
 // rooted at Background (not the interrupt context) so a termination signal is
 // handled by a graceful Close rather than a hard process kill.
 func (s *Session) start() error {
-	allocCtx, cancelAlloc := chromedp.NewExecAllocator(context.Background(), allocFlags(s.opts)...)
+	var allocCtx context.Context
+	var cancelAlloc context.CancelFunc
+	if s.opts.RemoteWS != "" {
+		// Reuse an already-running Chrome (backlog #13). NewRemoteAllocator resolves
+		// the browser websocket from the /json/version endpoint when the URL lacks
+		// the /devtools/browser/ path.
+		allocCtx, cancelAlloc = chromedp.NewRemoteAllocator(context.Background(), s.opts.RemoteWS)
+		s.borrowed = true
+	} else {
+		allocCtx, cancelAlloc = chromedp.NewExecAllocator(context.Background(), allocFlags(s.opts)...)
+	}
 	ctx, cancelCtx := chromedp.NewContext(allocCtx, chromedp.WithErrorf(quietErrorf))
-	// Force the browser process to actually start so profile/allocator errors
+	// Force the browser to actually start/connect so profile/allocator errors
 	// surface here rather than on first navigate.
 	if err := chromedp.Run(ctx); err != nil {
 		cancelCtx()
@@ -105,6 +130,11 @@ func (s *Session) start() error {
 // doesn't race the stale lock (which surfaces as Chrome's "Something went wrong
 // when opening your profile" dialog).
 func (s *Session) relaunch() error {
+	// A borrowed session must not spawn a replacement Chrome (it would collide on
+	// the shared profile lock); surface the lost connection instead (backlog #13).
+	if s.borrowed {
+		return fmt.Errorf("reused browser connection lost")
+	}
 	s.Close()
 	log.Print("[browser] session died; relaunching…")
 	s.waitProfileReleased(5 * time.Second)
@@ -185,6 +215,11 @@ func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 		if err == nil {
 			flags = append(flags, chromedp.UserDataDir(abs))
 		}
+	}
+	if o.DebugPort > 0 {
+		// Fixed debug port so other processes can reuse this Chrome (backlog #13).
+		// chromedp only auto-adds remote-debugging-port=0 when we don't set one.
+		flags = append(flags, chromedp.Flag("remote-debugging-port", strconv.Itoa(o.DebugPort)))
 	}
 	return flags
 }

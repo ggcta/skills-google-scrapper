@@ -96,10 +96,16 @@ func reloadList(portalKey, table string, headless bool) error {
 	// Signal-aware context so Ctrl+C / SIGTERM during a reload tears Chrome down.
 	ctx, stop := browserSignalContext()
 	defer stop()
-	sess, err := browser.Launch(ctx, browser.Options{
+	// Reuse the persistent "browser" window if one is open and reachable (#13),
+	// otherwise launch our own.
+	opts := browser.Options{
 		ProfileDir: browser.DefaultProfileDir(),
 		Headless:   headless,
-	})
+	}
+	if ws, ok := browser.LoadEndpoint(); ok && browser.EndpointAlive(ws) {
+		opts = browser.Options{RemoteWS: ws}
+	}
+	sess, err := browser.Launch(ctx, opts)
 	if err != nil {
 		return err
 	}

@@ -44,6 +44,10 @@ func Run(args []string) int {
 		return cmdSearch(rest)
 	case "reindex":
 		return cmdReindex(rest)
+	case "browser":
+		return cmdBrowser(rest)
+	case "browser-status":
+		return cmdBrowserStatus(rest)
 	case "login":
 		return cmdLogin(rest)
 	case "interactive", "i":
@@ -70,6 +74,7 @@ Commands:
   mdpath         Print the vault .md path for a stored item (-p/-c/-l <id>)
   search, s      Search the local database
   reindex        Rebuild the database.json index from the per-item JSON files
+  browser        Open a reusable browser that later fetches connect to (stays open)
   login          Sign in to a portal (opens a browser)
   interactive, i Launch the interactive menu
 
