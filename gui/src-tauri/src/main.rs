@@ -33,8 +33,11 @@ struct Item {
     scraped_date: String,
 }
 
-/// Holds the running `skills-scraper login` child so finish_login can complete it.
-struct LoginState(Mutex<Option<Child>>);
+/// Holds the running `skills-scraper browser` child — the persistent, reusable
+/// browser (backlog #13). It stays open across fetch/sync tasks (which connect to
+/// it) until close_browser or the window-close teardown ends it. Deliberately NOT
+/// behind BrowserGuard: fetches are meant to run WHILE it is open and reuse it.
+struct BrowserSession(Mutex<Option<Child>>);
 
 /// Single-flight guard: only ONE browser-driving op (sync / fetch / login
 /// session) may run at a time, because they all share the one persistent Chrome
@@ -430,56 +433,34 @@ fn continue_fetch(fetch_stdin: State<FetchStdin>) -> Result<(), String> {
     }
 }
 
-/// Open a visible browser to sign in; the child is held until finish_login. Only
-/// spawns (non-blocking), so it stays sync — but it acquires the browser guard,
-/// which finish_login releases, so the whole sign-in session is single-flight.
+/// Open the persistent, reusable browser (backlog #13): spawn `skills-scraper
+/// browser`, which opens a visible Chrome, advertises a reuse endpoint, and stays
+/// open. The user signs in / browses freely; later fetches connect to this same
+/// Chrome. It does NOT take BrowserGuard — fetches are meant to run alongside it.
+/// Rejects a second open while one is already running.
 #[tauri::command]
-fn login(
-    state: State<LoginState>,
-    guard: State<BrowserGuard>,
-    portal: String,
-) -> Result<(), String> {
-    if !guard.try_acquire() {
-        return Err(BUSY_MSG.into());
+fn open_browser(state: State<BrowserSession>, portal: String) -> Result<(), String> {
+    let mut slot = state.0.lock().unwrap();
+    if slot.is_some() {
+        return Err("A browser is already open.".into());
     }
-    let bin = match resolve_csb() {
-        Ok(b) => b,
-        Err(e) => {
-            guard.release();
-            return Err(e);
-        }
-    };
-    let child = match Command::new(&bin)
-        .args(["login", portal_flag(&portal)])
+    let bin = resolve_csb()?;
+    let child = Command::new(&bin)
+        .args(["browser", portal_flag(&portal)])
         .current_dir(repo_root())
         .stdin(Stdio::piped())
         .spawn()
-    {
-        Ok(c) => c,
-        Err(e) => {
-            guard.release();
-            return Err(format!(
-                "failed to launch skills-scraper ({}): {e}",
-                bin.display()
-            ));
-        }
-    };
-    *state.0.lock().unwrap() = Some(child);
+        .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
+    *slot = Some(child);
     Ok(())
 }
 
-/// Signal the pending login that the user is done (writes newline to stdin) and
-/// wait for the sign-in browser to close — off the UI thread. Releases the
-/// browser guard, but only if a login session was actually in progress, so it
-/// can never free a fetch/sync's guard.
+/// Close the persistent browser: send a newline to its stdin so it clears the
+/// reuse endpoint and shuts Chrome down gracefully, then wait — off the UI thread.
 #[tauri::command]
-async fn finish_login(
-    state: State<'_, LoginState>,
-    guard: State<'_, BrowserGuard>,
-) -> Result<(), String> {
+async fn close_browser(state: State<'_, BrowserSession>) -> Result<(), String> {
     // Take the child out under the lock, then drop the MutexGuard before awaiting.
     let child_opt = state.0.lock().unwrap().take();
-    let guard = guard.inner().clone();
     if let Some(mut child) = child_opt {
         let _ = tauri::async_runtime::spawn_blocking(move || {
             if let Some(mut stdin) = child.stdin.take() {
@@ -488,9 +469,19 @@ async fn finish_login(
             let _ = child.wait();
         })
         .await;
-        guard.release();
     }
     Ok(())
+}
+
+/// Report the reusable browser's state: "none", "alive" (a fetch will reuse it),
+/// or "stale" (advertised but unresponsive — the GUI asks the user to close it).
+/// Off the UI thread since it does a quick network probe via the binary.
+#[tauri::command]
+async fn browser_status() -> Result<String, String> {
+    let out = tauri::async_runtime::spawn_blocking(|| run_csb(&["browser-status".into()]))
+        .await
+        .map_err(|e| format!("browser-status task failed: {e}"))??;
+    Ok(out.trim().to_string())
 }
 
 /// Open a file or folder with the OS default handler.
@@ -543,7 +534,7 @@ async fn open_md(portal: String, kind: String, id: String) -> Result<(), String>
 
 fn main() {
     tauri::Builder::default()
-        .manage(LoginState(Mutex::new(None)))
+        .manage(BrowserSession(Mutex::new(None)))
         .manage(BrowserGuard(Arc::new(AtomicBool::new(false))))
         .manage(FetchState(Arc::new(Mutex::new(None))))
         .manage(FetchStdin(Arc::new(Mutex::new(None))))
@@ -556,7 +547,7 @@ fn main() {
                 if let Some(pid) = *window.state::<FetchState>().0.lock().unwrap() {
                     sigterm(pid);
                 }
-                if let Some(child) = window.state::<LoginState>().0.lock().unwrap().as_ref() {
+                if let Some(child) = window.state::<BrowserSession>().0.lock().unwrap().as_ref() {
                     sigterm(child.id());
                 }
             }
@@ -568,8 +559,9 @@ fn main() {
             fetch,
             stop_fetch,
             continue_fetch,
-            login,
-            finish_login,
+            open_browser,
+            close_browser,
+            browser_status,
             open_vault,
             open_md
         ])

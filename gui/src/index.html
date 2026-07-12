@@ -21,7 +21,7 @@
           <button data-portal="public" class="active">Public</button>
           <button data-portal="partner">Partner</button>
         </div>
-        <button class="btn" id="loginBtn">Sign in</button>
+        <button class="btn" id="browserBtn" title="Open a browser you can sign in and browse in; it stays open and your fetches reuse it">Browser</button>
         <button class="btn ghost" id="vaultBtn">Open vault</button>
       </div>
     </header>
@@ -110,13 +110,26 @@
       </section>
     </main>
 
-    <!-- Login modal -->
-    <div class="modal-backdrop" id="loginModal" hidden>
+    <!-- Persistent browser modal -->
+    <div class="modal-backdrop" id="browserModal" hidden>
       <div class="modal">
-        <h2>Signing in to <span id="loginPortal">public</span></h2>
-        <p>A browser window is opening. Sign in to Google Skills, then click Done.</p>
+        <h2>Browser open</h2>
+        <p>A browser window is open. Sign in and browse freely — it stays open, and your fetches reuse this same window (no need to tick “Sign in first”).</p>
         <div class="modal-actions">
-          <button class="btn primary" id="loginDone">Done</button>
+          <button class="btn" id="browserDismiss">Keep open</button>
+          <button class="btn danger" id="browserClose">Close browser</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reuse-impossible modal: the open browser stopped responding -->
+    <div class="modal-backdrop" id="browserStaleModal" hidden>
+      <div class="modal">
+        <h2>Browser not responding</h2>
+        <p>The browser you opened isn’t responding. Close it and continue? Your fetch will open a fresh browser window.</p>
+        <div class="modal-actions">
+          <button class="btn" id="staleCancel">Cancel</button>
+          <button class="btn primary" id="staleContinue">Close &amp; continue</button>
         </div>
       </div>
     </div>

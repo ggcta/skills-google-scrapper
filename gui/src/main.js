@@ -117,11 +117,16 @@ function logLine(line) {
 // ops (they share one Chrome profile), but this avoids the rejection entirely.
 // Local-only actions (browse, search, open) stay usable throughout.
 function setBrowserBusy(on) {
-  ["#fetchBtn", "#browseSyncBtn", "#loginBtn"].forEach((sel) => {
+  // Note: the Browser button is intentionally NOT disabled — fetches are meant to
+  // run while the persistent browser is open and reuse it (backlog #13).
+  ["#fetchBtn", "#browseSyncBtn"].forEach((sel) => {
     const b = $(sel);
     if (b) b.disabled = on;
   });
 }
+
+// Tracks whether the persistent, reusable browser is open (backlog #13).
+let browserOpen = false;
 if (listen) {
   listen("fetch-log", (e) => logLine(e.payload));
   // Each item the binary saves arrives as a fetch-item event, so Browse/Search
@@ -177,7 +182,7 @@ function scheduleRender(which) {
     else renderSearch();
   }, 250);
 }
-$("#fetchBtn").addEventListener("click", async () => {
+async function runFetch() {
   const ids = $("#fetchIds").value.split(/[\s,]+/).filter(Boolean);
   if (!ids.length) { setStatus("Enter at least one ID or URL."); return; }
   consoleEl.textContent = "";
@@ -205,6 +210,18 @@ $("#fetchBtn").addEventListener("click", async () => {
     setBrowserBusy(false);
     $("#stopBtn").hidden = true;
   }
+}
+$("#fetchBtn").addEventListener("click", async () => {
+  // If a persistent browser is open but stopped responding, a fetch can't reuse
+  // it — ask the user to acknowledge closing it before launching a fresh one (#13).
+  if (browserOpen) {
+    try {
+      const status = await invoke("browser_status");
+      if (status === "stale") { $("#browserStaleModal").hidden = false; return; }
+      if (status === "none") { browserOpen = false; }
+    } catch (_) { /* probe failed; just proceed */ }
+  }
+  runFetch();
 });
 
 // Stop mirrors Ctrl+C on the CLI: SIGTERM the fetch subprocess so it stops
@@ -357,36 +374,45 @@ $("#searchBtn").addEventListener("click", async () => {
 });
 $("#searchQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#searchBtn").click(); });
 
-// --- Login flow ---
-$("#loginBtn").addEventListener("click", async () => {
-  // Launch the browser first; only reveal the "click Done" modal once skills-scraper has
-  // actually started, so a launch failure surfaces as a readable status message
-  // instead of a modal that flashes open and shut.
+// --- Persistent browser flow (backlog #13) ---
+// The Browser button opens a browser that stays open; fetches reuse it, so the
+// user doesn't get re-challenged for sign-in or need "Sign in first" each time.
+$("#browserBtn").addEventListener("click", async () => {
+  if (browserOpen) { $("#browserModal").hidden = false; return; }
   const lp = concretePortal();
-  setStatus("Opening sign-in browser…", "busy");
-  // The sign-in browser stays open until Done, so stay busy across the whole
-  // session; only release here if launching failed.
-  setBrowserBusy(true);
+  setStatus("Opening browser…", "busy");
   try {
-    await invoke("login", { portal: lp });
-    $("#loginPortal").textContent = lp;
-    $("#loginModal").hidden = false;
-    setStatus(`Browser open for ${lp}. Sign in, then click Done.`, "busy");
+    await invoke("open_browser", { portal: lp });
+    browserOpen = true;
+    $("#browserModal").hidden = false;
+    setStatus(`Browser open for ${lp}. Sign in and browse; fetches reuse it.`, "ok");
   } catch (err) {
-    setStatus("Login failed: " + err);
-    setBrowserBusy(false);
+    setStatus("Could not open browser: " + err);
   }
 });
-$("#loginDone").addEventListener("click", async () => {
-  $("#loginModal").hidden = true;
+$("#browserDismiss").addEventListener("click", () => { $("#browserModal").hidden = true; });
+$("#browserClose").addEventListener("click", async () => {
+  $("#browserModal").hidden = true;
+  setStatus("Closing browser…", "busy");
   try {
-    await invoke("finish_login");
-    setStatus(`Signed in to ${portal}. Session saved.`, "ok");
+    await invoke("close_browser");
+    browserOpen = false;
+    setStatus("Browser closed.", "");
   } catch (err) {
-    setStatus("Login cleanup failed: " + err);
-  } finally {
-    setBrowserBusy(false);
+    setStatus("Could not close browser: " + err);
   }
+});
+// Reuse-impossible ack: the open browser stopped responding, so a fetch can't
+// reuse it. Confirm before closing it and launching a fresh one.
+$("#staleCancel").addEventListener("click", () => {
+  $("#browserStaleModal").hidden = true;
+  setStatus("Fetch canceled.");
+});
+$("#staleContinue").addEventListener("click", async () => {
+  $("#browserStaleModal").hidden = true;
+  try { await invoke("close_browser"); } catch (_) { /* best effort */ }
+  browserOpen = false;
+  runFetch();
 });
 
 // Continue a fetch that paused for sign-in: the user has signed in in the
