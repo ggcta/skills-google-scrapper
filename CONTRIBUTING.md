@@ -85,6 +85,7 @@ Sublime Text sample:
 - [x] #hig #cor #ftr #14 Python: cascade backlog #13 to the Python app — a persistent, reusable browser via Selenium `debuggerAddress`, sharing the `browser` command + endpoint-file contract with the Go core.
 - [ ] #med #cor #ftr #15 Python: cascade backlog #5 PDF generation — a `pdf` command (single + batch cascade, `--theme`, completeness warning) rendering via `pandoc --pdf-engine=typst`, sharing the `theme/<name>/` manifest + template contract with the Go core.
 - [ ] #med #cor #ftr #16 Extra: Generate command or download materials for course with link to html file, for example the course id 1743 (Deploy the Gemini Enterprise app to Transform Enterprises) comes with link likes this "https://storage.googleapis.com/cloud-training/cls-html5-courses/P-DLGITD-I/content/index.html", so the user can download the course materials via the `gcloud storage cp -r` command. (Ex: the current folder means to storage these html files: `gcloud storage cp --recursive 'gs://cloud-training/cls-html5-courses/*' .`)
+- [ ] #hig #cor #ftr #17 Core: Items management, able to manage the items saved in the database, sometime wrong items are saved due to manually keying in the item details (id, etc.). For example: at the moment, both path 60 and 264 are not actually existing paths, but recorded in the database without details.
 
 ---
 
