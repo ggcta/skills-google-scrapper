@@ -184,6 +184,26 @@ terracotta accent, a title band, contents, and running headers. Pick one with
 In the GUI, open the **Browse** tab, click an item to select it, pick a theme,
 and click **Generate PDF** (you're warned first if it isn't fully fetched).
 
+### `db` (alias `mgmt`) — manage stored items
+
+Implemented in the Go core (and the GUI's Browse-tab right-click menu). Review,
+delete, or rename items in the database — handy for bogus or mis-keyed entries
+(e.g. an id that isn't a real path, saved as a data-less stub).
+
+```bash
+skills-scraper db list -A -p              # review paths; flags "⚠ stub (no data)"
+skills-scraper db show -A -p 264          # inspect one item and its files
+skills-scraper db rm -A -p 60,264 --yes   # delete: ledger row + JSON + vault .md/.pdf
+skills-scraper db rm -A -c 159 --materials  # also remove materials/courses/159/
+skills-scraper db set -A -c 159 --name "New title"   # rename
+```
+
+`db rm` prompts for confirmation unless `--yes`/`-y` is given, and leaves the
+shared `materials/<type>/<id>/` alone unless `--materials` is passed. `db set`
+renames the ledger row and per-item JSON, dropping the now-stale `.md`/`.pdf`
+(regenerate with `md`/`pdf`). In the GUI, right-click a Browse row → **Rename…**
+or **Delete**. Python parity is on the backlog.
+
 ### `browser` (aliases `b`, `w`) — reusable browser
 
 ```bash
