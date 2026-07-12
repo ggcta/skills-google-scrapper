@@ -1,0 +1,663 @@
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<title>Architecting with Google Kubernetes Engine: Foundations | Google Skills for Partners</title>
+<link crossorigin href='https://cdn.qwiklabs.com' rel='preconnect'>
+<link crossorigin href='https://fonts.gstatic.com' rel='preconnect'>
+<link crossorigin href='https://fonts.googleapis.com' rel='preconnect'>
+<link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/google-symbols.woff2' rel='preload' type='font/woff2'>
+<link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/material-icons.woff2' rel='preload' type='font/woff2'>
+<link as='font' crossorigin='anonymous' href='https://cdn.qwiklabs.com/fonts/google-material-icons.woff2' rel='preload' type='font/woff2'>
+<style>
+  @mixin font_face_props {
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+  }
+  
+  @font-face {
+    @include font_face_props;
+  
+    font-family: 'Google Material Icons';
+    src: url('https://cdn.qwiklabs.com/fonts/google-material-icons.woff2') format('woff2');
+  }
+  
+  @font-face {
+    @include font_face_props;
+  
+    font-family: 'Material Icons';
+    src: url('https://cdn.qwiklabs.com/fonts/material-icons.woff2') format('woff2');
+  }
+  
+  @font-face {
+    @include font_face_props;
+  
+    font-family: 'Google Symbols';
+    src: url('https://cdn.qwiklabs.com/fonts/google-symbols.woff2') format('woff2');
+  }
+  
+  .material-icons {
+    font-family: 'Material Icons';
+  }
+  
+  .google-symbols {
+    font-family: 'Google Symbols';
+  }
+  
+  .google-material-icons {
+    font-family: 'Google Material Icons';
+  }
+  
+  .material-icons,
+  .google-symbols,
+  .google-material-icons {
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+</style>
+
+<meta name="action-cable-url" content="/cable" />
+<script>
+//<![CDATA[
+window.gon={};gon.deployment="googlecourses-run";
+//]]>
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  const properties = JSON.parse(atob('eyJsb2NhbGUiOiJlbiIsInVzZXJfcm9sZXMiOiJzdHVkZW50IiwiZmVhdHVyZV9hdXRvX3VwZ3JhZGVfZ2FtZV9sYWJzIjp0cnVlLCJmZWF0dXJlX29mZmJvYXJkX2d3Z19qdW5lIjpmYWxzZSwiZmVhdHVyZV9kb2NlYm9fdXgiOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfZm9yX3NzbyI6dHJ1ZSwiZmVhdHVyZV9kaWFsb2dfcXVldWUiOnRydWUsImZlYXR1cmVfcmVsYXVuY2hfY3JlZGVudGlhbHMiOmZhbHNlLCJmZWF0dXJlX2xhbmRpbmdfcGFnZSI6dHJ1ZSwiZmVhdHVyZV9pbm5vdmF0b3JfZ2Vhcl9zaWduX2luIjp0cnVlLCJmZWF0dXJlX2RvY2Vib19zeW5jIjp0cnVlLCJmZWF0dXJlX3JlbGF1bmNoX2NvbGxlY3Rpb25fYWkiOnRydWUsImZlYXR1cmVfZW50aXR5X2FwaV9rZXlzIjp0cnVlLCJmZWF0dXJlX2NvdXJzZV9leGFtcyI6dHJ1ZSwiZmVhdHVyZV9zd2l0Y2hfcGF0aF9hbmRfZXhwbG9yZV9oZWFkZXJzIjp0cnVlLCJmZWF0dXJlX25ld19zaWRlbmF2Ijp0cnVlLCJmZWF0dXJlX2NyZWRseSI6dHJ1ZSwiZmVhdHVyZV9leHBlcmltZW50YXRpb24iOnRydWUsImZlYXR1cmVfc2VhcmNoX2FzeW5jIjp0cnVlLCJmZWF0dXJlX25rX3JvbGxiYWNrX3ZlcnNpb24iOmZhbHNlLCJmZWF0dXJlX2NyZWRseV9pbnRlZ3JhdGlvbl9hbm5vdW5jZW1lbnRfbW9kYWwiOnRydWUsImZlYXR1cmVfc2VhcmNoX3N1Z2dlc3Rpb25zIjp0cnVlLCJmZWF0dXJlX2Jhbm5lcl9icmVhZGNydW1icyI6dHJ1ZSwiZmVhdHVyZV9vbmVfdGFwIjp0cnVlLCJmZWF0dXJlX3NlYXJjaF9hdXRvY29tcGxldGUiOnRydWUsImZlYXR1cmVfaWx0X2NvbnRlbnRfcHJvZ3JhbSI6ZmFsc2UsImZlYXR1cmVfbGFiX2V4cGFuZGVkX2hpbnQiOmZhbHNlLCJmZWF0dXJlX2Zyb250X2Rvb3JfbGFuZGluZ19wYWdlIjp0cnVlLCJmZWF0dXJlX2NhY2hlX2V4cGxvcmVfcGFnZV9yZXN1bHQiOnRydWUsImZlYXR1cmVfYWxleGFuZHJpYV9zdWJzY3JpcHRpb25zX3BhZ2luYXRpb24iOnRydWUsImZlYXR1cmVfYWJuX3N1cnZleV9mZWVkYmFjayI6ZmFsc2UsImZlYXR1cmVfY2Fub25pY2FsX2RvbWFpbl9yZWRpcmVjdCI6dHJ1ZSwiZmVhdHVyZV91c2VfbW9zYWljIjp0cnVlLCJmZWF0dXJlX3BhdGhmaW5kZXJfb3JnX29uYm9hcmRpbmciOmZhbHNlLCJmZWF0dXJlX2NoYWxsZW5nZV9sYWJfZmFzdF90cmFjayI6dHJ1ZSwiZmVhdHVyZV9xdW90YV9zZXJ2aWNlX3VzZV9sdWEiOnRydWUsImZlYXR1cmVfc2VhcmNoX3NvcnRfYnkiOnRydWUsImZlYXR1cmVfbm9fbHRpX3Nlc3Npb25fcmVkaXJlY3QiOmZhbHNlLCJmZWF0dXJlX2dvb2dsZV9kZXZfcGF5bWVudCI6dHJ1ZSwiZmVhdHVyZV91c2VfZG9jZWJvX2ZlYXR1cmVzIjp0cnVlLCJmZWF0dXJlX3BhdGhmaW5kZXJfam91cm5leV92aWV3IjpmYWxzZSwiZmVhdHVyZV9uZXdfcHJvZ3JhbV9kYXNoYm9hcmQiOnRydWUsImZlYXR1cmVfb3JnX2ludml0ZV9saW5rIjp0cnVlLCJmZWF0dXJlX2d1ZXN0X3VzZXIiOmZhbHNlLCJmZWF0dXJlX2hpZGVfdW5wb3B1bGFyX2ZpbHRlcnMiOnRydWUsImZlYXR1cmVfYWdlX2dhdGVfcmVzZXQiOmZhbHNlLCJmZWF0dXJlX2ZlZWRiYWNrIjp0cnVlLCJmZWF0dXJlX2F1dG9fY291cnNlX3VwZ3JhZGUiOmZhbHNlLCJmZWF0dXJlX21vc2FpY19za2lsbHNfbGFiX3JlY29tbWVuZGF0aW9uIjp0cnVlLCJmZWF0dXJlX2d3Z19wYWlkX2NoaXAiOnRydWUsImZlYXR1cmVfaW5fY29udGV4dF9hbGxfbGFicyI6dHJ1ZSwiZmVhdHVyZV9yZWNlcnQiOnRydWUsImZlYXR1cmVfZ3dnX2NhdGFsb2ciOnRydWUsImZlYXR1cmVfc2hvd19uZXdfY291cnNlX2V4YW1zIjp0cnVlLCJmZWF0dXJlX2dhbWlmaWNhdGlvbl9zdHJlYWtzIjp0cnVlLCJmZWF0dXJlX2dvbGRlbl9sYWJfYXV0b19sb2NhdGlvbnNfcGlsb3QiOmZhbHNlLCJmZWF0dXJlX25leHRfMjAyNl9lbmFibGVkIjpmYWxzZSwiZmVhdHVyZV9jaGltZV91c2VfYWJ1c2VfZGV0YWlscyI6dHJ1ZSwiZmVhdHVyZV9kaXNjb3ZlcnlfbGFiX2R1cmF0aW9uX2VzdGltYXRlIjp0cnVlLCJmZWF0dXJlX2dhbWlmaWNhdGlvbiI6dHJ1ZSwiZmVhdHVyZV9nYW1pZmljYXRpb25feHAiOnRydWUsImZlYXR1cmVfZG9jZWJvX3N5bmNfb3JnX3N1cHBvcnQiOnRydWUsImZlYXR1cmVfY2RuX2ZvbnRzIjp0cnVlLCJmZWF0dXJlX3BhdGhmaW5kZXJfb25ib2FyZGluZyI6ZmFsc2UsImZlYXR1cmVfbGFiX3BhZ2VfcmVkZXNpZ24iOnRydWUsImZlYXR1cmVfbGVhcm5pbmdfcGxhbl9zZWFyY2giOnRydWUsImZlYXR1cmVfc3NvX2ludGVncmF0aW9uX2FjY2Vzc19hbGxvd2xpc3QiOmZhbHNlLCJmZWF0dXJlX3JlbGF1bmNoIjp0cnVlLCJmZWF0dXJlX25ld19vcmdfZGFzaGJvYXJkIjp0cnVlLCJmZWF0dXJlX3JlbGF1bmNoX2V4dHJhIjp0cnVlLCJmZWF0dXJlX3plbmRlc2tfdG9fY2FzZXMiOnRydWUsImZlYXR1cmVfc2hvd19vcmdfY2F0YWxvZ19idXR0b24iOnRydWUsImZlYXR1cmVfYWlfc2VhcmNoX3N1bW1hcnkiOmZhbHNlLCJmZWF0dXJlX2lubm92YXRvcl9zaWduX2luIjp0cnVlLCJmZWF0dXJlX3JlbGF1bmNoX2VtZXJnZW5jeV9idXR0b24iOmZhbHNlLCJmZWF0dXJlX3JlbGF1bmNoX2dyaWRfbGlzdCI6dHJ1ZSwiZmVhdHVyZV9jcmVkbHlfbWFuYWdlbWVudCI6ZmFsc2UsImZlYXR1cmVfb25lX3N0b3BfaHViIjp0cnVlLCJmZWF0dXJlX3JlbGF1bmNoX3N1YnNjcmlwdGlvbnMiOnRydWUsImZlYXR1cmVfZ2FtaWZpY2F0aW9uX2xlYWd1ZXMiOnRydWUsImZlYXR1cmVfbGFiX2FpX2hpbnRzIjpmYWxzZSwiZmVhdHVyZV9uZXh0XzIwMjZfY29sbGVjdGlvbnMiOnRydWUsImZlYXR1cmVfdHVyYm8iOmZhbHNlLCJmZWF0dXJlX3JlcG9ydF9wYXJlbnRzIjpmYWxzZSwiZmVhdHVyZV9pbl9jb250ZXh0X3ZpZXciOnRydWUsImZlYXR1cmVfZ2FtaWZpY2F0aW9uX2xlYWRlcmJvYXJkcyI6dHJ1ZSwiZmVhdHVyZV9nYW1pZmljYXRpb25fdWlfZGF0YSI6ZmFsc2UsImZlYXR1cmVfZGFzaGJvYXJkX2pvYnMiOnRydWUsImZlYXR1cmVfc3Vic2NyaXB0aW9uX3V4Ijp0cnVlLCJmZWF0dXJlX2NhdGFsb2dfZmlsdGVyc19idXR0b24iOnRydWUsImZlYXR1cmVfY2F0YWxvZ19maWx0ZXJfY2hpcHMiOnRydWUsImZlYXR1cmVfc2l0ZW1hcF9wb2MiOnRydWUsImZlYXR1cmVfZ2FtaWZpY2F0aW9uX3VpIjp0cnVlLCJmZWF0dXJlX3Nzb19yZWRpcmVjdCI6dHJ1ZSwiZmVhdHVyZV9vbnJhbXAiOnRydWUsImZlYXR1cmVfaW50ZXJ2aWV3X3dhcm11cF90dXJuZG93biI6dHJ1ZSwiZmVhdHVyZV9vYXV0aF9yaXNjX3NodXRvZmYiOnRydWUsImZlYXR1cmVfZ2FtaWZpY2F0aW9uX2FjaGlldmVtZW50cyI6dHJ1ZSwiZmVhdHVyZV9yZWNhbGN1bGF0ZV9hY3Rpdml0aWVzIjp0cnVlLCJmZWF0dXJlX2xlYXJuaW5nX3BsYW5fc2x1ZyI6dHJ1ZSwiZmVhdHVyZV9yZXJvdXRlX25ld19pbnRlcnZpZXdfd2FybXVwIjp0cnVlLCJmZWF0dXJlX2djc2JvX2RvbWFpbl9yZWRpcmVjdCI6ZmFsc2UsImZlYXR1cmVfY291cnNlX2J1aWxkZXIiOmZhbHNlLCJmZWF0dXJlX2FuYWx5dGljc192MiI6dHJ1ZSwiZmVhdHVyZV9hbGV4YW5kcmlhX3Nob3dfYnVuZGxlX2Vycm9ycyI6ZmFsc2UsImZlYXR1cmVfd2lwZW91dF9oYXJkX2RlbGV0ZSI6dHJ1ZSwiZmVhdHVyZV9yZW1vdmVfZ2RwX3N1YnNjcmlwdGlvbiI6dHJ1ZSwiZmVhdHVyZV9uZXdfb3JnX2Rhc2hib2FyZF9hbm5vdW5jZW1lbnQiOnRydWUsImZlYXR1cmVfbGVhcm5lcl9ncmFjZV9wZXJpb2RfdXBncmFkZSI6dHJ1ZSwiZ3JvdXBfc3VhZG1pbnMiOmZhbHNlLCJncm91cF9ub25fc3VhZG1pbnMiOnRydWUsImdyb3VwX2FkbWlucyI6ZmFsc2UsImdyb3VwX3RyYWluZXJzIjpmYWxzZSwiZ3JvdXBfY29vcmRpbmF0b3JzIjpmYWxzZSwiZ3JvdXBfY3JlYXRvcnMiOmZhbHNlLCJncm91cF9zdHVkZW50cyI6dHJ1ZSwiZ3JvdXBfbm9uX29yZ2FuaXphdGlvbiI6dHJ1ZSwiZ3JvdXBfb3JnYW5pemF0aW9uX21lbWJlcnMiOmZhbHNlLCJncm91cF9ub25fcHJvZ3JhbSI6dHJ1ZSwiZ3JvdXBfZ29vZ2xlcnMiOnRydWUsImdyb3VwX0NMUyI6ZmFsc2UsImdyb3VwX2VuZ19wcm9kdWN0IjpmYWxzZSwiZ3JvdXBfZ2FtaWZpY2F0aW9uX2JldGFfdGVzdGVycyI6ZmFsc2V9'));
+  properties.event = 'user_properties';
+  dataLayer.push(properties);
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    if (arguments[0] === 'event') {
+      dataLayer.push({ event: arguments[1], eventParams: arguments[2] }, { eventParams: undefined });
+    } else {
+      dataLayer.push(arguments);
+    }
+  }
+  let gtmLoaded = false;
+  function glueCookieNotificationBarLoaded() {
+    if (!gtmLoaded) {
+      dataLayerInit(
+        true,
+        false,
+        false,
+        false,
+        'googlecourses-run'
+      );
+      (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+      new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer',"GTM-MBRHNDG7");
+      pushPageEvent();
+      if (typeof sessEvent !== 'undefined') {
+        pushSessionEvent(sessEvent, sessLoginStatus, sessPreviousPath);
+      }
+      gtmLoaded = true;
+    }
+  }
+</script>
+<script src="https://cdn.qwiklabs.com/assets/hallofmirrors/polyfills/webcomponents-loader-2e147cb1679d97581f981243bfc2d1c03dc34a58.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/head_scripts-78121e337319c81329ed63eb61196ea57f74a57d.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/vendor-1c75122c864db561eb016ef97dbd4eb4a740856f.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/application-4f28a3e4abea3562530c52c97c77c0fa2bbf3b06.js"></script>
+<script src="https://cdn.qwiklabs.com/assets/hallofmirrors/hallofmirrors-8cc991c80f4ed8f5132ca5a6740085c6b7fd965a.js"></script>
+<script src="https://cdn.qwiklabs.com/nk_components/1.1.42/index.js"></script>
+<script src="https://support.google.com/inapp/api.js"></script>
+
+
+<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="mWYFG1OwLUnKmXcVSlHMmn_qqIxzHY_LCgKfa3uziic_RDXSr2CLdz1VQ8HzYSRj-giWyoGi4IoUZI_hf1IoVg" />
+<meta content='width=device-width, initial-scale=1.0, user-scalable=yes' name='viewport'>
+<meta content='1rRsY0INj8RvwB5EF5pwdxt2A2P9aDgAlsICaJ0d5w0' name='google-site-verification'>
+<meta content='#3681E4' property='msapplication-TileColor'>
+<meta content='/super_G_optimized.png' property='msapplication-TileImage'>
+<meta content='{&quot;userId&quot;:49505389,&quot;experimentIds&quot;:[&quot;auto_upgrade_game_labs&quot;,&quot;docebo_ux&quot;,&quot;relaunch_for_sso&quot;,&quot;dialog_queue&quot;,&quot;landing_page&quot;,&quot;innovator_gear_sign_in&quot;,&quot;docebo_sync&quot;,&quot;relaunch_collection_ai&quot;,&quot;entity_api_keys&quot;,&quot;course_exams&quot;,&quot;switch_path_and_explore_headers&quot;,&quot;new_sidenav&quot;,&quot;credly&quot;,&quot;experimentation&quot;,&quot;search_async&quot;,&quot;credly_integration_announcement_modal&quot;,&quot;search_suggestions&quot;,&quot;banner_breadcrumbs&quot;,&quot;one_tap&quot;,&quot;search_autocomplete&quot;,&quot;front_door_landing_page&quot;,&quot;cache_explore_page_result&quot;,&quot;alexandria_subscriptions_pagination&quot;,&quot;canonical_domain_redirect&quot;,&quot;use_mosaic&quot;,&quot;challenge_lab_fast_track&quot;,&quot;quota_service_use_lua&quot;,&quot;search_sort_by&quot;,&quot;google_dev_payment&quot;,&quot;use_docebo_features&quot;,&quot;new_program_dashboard&quot;,&quot;org_invite_link&quot;,&quot;hide_unpopular_filters&quot;,&quot;feedback&quot;,&quot;mosaic_skills_lab_recommendation&quot;,&quot;gwg_paid_chip&quot;,&quot;in_context_all_labs&quot;,&quot;recert&quot;,&quot;gwg_catalog&quot;,&quot;show_new_course_exams&quot;,&quot;gamification_streaks&quot;,&quot;chime_use_abuse_details&quot;,&quot;discovery_lab_duration_estimate&quot;,&quot;gamification&quot;,&quot;gamification_xp&quot;,&quot;docebo_sync_org_support&quot;,&quot;cdn_fonts&quot;,&quot;lab_page_redesign&quot;,&quot;learning_plan_search&quot;,&quot;relaunch&quot;,&quot;new_org_dashboard&quot;,&quot;relaunch_extra&quot;,&quot;zendesk_to_cases&quot;,&quot;show_org_catalog_button&quot;,&quot;innovator_sign_in&quot;,&quot;relaunch_grid_list&quot;,&quot;one_stop_hub&quot;,&quot;relaunch_subscriptions&quot;,&quot;gamification_leagues&quot;,&quot;next_2026_collections&quot;,&quot;in_context_view&quot;,&quot;gamification_leaderboards&quot;,&quot;gamification_ui_data&quot;,&quot;dashboard_jobs&quot;,&quot;subscription_ux&quot;,&quot;catalog_filters_button&quot;,&quot;catalog_filter_chips&quot;,&quot;sitemap_poc&quot;,&quot;gamification_ui&quot;,&quot;sso_redirect&quot;,&quot;onramp&quot;,&quot;interview_warmup_turndown&quot;,&quot;oauth_risc_shutoff&quot;,&quot;gamification_achievements&quot;,&quot;recalculate_activities&quot;,&quot;learning_plan_slug&quot;,&quot;reroute_new_interview_warmup&quot;,&quot;analytics_v2&quot;,&quot;wipeout_hard_delete&quot;,&quot;remove_gdp_subscription&quot;,&quot;new_org_dashboard_announcement&quot;,&quot;learner_grace_period_upgrade&quot;]}' name='help-api-product-data'>
+<meta content='{&quot;groupIds&quot;:[&quot;non_suadmins&quot;,&quot;students&quot;,&quot;non_organization&quot;,&quot;non_program&quot;,&quot;googlers&quot;]}' name='help-api-custom-data'>
+<meta content='&amp;lt;p&amp;gt;In this course, &quot;Architecting with Google Kubernetes Engine: Foundations,&quot; you get a review of the layout and principles of Google Cloud, followed by an introduction to creating and managing software containers and an introduction to the architecture of Kubernetes.&amp;lt;/p&amp;gt;
+&amp;lt;p&amp;gt;&amp;lt;/p&amp;gt;
+&amp;lt;p&amp;gt;This is the first course of the Architecting with Google Kubernetes Engine series. After completing this course, enroll in the Architecting with Google Kubernetes Engine: Workloads course.&amp;lt;/p&amp;gt;' name='description'>
+<meta content='Google Skills for Partners' name='author'>
+<meta content='https://partner.skills.google/paths/89/course_templates/32' property='og:url'>
+<meta content='Architecting with Google Kubernetes Engine: Foundations | Google Skills for Partners' property='og:title'>
+<meta content='website' property='og:type'>
+<meta content='/super_G_optimized.png' property='og:image'>
+<meta content='1200' property='og:image:width'>
+<meta content='630' property='og:image:height'>
+<meta content='image/png' property='og:image:type'>
+<meta content='Google Skills for Partners' property='og:site_name'>
+<meta content='&amp;lt;p&amp;gt;In this course, &quot;Architecting with Google Kubernetes Engine: Foundations,&quot; you get a review of the layout and principles of Google Cloud, followed by an introduction to creating and managing software containers and an introduction to the architecture of Kubernetes.&amp;lt;/p&amp;gt;
+&amp;lt;p&amp;gt;&amp;lt;/p&amp;gt;
+&amp;lt;p&amp;gt;This is the first course of the Architecting with Google Kubernetes Engine series. After completing this course, enroll in the Architecting with Google Kubernetes Engine: Workloads course.&amp;lt;/p&amp;gt;' property='og:description'>
+
+
+<link href='https://cdn.qwiklabs.com/Vag5GK2J6rS6843Qvg8TQJ1kEbAsEmQoF0%2BdLRfcLRE%3D' rel='icon' type='image/x-icon'>
+<link href='https://partner.skills.google/paths/89/course_templates/32' rel='canonical'>
+
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald:400|Roboto+Mono:400,700|Roboto:300,400,500,700|Google+Sans:300,400,500,700|Google+Sans+Display:400|Google+Sans+Text:400,500,700" />
+
+<link rel="stylesheet" href="https://cdn.qwiklabs.com/assets/application-f2291582837196477f04cc2c1d81e8bb7de4c08c.css" media="all" />
+<link rel="stylesheet" href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css" />
+
+
+<style>
+  :root {
+    --primary-text-on-surface-color: #355d9c;
+    --primary-text-on-surface-color-dark: #2f538b;
+    --primary-text-on-surface-color-darker: #29497a;
+    --primary-text-on-surface-color-darkest: #243e69;
+    --primary-surface-color: #586d8d;
+    --primary-surface-color-rgb: 88,109,141;
+    --primary-surface-color-light: #e0e4eb;
+    --primary-surface-color-lightest: #eff2f5;
+    --text-on-primary-color: #ffffff;
+    --accent-text-on-surface-color: #f000e8;
+    --accent-surface-color: #f9ab00;
+    --accent-surface-color-rgb: 249,171,0;
+    --accent-surface-color-light: #ffefcc;
+    --text-on-accent-color: #000000;
+  }
+</style>
+
+
+
+</head>
+<body class=' course-template-show-body course-template-show-body relaunch course-layout-body l-full relaunch  learner-layout-body relaunch '>
+<div class='body-container' newsidenav relaunch>
+<div class='body-header'>
+<ql-toolbar class='app-toolbar' jumpEnabled role='banner'>
+<div class='toolbar-navigation' slot='navigation'>
+<ql-toggle-button animatedToggle class='always-show' data-tooltip-text='Menu' for='app-nav' icon='menu' id='menu-toggle' label='Menu' offIcon='menu' onIcon='menu_open'></ql-toggle-button>
+
+</div>
+<div class='toolbar-title gs-logo' slot='title'>
+<a class="custom-logo" aria-label="Google Skills for Partners" href="/"><div class="custom-logo"><img alt="Google Skills for Partners" height="24" aria-label="Google Skills for Partners" src="https://cdn.qwiklabs.com/lqJbxogu4tSLez1OvjDcIO8rwow6cPLwvrfIdmQLf6U%3D" /></div></a>
+
+<div class='header-tag'>
+Partner
+</div>
+</div>
+<div class='search-bar tablet-hide' slot='search'></div>
+<div class='toolbar-actions' slot='action'>
+<ql-icon-button class='mobile-hide' data-tooltip-text='Share' icon='share' id='share_32' label='Share on social media'></ql-icon-button>
+<ql-menu class='social-share-menu' for='share_32'>
+<ql-menu-item data-analytics-action='Shared to LinkedIn Feed.' data-analytics-category='CourseTemplate' data-analytics-label='Architecting with Google Kubernetes Engine: Foundations' href='https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fpartner.skills.google%2Fcourse_templates%2F32%3Futm_medium%3Dsocial%26utm_source%3Dlinkedin%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_linkedin-a277effb6f261f5d3b8ad0fc692fb0025ff82eaf.png' label='Share on LinkedIn Feed' role='link' target='_blank'>
+<span class='label'>Share on LinkedIn Feed</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to X.' data-analytics-category='CourseTemplate' data-analytics-label='Architecting with Google Kubernetes Engine: Foundations' href='https://x.com/intent/tweet?text=Learn%20cloud%20tech%20through%20hands-on%20training%20on%20%23GoogleSkills%21&amp;url=https%3A%2F%2Fpartner.skills.google%2Fcourse_templates%2F32%3Futm_medium%3Dsocial%26utm_source%3Dx%26utm_campaign%3Dql-social-share&amp;hashtags=' iconSrc='https://cdn.qwiklabs.com/assets/logo_x-2abcf45e0673a8f244a6b686ea7f0189457d4fe3.png' label='X' role='link' target='_blank'>
+<span class='label'>X</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to Facebook.' data-analytics-category='CourseTemplate' data-analytics-label='Architecting with Google Kubernetes Engine: Foundations' href='https://facebook.com/sharer.php?display=popup&amp;u=https%3A%2F%2Fpartner.skills.google%2Fcourse_templates%2F32%3Futm_medium%3Dsocial%26utm_source%3Dfacebook%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_facebook-5ccdec05e255be16449f837fff607b6d33ae9b87.png' label='Facebook' role='link' target='_blank'>
+<span class='label'>Facebook</span>
+</ql-menu-item>
+
+<ql-copyable-input label='Share Link' value='https://partner.skills.google/course_templates/32'></ql-copyable-input>
+
+</ql-menu>
+
+
+<div class='toolbar-actions__points mobile-hide'>
+<ql-user-points data-tooltip-text='Experience points' points='76831'></ql-user-points>
+</div>
+<div class='toolbar-actions__streak-count mobile-hide' data-tooltip-text='Current streak count'>
+<img alt="Current streak count" src="https://cdn.qwiklabs.com/assets/gamification/streak_icon-21476b37c13f49828a5aaa2d86c4d3378cca4117.svg" />
+<div class='ql-body-large count-label'>2</div>
+</div>
+<ql-icon-button class='mobile-hide' data-tooltip-text='Help' icon='help_outline' id='help-menu-button' label='Help options'></ql-icon-button>
+<ql-menu for='help-menu-button' id='help-menu'>
+<ql-menu-item data-analytics-action='opened_help' data-analytics-label='course' label='Help Center' onclick='hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:49505389},&quot;context&quot;:&quot;course&quot;})'></ql-menu-item>
+<ql-menu-item href='https://support.google.com/qwiklabs/contact/Google_Skills_Partner' label='Contact Us' target='_blank'></ql-menu-item>
+<ql-menu-item href='https://reportingwidget.google.com/widget/54?cid=1&amp;url=https://partner.skills.google/paths/89/course_templates/32?' label='Report Illegal Content'></ql-menu-item>
+</ql-menu>
+
+<ql-icon-button class='mobile-hide' data-tooltip-text='Language' icon='language' id='language' label='Language options'></ql-icon-button>
+<ql-menu for='language'>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ar' href='/paths/89/course_templates/32?locale=ar' label='العربية‬‎' lang='ar'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='de' href='/paths/89/course_templates/32?locale=de' label='Deutsch' lang='de'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='en' href='/paths/89/course_templates/32?locale=en' label='English' lang='en'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='es' href='/paths/89/course_templates/32?locale=es' label='español (Latinoamérica)' lang='es'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr' href='/paths/89/course_templates/32?locale=fr' label='français' lang='fr'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr_CA' href='/paths/89/course_templates/32?locale=fr_CA' label='français (Canada)' lang='fr-CA'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='he' href='/paths/89/course_templates/32?locale=he' label='עברית' lang='he'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='id' href='/paths/89/course_templates/32?locale=id' label='bahasa Indonesia' lang='id'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='it' href='/paths/89/course_templates/32?locale=it' label='italiano' lang='it'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ja' href='/paths/89/course_templates/32?locale=ja' label='日本語' lang='ja'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ko' href='/paths/89/course_templates/32?locale=ko' label='한국어' lang='ko'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pl' href='/paths/89/course_templates/32?locale=pl' label='polski' lang='pl'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_BR' href='/paths/89/course_templates/32?locale=pt_BR' label='português (Brasil)' lang='pt-BR'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_PT' href='/paths/89/course_templates/32?locale=pt_PT' label='português (Portugal)' lang='pt-PT'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ru' href='/paths/89/course_templates/32?locale=ru' label='русский' lang='ru'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='tr' href='/paths/89/course_templates/32?locale=tr' label='Türkçe' lang='tr'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='uk' href='/paths/89/course_templates/32?locale=uk' label='українська' lang='uk'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh' href='/paths/89/course_templates/32?locale=zh' label='简体中文' lang='zh'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh_TW' href='/paths/89/course_templates/32?locale=zh_TW' label='繁體中文' lang='zh-TW'></ql-menu-item>
+</ql-menu>
+
+<ql-icon-button aria-expanded='false' aria-haspopup aria-label='More options' class='mobile-show' data-toggle='tooltip' icon='more_vert' id='mobile-more-menu-button' title='More options'></ql-icon-button>
+<ql-menu for='mobile-more-menu-button' id='mobile-more-menu'>
+<ql-menu-item aria-controls='share-submenu' aria-expanded='false' aria-haspopup='true' id='share_mobile_32' label='Share' role='button' tabindex='0'></ql-menu-item>
+
+
+<ql-menu-item aria-controls='help-submenu' aria-expanded='false' aria-haspopup='true' id='help-submenu-button' label='Help' role='button' tabindex='0'></ql-menu-item>
+<ql-menu-item aria-controls='language-submenu' aria-expanded='false' aria-haspopup='true' id='language-submenu-button' label='Language' role='button' tabindex='0'></ql-menu-item>
+</ql-menu>
+<ql-menu class='submenu' for='share_mobile_32' id='share-submenu'>
+<ql-menu-item data-analytics-action='Shared to LinkedIn Feed.' data-analytics-category='CourseTemplate' data-analytics-label='Architecting with Google Kubernetes Engine: Foundations' href='https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fpartner.skills.google%2Fcourse_templates%2F32%3Futm_medium%3Dsocial%26utm_source%3Dlinkedin%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_linkedin-a277effb6f261f5d3b8ad0fc692fb0025ff82eaf.png' label='Share on LinkedIn Feed' role='link' target='_blank'>
+<span class='label'>Share on LinkedIn Feed</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to X.' data-analytics-category='CourseTemplate' data-analytics-label='Architecting with Google Kubernetes Engine: Foundations' href='https://x.com/intent/tweet?text=Learn%20cloud%20tech%20through%20hands-on%20training%20on%20%23GoogleSkills%21&amp;url=https%3A%2F%2Fpartner.skills.google%2Fcourse_templates%2F32%3Futm_medium%3Dsocial%26utm_source%3Dx%26utm_campaign%3Dql-social-share&amp;hashtags=' iconSrc='https://cdn.qwiklabs.com/assets/logo_x-2abcf45e0673a8f244a6b686ea7f0189457d4fe3.png' label='X' role='link' target='_blank'>
+<span class='label'>X</span>
+</ql-menu-item>
+
+<ql-menu-item data-analytics-action='Shared to Facebook.' data-analytics-category='CourseTemplate' data-analytics-label='Architecting with Google Kubernetes Engine: Foundations' href='https://facebook.com/sharer.php?display=popup&amp;u=https%3A%2F%2Fpartner.skills.google%2Fcourse_templates%2F32%3Futm_medium%3Dsocial%26utm_source%3Dfacebook%26utm_campaign%3Dql-social-share' iconSrc='https://cdn.qwiklabs.com/assets/logo_facebook-5ccdec05e255be16449f837fff607b6d33ae9b87.png' label='Facebook' role='link' target='_blank'>
+<span class='label'>Facebook</span>
+</ql-menu-item>
+
+<ql-copyable-input label='Share Link' value='https://partner.skills.google/course_templates/32'></ql-copyable-input>
+
+</ql-menu>
+
+<ql-menu class='submenu' for='help-submenu-button' id='help-submenu'>
+<ql-menu-item data-analytics-action='opened_help' data-analytics-label='course' label='Help Center' onclick='hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:49505389},&quot;context&quot;:&quot;course&quot;})'></ql-menu-item>
+<ql-menu-item href='https://support.google.com/qwiklabs/contact/Google_Skills_Partner' label='Contact Us' target='_blank'></ql-menu-item>
+<ql-menu-item href='https://reportingwidget.google.com/widget/54?cid=1&amp;url=https%3A%2F%2Fpartner.skills.google%2Fpaths%2F89%2Fcourse_templates%2F32%3F' label='Report Illegal Content'></ql-menu-item>
+</ql-menu>
+<ql-menu class='submenu' for='language-submenu-button' id='language-submenu'>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ar' href='/paths/89/course_templates/32?locale=ar' label='العربية‬‎' lang='ar' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='de' href='/paths/89/course_templates/32?locale=de' label='Deutsch' lang='de' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='en' href='/paths/89/course_templates/32?locale=en' label='English' lang='en' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='es' href='/paths/89/course_templates/32?locale=es' label='español (Latinoamérica)' lang='es' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr' href='/paths/89/course_templates/32?locale=fr' label='français' lang='fr' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='fr_CA' href='/paths/89/course_templates/32?locale=fr_CA' label='français (Canada)' lang='fr-CA' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='he' href='/paths/89/course_templates/32?locale=he' label='עברית' lang='he' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='id' href='/paths/89/course_templates/32?locale=id' label='bahasa Indonesia' lang='id' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='it' href='/paths/89/course_templates/32?locale=it' label='italiano' lang='it' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ja' href='/paths/89/course_templates/32?locale=ja' label='日本語' lang='ja' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ko' href='/paths/89/course_templates/32?locale=ko' label='한국어' lang='ko' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pl' href='/paths/89/course_templates/32?locale=pl' label='polski' lang='pl' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_BR' href='/paths/89/course_templates/32?locale=pt_BR' label='português (Brasil)' lang='pt-BR' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='pt_PT' href='/paths/89/course_templates/32?locale=pt_PT' label='português (Portugal)' lang='pt-PT' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='ru' href='/paths/89/course_templates/32?locale=ru' label='русский' lang='ru' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='tr' href='/paths/89/course_templates/32?locale=tr' label='Türkçe' lang='tr' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='uk' href='/paths/89/course_templates/32?locale=uk' label='українська' lang='uk' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh' href='/paths/89/course_templates/32?locale=zh' label='简体中文' lang='zh' role='menuitem'></ql-menu-item>
+<ql-menu-item data-analytics-action='changed_locale' data-analytics-label='zh_TW' href='/paths/89/course_templates/32?locale=zh_TW' label='繁體中文' lang='zh-TW' role='menuitem'></ql-menu-item>
+</ql-menu>
+
+<ql-icon-button data-tooltip-text='My account' id='my_account' label='My account'>
+<ql-avatar src='https://lh3.googleusercontent.com/a/ACg8ocJuVwbYM1d-M80nWiidL3WbanCp91AeV6JPovhKgZri2fHyWdw=s320-c'></ql-avatar>
+</ql-icon-button>
+<ql-menu for='my_account' id='my_account_menu'>
+<div class='learner-profile-account-menu my-account-menu'>
+<div class='learner-profile-account-menu__notifications'>
+</div>
+<div class='learner-profile-account-menu__profile'>
+<ql-avatar size='88' src='https://lh3.googleusercontent.com/a/ACg8ocJuVwbYM1d-M80nWiidL3WbanCp91AeV6JPovhKgZri2fHyWdw=s320-c'></ql-avatar>
+<div class='learner-profile-account-menu__metadata'>
+<h4 class='ql-title-large'>Sam Dinh</h4>
+<p class='ql-body-medium text--light'>
+</p>
+<div class='ql-body-medium l-mbs'>Member since 2024</div>
+</div>
+</div>
+<div class='learner-profile-account-menu__options'>
+<ql-button href='/' icon='dashboard' label='Dashboard' text></ql-button>
+<ql-button href='/profile/activity' icon='lists' label='Progress' text></ql-button>
+<ql-button href='/my_account/profile' icon='settings' label='Settings' text></ql-button>
+<ql-button data-analytics-action='clicked_sign_out' href='/users/sign_out' icon='logout' label='Sign Out' method='delete' text></ql-button>
+</div>
+<div class='learner-profile-account-menu__footer'>
+<ql-button href='/privacy_policy' label='Privacy' target='_blank' text></ql-button>
+<ql-button href='/terms_of_service' label='Terms' text></ql-button>
+</div>
+</div>
+</ql-menu>
+
+
+
+</div>
+</ql-toolbar>
+</div>
+<div class='body-container__inner'>
+<ql-sidenav id='app-nav' items='[{&quot;type&quot;:&quot;item&quot;,&quot;label&quot;:&quot;Dashboard&quot;,&quot;icon&quot;:&quot;dashboard&quot;,&quot;active&quot;:false,&quot;href&quot;:&quot;/&quot;},{&quot;type&quot;:&quot;item&quot;,&quot;label&quot;:&quot;Catalog&quot;,&quot;icon&quot;:&quot;book_2&quot;,&quot;active&quot;:false,&quot;href&quot;:&quot;/catalog&quot;},{&quot;type&quot;:&quot;item&quot;,&quot;label&quot;:&quot;Paths&quot;,&quot;icon&quot;:&quot;conversion_path&quot;,&quot;active&quot;:true,&quot;href&quot;:&quot;/paths&quot;},{&quot;type&quot;:&quot;item&quot;,&quot;label&quot;:&quot;Programs&quot;,&quot;icon&quot;:&quot;groups&quot;,&quot;active&quot;:false,&quot;href&quot;:&quot;/my_account/programs&quot;}]'>
+<ql-fab class='navrail-search-button' expandable icon='search' label='Search' slot='start'></ql-fab>
+</ql-sidenav>
+
+<div class='body-content'>
+<div class='banner'>
+<div id='callout-container'>
+</div>
+
+</div>
+<div class='page-header'>
+<div class='page-main-banner'>
+<div class='page-main-banner-breadcrumbs'>
+<nav aria-label='Breadcrumb' class='breadcrumbs-container' role='navigation'>
+<ol>
+<li class='breadcrumb-item ql-label-medium'>
+<ql-icon-button href='/' icon='home_filled' iconFill></ql-icon-button>
+
+<ql-icon class='breadcrumb-arrow'>navigate_next</ql-icon>
+</li>
+<li class='breadcrumb-item ql-label-medium'>
+<a href="/paths/89">Hybrid and Multi-cloud Infrastructure</a>
+<ql-icon class='breadcrumb-arrow'>navigate_next</ql-icon>
+</li>
+<li class='breadcrumb-item ql-label-medium' tabindex='0'>
+Architecting with Google Kubernetes Engine: Foundations
+</li>
+</ol>
+</nav>
+
+</div>
+</div>
+
+</div>
+<main id='jump-content' tabindex='-1'>
+<ql-drawer-container class='course-container'>
+<ql-drawer-content class='course-activity' slot='drawer-content'>
+<div class='course-activity-header'>
+<div class='course-toc-cont'>
+</div>
+</div>
+<div class='course-activity-content' role='region' tabindex='0'>
+
+<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="IloybGtPaTh2Y1hkcGEyeGhZbk12UTI5MWNuTmxVMlZ6YzJsdmJpOHlNRGt6TmpBMk5BIg==--962d28d63b5b4560cf2c29d69b06f5c870a771590238e463681f4130f934d16b"></turbo-cable-stream-source>
+
+<div class='learning-wrapper'>
+<div class='top-matter'>
+<div class='top-container'>
+<div class='top-content'>
+<div class='top-title'>
+<div class='learnable-type-chip'>
+<img alt='Course Path Icon' src='https://cdn.qwiklabs.com/assets/courses/shapes-activities-chip-7672170a090f2a4d334f3d0d47468e520e8534c7.svg'>
+Course
+</div>
+<h1 class='ql-display-small'>Architecting with Google Kubernetes Engine: Foundations</h1>
+<div class='course-details'>
+<span class='course-detail'>
+24 hours
+</span>
+<span class='course-detail'>
+Intermediate
+</span>
+<span class='course-detail'>
+Updated 10 months ago
+</span>
+</div>
+</div>
+<div class='top-image'>
+<img alt='Course Path Shape' src='https://cdn.qwiklabs.com/assets/courses/shapes-activities-5b6ad5d706a5803056d637d8cbe25cdd6f33fa88.svg'>
+</div>
+</div>
+<div class='top-cta-progress-section'>
+<div class='cta-and-like-section'>
+<div class='course-badge-buttons__buttons'>
+<ql-button data-analytics-action='resume' data-analytics-actions='[&quot;resume&quot;, &quot;course_resume&quot;]' data-analytics-button-text='Continue' data-analytics-legacyEventName='resume' data-analytics-position='course-banner' data-analytics-type='eventParams' data-content-name='Architecting with Google Kubernetes Engine: Foundations' data-content-type='course' href='/paths/89/course_sessions/20936064/video/450874' icon='arrow_forward' label='Continue' outlined></ql-button>
+</div>
+
+</div>
+<div alt='Progress bar' class='learnable-progress-bar'>
+<ql-progress-bar color='#0B57D0' progress='0.16363636363636364' progressBarStyles='{&quot;height&quot;:&quot;8px&quot;,&quot;background&quot;:&quot;progress_background&quot;,&quot;width&quot;:&quot;100%&quot;}'></ql-progress-bar>
+</div>
+<div class='gamification-section'>
+<div class='learnable-stars'>
+<div class='points'>
+<ql-icon fill icon='star' size='20'></ql-icon>
+<span>309</span>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+<div class='course-table-of-content'>
+<ql-contents-menu modules='[{&quot;id&quot;:&quot;66952&quot;,&quot;title&quot;:&quot;Course Introduction for Course 1&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module, you&#39;ll become familiar with the structure and layout of the course.\u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;458106&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450873&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450873&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Welcome and Getting Started Guide&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458107&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450874&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450874&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Course Introduction Foundation&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;66953&quot;,&quot;title&quot;:&quot;Introduction to Google Cloud&quot;,&quot;description&quot;:&quot;\u003cp\u003eThis module helps you start off with the right framework of concepts. After a review of fundamentals cloud computing, you will learn about how Google Cloud&#39;s resources around the world are organized into regions and zones. You&#39;ll also learn how you can organize the resources you use in Google Cloud, so that you can manage them. Finally, you&#39;ll meet the tools that let you connect to Google Cloud and allocate, change, and release resources.\u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;458108&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450875&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450875&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458109&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450876&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450876&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Cloud Computing and Google Cloud&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458110&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450877&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450877&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Cloud Computing and Google Cloud&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458111&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450878&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450878&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Resource Management&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458112&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450879&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450879&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Resource Management&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458113&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450880&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450880&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Billing&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458114&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450881&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450881&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Billing&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458115&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450882&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450882&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Interacting with Google Cloud&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458116&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450883&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450883&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Interacting with Google Cloud&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458117&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450884&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450884&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Computing Options&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458118&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450885&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450885&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Lab Intro&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458119&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;450886&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/labs/450886&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Accessing the Google Cloud Console and Cloud Shell&quot;,&quot;description&quot;:&quot;Architecting with Google Kubernetes Engine: Introduction to Google Cloud&quot;,&quot;type&quot;:&quot;lab&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458120&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450887&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450887&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Lab solution&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458121&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450888&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450888&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Summary&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458122&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;450889&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450889&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Google Cloud&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;66954&quot;,&quot;title&quot;:&quot;Introduction to Containers and Kubernetes&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module you will learn about software containers and their benefits are for application deployment. You&#39;ll configure and build containers. You&#39;ll also learn about the functions container that management solutions like Kubernetes provide. You&#39;ll encounter the advantages of Google Kubernetes Engine compared to building your own container-management infrastructure.\u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;458123&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450890&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450890&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458124&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450891&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450891&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Containers&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458125&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450892&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450892&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Containers&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458126&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450893&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450893&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Containers and Container Images&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458127&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450894&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450894&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Containers and Container Images&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458128&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450895&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450895&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Lab Intro&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458129&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;450896&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/labs/450896&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Working with Cloud Build&quot;,&quot;description&quot;:&quot;Architecting with Google Kubernetes Engine: Working with Cloud Build&quot;,&quot;type&quot;:&quot;lab&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458130&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450897&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450897&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Lab Solution&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458131&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450898&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450898&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Kubernetes&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458132&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450899&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450899&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Kubernetes&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458133&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450900&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450900&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Google Kubernetes Engine&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458134&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450901&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450901&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction to Google Kubernetes Engine&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458135&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450902&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450902&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Compute Options Detail&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458136&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450903&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450903&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Summary&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458137&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;450904&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450904&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Containers and Kubernetes in Google Cloud&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;66955&quot;,&quot;title&quot;:&quot;Kubernetes Architecture&quot;,&quot;description&quot;:&quot;\u003cp\u003eIn this module you’ll learn the components of a Kubernetes cluster and how they work together. You&#39;ll deploy a Kubernetes cluster using Google Kubernetes Engine and deploy Pods to a GKE cluster. You&#39;ll also view and manage several very useful kinds of Kubernetes objects.\u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;458138&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450905&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450905&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Introduction&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458139&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450906&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450906&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Concepts&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458140&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450907&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450907&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Concepts&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458141&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450908&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450908&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Control Plane&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458142&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450909&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450909&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Control Plane&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458143&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450910&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450910&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Google Kubernetes Engine Concepts&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458144&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450911&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450911&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Google Kubernetes Engine Concepts&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458145&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450912&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450912&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Object Management&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458146&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450913&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450913&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;A note about Deployments and ReplicaSets&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458147&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450914&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450914&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Object Management&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458148&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450915&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450915&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;A note about Services&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458149&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450916&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450916&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Controller objects to know about&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458150&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450917&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450917&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Controller Objects&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458151&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450918&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450918&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Lab Intro&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458152&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;450919&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/labs/450919&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Deploying Google Kubernetes Engine&quot;,&quot;description&quot;:&quot;Architecting with Google Kubernetes Engine: Creating a GKE Cluster via Google Cloud Console&quot;,&quot;type&quot;:&quot;lab&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458153&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450920&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450920&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Migrate for Anthos introduction&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458154&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450921&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450921&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Migrate for Anthos Architecture&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458155&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450922&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450922&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Migration Path&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458156&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450923&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450923&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Migrate for Anthos Installation&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458157&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450924&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/video/450924&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Summary&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;video&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458158&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:false,&quot;activities&quot;:[{&quot;id&quot;:&quot;450925&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/quizzes/450925&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Kubernetes Architecture&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;quiz&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:true,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;458159&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450926&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450926&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Next steps&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;66956&quot;,&quot;title&quot;:&quot;Course Resources&quot;,&quot;description&quot;:&quot;\u003cp\u003ePDF links to all modules\u003c/p\u003e&quot;,&quot;steps&quot;:[{&quot;id&quot;:&quot;458160&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;450927&quot;,&quot;href&quot;:&quot;/paths/89/course_sessions/20936064/documents/450927&quot;,&quot;isLocked&quot;:false,&quot;duration&quot;:null,&quot;title&quot;:&quot;Foundations Course Resources&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;document&quot;,&quot;isComplete&quot;:true,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false,&quot;paid&quot;:false}],&quot;isComplete&quot;:true,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:false},{&quot;id&quot;:&quot;next-steps&quot;,&quot;title&quot;:&quot;Your Next Steps&quot;,&quot;description&quot;:null,&quot;steps&quot;:[{&quot;id&quot;:&quot;badge-step&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;badge&quot;,&quot;href&quot;:null,&quot;isLocked&quot;:true,&quot;duration&quot;:null,&quot;title&quot;:&quot;Claim credential&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;credential&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:true,&quot;credentialType&quot;:null}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false},{&quot;id&quot;:&quot;survey-0-step&quot;,&quot;prompt&quot;:null,&quot;isOptional&quot;:true,&quot;activities&quot;:[{&quot;id&quot;:&quot;survey-0&quot;,&quot;href&quot;:null,&quot;isLocked&quot;:true,&quot;duration&quot;:null,&quot;title&quot;:&quot;Course Survey&quot;,&quot;description&quot;:null,&quot;type&quot;:&quot;survey&quot;,&quot;isComplete&quot;:false,&quot;inProgress&quot;:false,&quot;score&quot;:null,&quot;disabled&quot;:false}],&quot;isComplete&quot;:false,&quot;isTestedOut&quot;:false,&quot;allActivitiesRequired&quot;:false}],&quot;expanded&quot;:true}]'></ql-contents-menu>
+</div>
+<div class='course-description-section'>
+<div class='course-description'><p>In this course, "Architecting with Google Kubernetes Engine: Foundations," you get a review of the layout and principles of Google Cloud, followed by an introduction to creating and managing software containers and an introduction to the architecture of Kubernetes.</p>
+<p></p>
+<p>This is the first course of the Architecting with Google Kubernetes Engine series. After completing this course, enroll in the Architecting with Google Kubernetes Engine: Workloads course.</p></div>
+<div class='course-badge-buttons'>
+<div class='course-badge-buttons__text-badge-section'>
+<div class='course-badge-buttons__text'>
+<p>Earn a badge today!</p>
+</div>
+</div>
+</div>
+
+<div class='learning-plan-actions-row'>
+
+<ql-button-group id='view-selector' options='[{&quot;label&quot;:&quot;Grid&quot;,&quot;icon&quot;:&quot;grid_view&quot;,&quot;value&quot;:&quot;grid&quot;},{&quot;label&quot;:&quot;List&quot;,&quot;icon&quot;:&quot;list&quot;,&quot;value&quot;:&quot;list&quot;}]' tonal value='grid'></ql-button-group>
+</div>
+</div>
+<div class='course-activities'>
+<div class='grid' id='activities-wrapper'>
+<ql-activity-card completed elevation='-1' name='Welcome and Getting Started Guide' path='/paths/89/course_sessions/20936064/documents/450873' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Course Introduction Foundation' path='/paths/89/course_sessions/20936064/video/450874' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Introduction' path='/paths/89/course_sessions/20936064/video/450875' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Cloud Computing and Google Cloud' path='/paths/89/course_sessions/20936064/video/450876' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Cloud Computing and Google Cloud' path='/paths/89/course_sessions/20936064/quizzes/450877' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Resource Management' path='/paths/89/course_sessions/20936064/video/450878' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Resource Management' path='/paths/89/course_sessions/20936064/quizzes/450879' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Billing' path='/paths/89/course_sessions/20936064/video/450880' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Billing' path='/paths/89/course_sessions/20936064/quizzes/450881' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Interacting with Google Cloud' path='/paths/89/course_sessions/20936064/video/450882' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Interacting with Google Cloud' path='/paths/89/course_sessions/20936064/quizzes/450883' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card completed elevation='-1' name='Computing Options' path='/paths/89/course_sessions/20936064/documents/450884' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Lab Intro' path='/paths/89/course_sessions/20936064/video/450885' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card completed description='Architecting with Google Kubernetes Engine: Introduction to Google Cloud' elevation='-1' name='Accessing the Google Cloud Console and Cloud Shell' path='/paths/89/course_sessions/20936064/labs/450886' relaunch_extra required type='lab'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Lab solution' path='/paths/89/course_sessions/20936064/video/450887' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Summary' path='/paths/89/course_sessions/20936064/video/450888' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Introduction to Google Cloud' path='/paths/89/course_sessions/20936064/quizzes/450889' relaunch_extra required type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Introduction' path='/paths/89/course_sessions/20936064/video/450890' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Introduction to Containers' path='/paths/89/course_sessions/20936064/video/450891' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Introduction to Containers' path='/paths/89/course_sessions/20936064/quizzes/450892' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Containers and Container Images' path='/paths/89/course_sessions/20936064/video/450893' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Containers and Container Images' path='/paths/89/course_sessions/20936064/quizzes/450894' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Lab Intro' path='/paths/89/course_sessions/20936064/video/450895' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card completed description='Architecting with Google Kubernetes Engine: Working with Cloud Build' elevation='-1' name='Working with Cloud Build' path='/paths/89/course_sessions/20936064/labs/450896' relaunch_extra required type='lab'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Lab Solution' path='/paths/89/course_sessions/20936064/video/450897' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Introduction to Kubernetes' path='/paths/89/course_sessions/20936064/video/450898' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Introduction to Kubernetes' path='/paths/89/course_sessions/20936064/quizzes/450899' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Introduction to Google Kubernetes Engine' path='/paths/89/course_sessions/20936064/video/450900' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Introduction to Google Kubernetes Engine' path='/paths/89/course_sessions/20936064/quizzes/450901' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Compute Options Detail' path='/paths/89/course_sessions/20936064/video/450902' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Summary' path='/paths/89/course_sessions/20936064/video/450903' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Containers and Kubernetes in Google Cloud' path='/paths/89/course_sessions/20936064/quizzes/450904' relaunch_extra required type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Introduction' path='/paths/89/course_sessions/20936064/video/450905' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Kubernetes Concepts' path='/paths/89/course_sessions/20936064/video/450906' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Kubernetes Concepts' path='/paths/89/course_sessions/20936064/quizzes/450907' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Kubernetes Control Plane' path='/paths/89/course_sessions/20936064/video/450908' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Kubernetes Control Plane' path='/paths/89/course_sessions/20936064/quizzes/450909' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Google Kubernetes Engine Concepts' path='/paths/89/course_sessions/20936064/video/450910' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Google Kubernetes Engine Concepts' path='/paths/89/course_sessions/20936064/quizzes/450911' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Kubernetes Object Management' path='/paths/89/course_sessions/20936064/video/450912' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card completed elevation='-1' name='A note about Deployments and ReplicaSets' path='/paths/89/course_sessions/20936064/documents/450913' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Kubernetes Object Management' path='/paths/89/course_sessions/20936064/quizzes/450914' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card completed elevation='-1' name='A note about Services' path='/paths/89/course_sessions/20936064/documents/450915' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card completed elevation='-1' name='Controller objects to know about' path='/paths/89/course_sessions/20936064/documents/450916' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Kubernetes Controller Objects' path='/paths/89/course_sessions/20936064/quizzes/450917' relaunch_extra type='quiz'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Lab Intro' path='/paths/89/course_sessions/20936064/video/450918' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card description='Architecting with Google Kubernetes Engine: Creating a GKE Cluster via Google Cloud Console' elevation='-1' name='Deploying Google Kubernetes Engine' path='/paths/89/course_sessions/20936064/labs/450919' relaunch_extra required type='lab'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Migrate for Anthos introduction' path='/paths/89/course_sessions/20936064/video/450920' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Migrate for Anthos Architecture' path='/paths/89/course_sessions/20936064/video/450921' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Migration Path' path='/paths/89/course_sessions/20936064/video/450922' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Migrate for Anthos Installation' path='/paths/89/course_sessions/20936064/video/450923' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Summary' path='/paths/89/course_sessions/20936064/video/450924' relaunch_extra type='video'></ql-activity-card>
+<ql-activity-card elevation='-1' inProgress name='Kubernetes Architecture' path='/paths/89/course_sessions/20936064/quizzes/450925' relaunch_extra required type='quiz'></ql-activity-card>
+<ql-activity-card completed elevation='-1' name='Next steps' path='/paths/89/course_sessions/20936064/documents/450926' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card completed elevation='-1' name='Foundations Course Resources' path='/paths/89/course_sessions/20936064/documents/450927' relaunch_extra type='document'></ql-activity-card>
+<ql-activity-card elevation='-1' inactiveLinks name='Claim credential' relaunch_extra type='credential'></ql-activity-card>
+<ql-activity-card elevation='-1' name='Course Survey' relaunch_extra type='survey'></ql-activity-card>
+</div>
+</div>
+<ql-button class='l-mtxl' data-analytics-action='unenroll' data-content-name='Architecting with Google Kubernetes Engine: Foundations' data-content-type='course' href='/paths/89/course_templates/32/unenroll' label='Leave Course' method='post' negative></ql-button>
+
+</div>
+<script>
+  window.addEventListener("pageshow", function() {
+    const navEntries = performance.getEntriesByType("navigation");
+    if (navEntries.length > 0 && navEntries[0].type === "back_forward") {
+      window.location.reload();
+    }
+  });
+</script>
+
+</div>
+</ql-drawer-content>
+</ql-drawer-container>
+
+</main>
+
+<footer slot='drawer-content'>
+<nav ariaLabel='Footer navigation' class='application-footer relaunch-extra'>
+
+<div class='footer-container'>
+<div class='footer-logo'>
+<a class="custom-logo" aria-label="Google Skills for Partners" href="/"><div class="custom-logo"><img alt="Google Skills for Partners" height="24" aria-label="Google Skills for Partners" src="https://cdn.qwiklabs.com/lqJbxogu4tSLez1OvjDcIO8rwow6cPLwvrfIdmQLf6U%3D" /></div></a>
+</div>
+<div class='footer-row'>
+<a href="/">Dashboard</a>
+<a href="/catalog">Catalog</a>
+<a href="/paths">Paths</a>
+<a href="/subscriptions">Subscriptions</a>
+<a href="/profile/stay_on_track">Activities</a>
+<a href="/profile/badges">Achievements</a>
+<a href="/my_account/profile">Settings</a>
+<a rel="nofollow" data-method="delete" href="/users/sign_out">Sign out</a>
+</div>
+<div class='footer-row'>
+<a class="g-cloud-youtube" target="_blank" rel="noopener" href="https://www.youtube.com/@googlecloud"><ql-icon icon='video_youtube'></ql-icon>
+Youtube
+</a><a rel="noopener" onclick="hallofmirrors.helpService.startHelp({&quot;productData&quot;:{&quot;userId&quot;:49505389},&quot;context&quot;:&quot;course&quot;}); return false;" href="/help">Help Center</a>
+<a href="/terms_of_service">Terms</a>
+<a target="_blank" href="/privacy_policy">Privacy</a>
+<a aria-hidden='true' class='glue-cookie-notification-bar-control'>
+Manage cookies
+</a>
+</div>
+</div>
+
+</nav>
+</footer>
+</div>
+</div>
+</div>
+
+
+<span class='hidden' id='flash-sibling-before'></span>
+<ql-snackbar></ql-snackbar>
+
+<script data-glue-cookie-notification-bar-category='2A' src='https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js'></script>
+
+
+
+<ql-dialog id='connect-certmetrics-modal' noCloseIcon noDefaultAction noDefaultDismiss>
+<div class='certmetrics-modal' id='sso-modal-body'>
+<div id='sso-header-image'>
+<img alt="Authorize Header" src="https://cdn.qwiklabs.com/assets/certmetrics_modal_connect-41dccb0f7c320144dca93f8f89ac18758cec5014.svg" />
+</div>
+<h2 class='ql-headline-4' id='sso-modal-title'>
+Recertify in 3 simple steps:
+</h2>
+<ql-card class='info-card' elevation='0' padded>
+<div class='recertify-step'>
+<ql-icon icon='counter_1' size='24'></ql-icon>
+<span>Link your Google Skills and certification account profiles using the same email to get started.</span>
+</div>
+<div class='recertify-step'>
+<ql-icon icon='counter_2' size='24'></ql-icon>
+<span>Instantly see which certifications are eligible for renewal.</span>
+</div>
+<div class='recertify-step'>
+<ql-icon icon='counter_3' size='24'></ql-icon>
+<span>Complete courses and skill badges to renew your certifications automatically.</span>
+</div>
+<p class='ql-body-medium'>
+By clicking &quot;Accept&quot;, I consent to share my name, email, and course completion data with Google Skills&#39; certification partner, CM Connect, to receive continuing education credit for certification renewal.
+</p>
+</ql-card>
+</div>
+<ql-button id='sso-cancel-btn' label='Close' onclick='document.querySelector(&quot;#connect-certmetrics-modal&quot;).close();' slot='action' text></ql-button>
+<ql-button id='sso-approve-btn' label='Accept' onclick='this.loading = true; document.querySelector(&#39;#sso-cancel-btn&#39;).disabled = true; document.querySelector(&#39;#sso-consent-form&#39;).requestSubmit();' raised slot='action'></ql-button>
+<form id="sso-consent-form" data-turbo="true" action="/oidc/connect_certmetrics_account" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="PKWpbpHVvmRwBDc5Io4kgRmA6l-igduLSN44SqZXMbPEo0u-u2NKBlCoRwKJrwFWEmSOcu97ZTvUTU7vfk2YvQ" autocomplete="off" /></form>
+</ql-dialog>
+
+<ql-dialog id='js-challenge-help-dialog'>
+<h1 class='ql-headline-large'>The Power of Challenge Labs</h1>
+<p class='text--small text--light l-mtl'>
+Now you can fast track your way to a skill badge without having to take the entire course. If you&#39;re confident with your skills, jump straight to the challenge lab.
+</p>
+</ql-dialog>
+
+<ql-dialog dismissalLabel='Cancel' headline='A newer version of this course is available. Your progress will carry over if you choose to upgrade. However, your completion percentage may change if the new version has added or removed any learning activities. Click the preview button to see the course changes before upgrading.' icon='error' id='course-session-upgrade-modal'>
+<ql-button href='/paths/89/course_templates/32/preview' label='Preview' slot='action'>
+Preview
+</ql-button>
+</ql-dialog>
+
+
+
+<script>
+  document.addEventListener("turbo:load", function () {
+    ql.initMaterialInputs();
+    ql.tomSelect.init();
+    initTabs();
+    ql.list.init();
+    ql.favoriting.init();
+    ql.header.myAccount.init();
+    initTooltips();
+    ql.autocomplete.init();
+    ql.modals.init();
+    ql.toggleButtons.init();
+    Turbo.session.drive = false;
+    ql.aiFeaturesSurvey.init();
+  ql.gridListView.init();
+  ql.course_resize_layout.init("Hybrid and Multi-cloud Infrastructure", "Path", "Architecting with Google Kubernetes Engine: Foundations", "Course", "");
+  ql.course_navigation.init("20946648");
+  ql.messages.init();
+  ql.jumpContent.init();
+  
+  }, {once: true});
+</script>
+<script>
+  document.addEventListener("turbo:load", () => ql.analyticsV2.init());
+  document.addEventListener("turbo:frame-load", () => ql.analyticsV2.init());
+</script>
+<script>
+  document.addEventListener("turbo:load", function () {
+    ql.celebrations.init({"course_complete":"COURSE COMPLETED","document_complete":"DOCUMENT COMPLETED","experience_label":"Experience points","lab_complete":"LAB COMPLETED","learning_plan_complete":"PATH COMPLETED","lesson_complete":"LESSON COMPLETED","quiz_complete":"QUIZ COMPLETED","video_complete":"VIDEO COMPLETED"});
+    ql.achievements.init();
+  }, {once: true});
+</script>
+
+</body>
+</html>
+
+
+
