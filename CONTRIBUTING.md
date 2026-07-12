@@ -82,7 +82,7 @@ Sublime Text sample:
 - [x] #hig #cor #ftr #11 Fetch: Allow to specify `-s`/`--signin` to sign in with a Google account before fetching: (https://www.skills.google/users/sign_in). Ask user to press Continue (GUI) or Enter (CLI) to proceed after they log in.
 - [x] #hig #cor #ftr #12 Fetch: Rename `--no-transcript` to `--md-no-transcript` indicating that the transcript should not be generated into markdown file. However, transcript will be fetched every time the course is fetched, just saving to .json data file only, and ready to be rendered into markdown file later with the `md` command.
 - [x] #hig #gui #ftr #13 GUI: Rename the 'Sign in' button to 'Browser' — it opens a browser the user can log in and browse in, and that stays open; subsequent fetch/sync tasks reuse that same browser (via a `browser` command that advertises a Chrome remote-debugging endpoint, which fetches connect to) so the site never re-challenges for sign-in. If reuse is impossible (endpoint unresponsive), the GUI asks the user to acknowledge closing it.
-- [ ] #hig #cor #ftr #14 Python: cascade backlog #13 to the Python app — a persistent, reusable browser via Selenium `debuggerAddress`, sharing the `browser` command + endpoint-file contract with the Go core.
+- [x] #hig #cor #ftr #14 Python: cascade backlog #13 to the Python app — a persistent, reusable browser via Selenium `debuggerAddress`, sharing the `browser` command + endpoint-file contract with the Go core.
 
 ---
 

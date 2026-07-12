@@ -2,7 +2,7 @@
 import sys
 import os
 import argparse
-from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, BASE_URL_PARTNERS, DEFAULT_PORTAL, PORTALS, portal_config, DATA_FOLDER_NAME
+from config.settings import WEBDRIVER_PROFILE_FOLDER_NAME, DEFAULT_PORTAL, PORTALS, portal_config, DATA_FOLDER_NAME
 
 # Ensure app modules can be imported
 # Add 'app' directory to sys.path so we can import 'models' directly
@@ -15,6 +15,7 @@ from models.paths import Paths
 from models.courses import Courses
 from models.labs import Labs
 from services.launch_browser import launch_browser
+from services import browser_endpoint
 from utils.utils import util_portal_and_id, util_ensure_authenticated
 from utils.completeness import item_complete, path_complete, course_complete
 
@@ -47,6 +48,50 @@ def _fetch_label(portal, table, ident):
     """Format an item as "<id> - <name>" when the name is known, else "<id>"."""
     name = _stored_name(portal, table, ident)
     return f"{ident} - {name}" if name else str(ident)
+
+
+def _reusable_browser():
+    """
+    Backlog #14: return the debug port of a live, reusable persistent browser, or
+    None. A separate `browser` process advertises it; fetch/list ATTACH to that
+    already-signed-in Chrome instead of launching (and re-authenticating) their
+    own — and so they don't lock the shared profile twice.
+    """
+    port, ok = browser_endpoint.load_endpoint()
+    if ok and browser_endpoint.endpoint_alive(port):
+        return port
+    return None
+
+
+def _acquire_driver(headless):
+    """
+    Return (driver, borrowed). Reuse the persistent browser (#14) when one is
+    live — attach to it so the sign-in carries over; otherwise launch a fresh
+    browser on the shared profile.
+    """
+    port = _reusable_browser()
+    if port is not None:
+        try:
+            print("\n\033[35mReusing the open browser...\033[0m")
+            return launch_browser(browser="chrome",
+                                  debugger_address=f"127.0.0.1:{port}"), True
+        except Exception as e:
+            print(f"(reuse) could not attach to the open browser: {e}; launching a new one.")
+    print("\n\033[35mLaunching browser...\033[0m")
+    return launch_browser(headless=headless, browser="chrome",
+                          profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME), False
+
+
+def _release_driver(driver, borrowed):
+    """
+    Tear a driver down. A borrowed (attached) driver only DETACHES — quitting it
+    ends our chromedriver session but leaves the shared browser running, because
+    ChromeDriver only closes a Chrome it launched itself.
+    """
+    if not driver:
+        return
+    print("Detaching from the open browser..." if borrowed else "Closing browser...")
+    driver.quit()
 
 
 def add_portal_flags(parser):
@@ -116,9 +161,9 @@ def cmd_list(args):
     # Reload from remote first, if requested.
     if args.reload:
         driver = None
+        borrowed = False
         try:
-            print("\n\033[35mLaunching browser for list extraction...\033[0m")
-            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver, borrowed = _acquire_driver(headless)
 
             print(f"Reloading {label} list from remote [{portal}]...")
             collection = target_class(driver=driver, portal=portal)
@@ -138,9 +183,7 @@ def cmd_list(args):
             except Exception as e:
                 print(f"Error reloading {label}: {e}")
         finally:
-            if driver:
-                print("Closing browser...")
-                driver.quit()
+            _release_driver(driver, borrowed)
 
     print(f"Listing all {label} [{portal}]...")
 
@@ -190,9 +233,9 @@ def _collect_all_ids(kind, portal, headless):
     class_map = {'paths': Paths, 'courses': Courses, 'labs': Labs}
     out = {}
     driver = None
+    borrowed = False
     try:
-        print("\n\033[35mLaunching browser to enumerate the catalog...\033[0m")
-        driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+        driver, borrowed = _acquire_driver(headless)
         for table in tables:
             collection = class_map[table](driver=driver, portal=portal)
             collection.load_json()
@@ -207,9 +250,7 @@ def _collect_all_ids(kind, portal, headless):
             out[table] = list(collection.collection.keys())
             print(f"{table}: {len(out[table])} to fetch [{portal}]")
     finally:
-        if driver:
-            print("Closing browser...")
-            driver.quit()
+        _release_driver(driver, borrowed)
     return out
 
 def _section_needs_browser(ids, kind, default_portal, force):
@@ -287,17 +328,22 @@ def cmd_fetch(args):
         return
 
     # #11: proactively sign in before fetching. The session persists in the
-    # browser profile, so the per-section fetches below reuse it.
+    # browser profile, so the per-section fetches below reuse it. #14: if a
+    # reusable browser is already open, sign in there instead — a separate
+    # sign-in browser would collide on the shared profile lock.
     if signin:
-        _proactive_signin(default_portal, headless)
+        if _reusable_browser() is not None:
+            print("\nA reusable browser is already open — sign in there; skipping the separate sign-in step.")
+        else:
+            _proactive_signin(default_portal, headless)
 
     # --- Paths ---
     if fetch_paths_ids and _section_needs_browser(fetch_paths_ids, 'paths', default_portal, force):
         print(f"\nProcessing Paths: {fetch_paths_ids}")
         driver = None
+        borrowed = False
         try:
-            print("\n\033[35mLaunching browser for path extraction...\033[0m")
-            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver, borrowed = _acquire_driver(headless)
 
             for raw_pid in fetch_paths_ids:
                 portal, pid = _resolve_portal(raw_pid, default_portal)
@@ -355,9 +401,7 @@ def cmd_fetch(args):
                 except Exception as e:
                     print(f"Failed to fetch path {pid}: {e}")
         finally:
-            if driver:
-                print("Closing browser...")
-                driver.quit()
+            _release_driver(driver, borrowed)
     elif fetch_paths_ids:
         print(f"\nProcessing Paths: {fetch_paths_ids}")
         print("All requested paths are already complete (use --force to re-fetch).")
@@ -366,11 +410,10 @@ def cmd_fetch(args):
     if fetch_courses_ids and _section_needs_browser(fetch_courses_ids, 'courses', default_portal, force):
         print(f"\nProcessing Courses: {fetch_courses_ids}")
         driver = None
+        borrowed = False
         try:
-             # Launch browser for authenticated access
-             print("\n\033[35mLaunching browser for course extraction...\033[0m")
-             driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
-             
+             driver, borrowed = _acquire_driver(headless)
+
              for raw_cid in fetch_courses_ids:
                 portal, cid = _resolve_portal(raw_cid, default_portal)
                 try:
@@ -387,9 +430,7 @@ def cmd_fetch(args):
                 except Exception as e:
                     print(f"Failed to fetch course {cid}: {e}")
         finally:
-            if driver:
-                print("Closing browser...")
-                driver.quit()
+            _release_driver(driver, borrowed)
     elif fetch_courses_ids:
         print(f"\nProcessing Courses: {fetch_courses_ids}")
         print("All requested courses are already complete (use --force to re-fetch).")
@@ -398,9 +439,9 @@ def cmd_fetch(args):
     if fetch_labs_ids and _section_needs_browser(fetch_labs_ids, 'labs', default_portal, force):
         print(f"\nProcessing Labs: {fetch_labs_ids}")
         driver = None
+        borrowed = False
         try:
-            print("\n\033[35mLaunching browser for lab extraction...\033[0m")
-            driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
+            driver, borrowed = _acquire_driver(headless)
 
             for raw_lid in fetch_labs_ids:
                 portal, lid = _resolve_portal(raw_lid, default_portal)
@@ -411,9 +452,7 @@ def cmd_fetch(args):
                 except Exception as e:
                     print(f"Failed to fetch lab {lid}: {e}")
         finally:
-            if driver:
-                print("Closing browser...")
-                driver.quit()
+            _release_driver(driver, borrowed)
     elif fetch_labs_ids:
         print(f"\nProcessing Labs: {fetch_labs_ids}")
         print("All requested labs are already complete (use --force to re-fetch).")
@@ -573,27 +612,54 @@ def cmd_reindex(args):
     print(f"Reindex complete: {total} fetched items indexed [{portal}]")
 
 def cmd_browser(args):
-    """Handle browser command"""
-    print("\n\033[35mDEBUG: LAUNCHING THE BROWSER...\033[0m\n")
-    
-    profile = args.profile_folder if args.profile_folder else WEBDRIVER_PROFILE_FOLDER_NAME
-    
-    driver = launch_browser(profile_folder=profile, headless=False, browser="chrome")
-    
-    # Open the URL in the default web browser (PARTNERS page usually redirects to login if not logged in)
-    driver.get(BASE_URL_PARTNERS)
-    print("\n\033[35mDEBUG: BROWSER LAUNCHED.\033[0m")
-    print("You can now log in. The script will keep running. Press Ctrl+C to exit and close browser.")
-    
+    """
+    Backlog #14 (cascade of #13): open a persistent, reusable browser.
+
+    Launches a visible Chrome on the selected portal with a fixed remote-
+    debugging port, advertises that endpoint (services/browser_endpoint), and
+    stays open until Enter / Ctrl+C / SIGTERM. While it is open, `fetch` and
+    `list -r` ATTACH to this same window (Selenium debuggerAddress) instead of
+    launching their own — so the site never re-challenges for sign-in between
+    tasks. On exit it clears the endpoint and closes the browser (it owns it).
+    """
+    portal = getattr(args, 'portal', DEFAULT_PORTAL)
+    profile = args.profile_folder if getattr(args, 'profile_folder', None) else WEBDRIVER_PROFILE_FOLDER_NAME
+    url = portal_config(portal)["base"]
+
+    port = browser_endpoint.free_port()
+    print(f"\n\033[35mOpening a reusable browser for the '{portal}' portal...\033[0m")
+    print(f"Opening: {url}")
+
+    driver = launch_browser(profile_folder=profile, headless=False, browser="chrome", debug_port=port)
     try:
-        # Keep the script running so the browser stays open
-        # We can also just input() to wait
-        input("Press Enter to close the browser and exit...")
-    except KeyboardInterrupt:
-        pass
+        # Chrome is up and listening on the debug port now; advertise it so
+        # fetch/list can reuse this window.
+        browser_endpoint.save_endpoint(port)
+        driver.get(url)
+        print("Browser is open. Sign in and browse freely; fetches will reuse this window.")
+        try:
+            input("Press Enter to close the browser and exit...")
+        except (KeyboardInterrupt, EOFError):
+            pass
     finally:
+        browser_endpoint.clear_endpoint()
         print("Closing browser...")
         driver.quit()
+
+
+def cmd_browser_status(args):
+    """
+    Backlog #14: print whether a reusable browser is advertised and reachable —
+    "none" / "alive" / "stale" — mirroring the Go `browser-status` command, so a
+    GUI can decide to reuse it or ask the user to close a stale one.
+    """
+    port, ok = browser_endpoint.load_endpoint()
+    if not ok:
+        print("none")
+    elif browser_endpoint.endpoint_alive(port):
+        print("alive")
+    else:
+        print("stale")
 
 def cmd_mdpath(args):
     """
@@ -745,10 +811,16 @@ def main():
     add_portal_flags(parser_login)
     parser_login.set_defaults(func=cmd_login)
 
-    # Browser command
-    parser_b = subparsers.add_parser('browser', aliases=['b', 'w'], help='Launch browser for manual login')
+    # Browser command: open a reusable browser that later fetches attach to (#14).
+    parser_b = subparsers.add_parser('browser', aliases=['b', 'w'],
+                                     help='Open a reusable browser you can sign in to; fetches reuse it')
     parser_b.add_argument('--profile-folder', help='Specific webdriver profile folder', default=None)
+    add_portal_flags(parser_b)
     parser_b.set_defaults(func=cmd_browser)
+
+    # Browser-status command (hidden, GUI-facing): none / alive / stale (#14).
+    parser_bs = subparsers.add_parser('browser-status')
+    parser_bs.set_defaults(func=cmd_browser_status)
 
     # MD command
     parser_m = subparsers.add_parser('md', help='Generate markdown output')

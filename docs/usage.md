@@ -139,7 +139,7 @@ AVAILABLE OPTIONS  (working portal: public)
   2. l: LIST paths / courses / labs
   3. s: SEARCH the database
   4. m: GENERATE markdown
-  5. w: LAUNCH browser (manual login)
+  5. w: OPEN a reusable browser (fetches reuse it)
   6. p: SWITCH portal (public / partner)
   0. q: QUIT
 ```
@@ -159,10 +159,22 @@ Opens a browser at the portal's home page. Log in, then press **Enter** to close
 it. Your session is saved to the reusable Chrome profile, so later fetches are
 already authenticated. Run it again whenever pages start returning empty.
 
-### `browser` (aliases `b`, `w`) — manual browser
+### `browser` (aliases `b`, `w`) — reusable browser
 
-Opens a Chrome window (with the shared profile) for manual login or debugging,
-and keeps it open until you press Enter.
+```bash
+uv run app/main.py browser          # public
+uv run app/main.py browser -B       # partner
+```
+
+Opens a Chrome window (with the shared profile) you can sign in to and browse in,
+and keeps it open until you press **Enter** (or it receives Ctrl+C / SIGTERM).
+While it is open, `fetch` and `list -r` **attach to this same window** instead of
+launching their own browser — so the site never re-challenges for sign-in between
+tasks, and you don't need `--signin` on each fetch. Closing it (Enter) shuts the
+browser down and stops the reuse.
+
+`browser-status` prints `none` / `alive` / `stale` — whether a reusable browser
+is currently advertised and reachable (used by the GUI).
 
 ## Where output goes
 

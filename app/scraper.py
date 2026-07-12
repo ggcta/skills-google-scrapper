@@ -252,13 +252,13 @@ def _action_markdown(portal: str) -> None:
 
 
 def _action_browser(portal: str) -> None:
-    """Launch a browser for manual login, delegating to cmd_browser.
+    """Open a reusable browser (#14), delegating to cmd_browser.
 
-    Portal is accepted for a uniform action signature; the login page is
-    shared across portals so it is not portal-specific here.
+    The browser opens on the given portal and stays open so subsequent fetches
+    reuse it (via the advertised remote-debugging endpoint).
     """
     import main  # lazy import
-    args = SimpleNamespace(profile_folder=None)
+    args = SimpleNamespace(profile_folder=None, portal=portal)
     main.cmd_browser(args)
 
 
@@ -306,7 +306,7 @@ def interactive_mode() -> None:
             "  2. l: LIST paths / courses / labs\n"
             "  3. s: SEARCH the database\n"
             "  4. m: GENERATE markdown\n"
-            "  5. w: LAUNCH browser (manual login)\n"
+            "  5. w: OPEN a reusable browser (fetches reuse it)\n"
             "  6. p: SWITCH portal (public / partner)\n"
             "  0. q: QUIT\n"
             "• PLEASE SELECT: "
