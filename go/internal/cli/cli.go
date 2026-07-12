@@ -46,6 +46,8 @@ func Run(args []string) int {
 		return cmdMDPath(rest)
 	case "search", "s":
 		return cmdSearch(rest)
+	case "db", "mgmt":
+		return cmdDB(rest)
 	case "reindex":
 		return cmdReindex(rest)
 	case "browser":
@@ -78,6 +80,7 @@ Commands:
   pdf            Generate a styled PDF from stored data (-p/-c/-l <ids>)
   mdpath         Print the vault .md path for a stored item (-p/-c/-l <id>)
   search, s      Search the local database
+  db, mgmt       Manage stored items: list / show / rm / set (rename)
   reindex        Rebuild the database.json index from the per-item JSON files
   browser        Open a reusable browser that later fetches connect to (stays open)
   login          Sign in to a portal (opens a browser)
@@ -112,7 +115,14 @@ PDF options (pdf):
   --theme NAME        Theme folder under theme/ (default: humanist)
   --list-themes       List available themes and exit
   -f, --force         Silence the "not fully fetched" warning
-  --toc               Structure only; --md-no-transcript omits transcripts`)
+  --toc               Structure only; --md-no-transcript omits transcripts
+
+Item management (db):
+  db list [-p|-c|-l]  Review items; flags data-less stubs (bogus entries)
+  db show -p/-c/-l ID Inspect one item and its files
+  db rm -p/-c/-l IDS  Delete item(s): ledger row + JSON + vault .md/.pdf
+                      (--materials also removes materials/; --yes skips the prompt)
+  db set -p/-c/-l ID --name "New name"   Rename an item`)
 }
 
 // flagSet is a tiny argument scanner shared by the commands. It recognises the
