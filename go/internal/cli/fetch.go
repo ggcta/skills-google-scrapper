@@ -203,7 +203,7 @@ func cmdFetch(args []string) int {
 		}
 		pk, id := resolvePortal(raw, p.portal)
 		logx.Printf("\nProcessing Course %s [%s]\n", labelFor(pk, "courses", id), pk)
-		if err := fetchCourse(sess, pk, id, force, noMD, tocOnly, noTranscript); reportable(sess, err) {
+		if _, err := fetchCourse(sess, pk, id, "", force, noMD, tocOnly, noTranscript); reportable(sess, err) {
 			logx.Errf("Failed to fetch course %s: %v\n", id, err)
 			rc = 1
 		}
@@ -214,7 +214,7 @@ func cmdFetch(args []string) int {
 		}
 		pk, id := resolvePortal(raw, p.portal)
 		logx.Printf("\nProcessing Lab %s [%s]\n", labelFor(pk, "labs", id), pk)
-		if err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); reportable(sess, err) {
+		if _, err := fetchLab(sess, pk, id, "", force, noMD, tocOnly); reportable(sess, err) {
 			logx.Errf("Failed to fetch lab %s: %v\n", id, err)
 			rc = 1
 		}
@@ -297,9 +297,9 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 			case "paths":
 				e = fetchPath(sess, portalKey, id, force, noMD, tocOnly, noTranscript)
 			case "courses":
-				e = fetchCourse(sess, portalKey, id, force, noMD, tocOnly, noTranscript)
+				_, e = fetchCourse(sess, portalKey, id, "", force, noMD, tocOnly, noTranscript)
 			case "labs":
-				e = fetchLab(sess, portalKey, id, "", force, noMD, tocOnly)
+				_, e = fetchLab(sess, portalKey, id, "", force, noMD, tocOnly)
 			}
 			if reportable(sess, e) {
 				logx.Errf("Failed to fetch %s %s: %v\n", singular, id, e)
@@ -344,11 +344,14 @@ func resolvePortal(raw, defaultPortal string) (string, string) {
 
 // fetchLab loads, parses, and persists a single lab. When fetchURL is empty the
 // lab's catalog URL is used; partner labs from a path pass their focus URL.
-func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD, tocOnly bool) error {
+// fetchLab fetches a lab. fetchURL is the path's stored activity URL; when it's a
+// partner session deep-link (no catalog id) the real lab id is resolved from the
+// target page's canonical URL. Returns the resolved lab id.
+func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD, tocOnly bool) (string, error) {
 	if !force {
 		if existing, _ := store.LoadLab(portalKey, id); existing != nil && existing.ScrapedTime > 0 {
 			logx.Printf("•-• [+] Already complete: %s - %s\n", id, existing.Title)
-			return nil
+			return id, nil
 		}
 	}
 
@@ -356,37 +359,59 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 	if target == "" {
 		target = portal.Get(portalKey).Lab + "/" + id // catalog_lab/<id>
 	}
+	sessionLink := scrape.IsSessionDeepLink(fetchURL)
 	logx.Printf("Fetching: %s\n", target)
 	html, finalURL, err := sess.Navigate(target, 1500*time.Millisecond)
 	if err != nil {
-		return err
+		return id, err
 	}
 	html, err = ensureAuthenticated(sess, target, html, finalURL, 1500*time.Millisecond, "lab "+id)
 	if err != nil {
-		return err
+		return id, err
+	}
+	if sessionLink {
+		real := scrape.LabIDFromURL(finalURL)
+		if real == "" {
+			real = scrape.LabIDFromURL(scrape.CanonicalURL(html))
+		}
+		if real != "" && real != id {
+			id = real
+			target = portal.Get(portalKey).Lab + "/" + id
+			logx.Printf("Resolved session link to lab %s: %s\n", id, target)
+			html, finalURL, err = sess.Navigate(target, 1500*time.Millisecond)
+			if err != nil {
+				return id, err
+			}
+			html, err = ensureAuthenticated(sess, target, html, finalURL, 1500*time.Millisecond, "lab "+id)
+			if err != nil {
+				return id, err
+			}
+		} else if real != "" {
+			id = real
+		}
 	}
 
 	lc, err := scrape.ParseLabHTML(html)
 	if err != nil {
-		return err
+		return id, err
 	}
 	if lc.Name == "" {
-		return fmt.Errorf("could not determine lab name (page may require sign-in)")
+		return id, fmt.Errorf("could not determine lab name (page may require sign-in)")
 	}
 
 	if sess.Interrupted() {
-		return errInterrupted
+		return id, errInterrupted
 	}
 	lab := lc.ToModel(id, portalKey)
 	if err := store.SaveLabEntity(lab); err != nil {
-		return err
+		return id, err
 	}
 	if !noMD {
 		if _, err := store.WriteLabMarkdown(lab, mdgen.Lab(lab, mdgen.Options{TOCOnly: tocOnly})); err != nil {
-			return err
+			return id, err
 		}
 	}
 	itemSaved("lab", portalKey, id, lab.Title, lab.ScrapedTime)
 	logx.Printf("•-• [+] %s - %s (%d steps)\n", id, lab.Title, lab.Steps.Len())
-	return nil
+	return id, nil
 }

@@ -41,9 +41,14 @@ func ParseCourseMetadata(pageHTML string) (CourseMeta, error) {
 	ld := strings.TrimSpace(doc.Find("script[type='application/ld+json']").First().Text())
 	metaDesc, _ := doc.Find("meta[name='description']").Attr("content")
 
-	// Partner: no ld+json.
+	// Partner: no ld+json. Its id comes from the page's canonical URL
+	// (…/course_templates/<id>) since there is no ld+json @id.
 	if ld == "" {
-		return parseCourseMetaPartner(doc, metaDesc)
+		m, err := parseCourseMetaPartner(doc, metaDesc)
+		if err == nil {
+			m.ID = CourseTemplateIDFromURL(canonicalURLFromDoc(doc))
+		}
+		return m, err
 	}
 
 	var m CourseMeta

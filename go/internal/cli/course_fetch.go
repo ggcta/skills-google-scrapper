@@ -25,24 +25,58 @@ const activitySettle = 1200 * time.Millisecond
 
 var sessionHrefRe = regexp.MustCompile(`/course_sessions/[^/]+`)
 
-// fetchCourse ports Course.extract_transcript end to end.
-func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOnly, noTranscript bool) error {
+// fetchCourse ports Course.extract_transcript end to end. fetchURL is the path's
+// stored activity URL: when it's a partner session deep-link (no catalog id), the
+// real course id is resolved from the target page's canonical URL. Returns the
+// resolved course id, so the caller can correct the path's stored ref.
+func fetchCourse(sess *browser.Session, portalKey, id, fetchURL string, force, noMD, tocOnly, noTranscript bool) (string, error) {
 	// Skip before any navigation when the course is already fully scraped
 	// (backlog #6/#7); --force re-fetches (#8). This is a local check (no browser),
 	// distinct from the online datePublished freshness check further below.
 	if !force && courseComplete(portalKey, id) {
 		logx.Printf("•-• [+] Course %s already complete.\n", labelFor(portalKey, "courses", id))
-		return nil
+		return id, nil
 	}
+
+	// Partner path fix: a session deep-link (…/course_sessions/…) carries no
+	// catalog id (the trailing segment is a video/quiz id, not the course), so
+	// navigate it and resolve the real course id from the final URL or the page
+	// canonical, then fetch the authoritative course page for the outline.
 	courseURL := portal.Get(portalKey).Courses + "/" + id
-	logx.Printf("(fetch_course_page) Fetching: %s\n", courseURL)
-	html, finalURL, err := sess.Navigate(courseURL, activitySettle)
-	if err != nil {
-		return err
+	target := courseURL
+	sessionLink := scrape.IsSessionDeepLink(fetchURL)
+	if sessionLink {
+		target = fetchURL
 	}
-	html, err = ensureAuthenticated(sess, courseURL, html, finalURL, activitySettle, "course "+id)
+	logx.Printf("(fetch_course_page) Fetching: %s\n", target)
+	html, finalURL, err := sess.Navigate(target, activitySettle)
 	if err != nil {
-		return err
+		return id, err
+	}
+	html, err = ensureAuthenticated(sess, target, html, finalURL, activitySettle, "course "+id)
+	if err != nil {
+		return id, err
+	}
+	if sessionLink {
+		real := scrape.CourseTemplateIDFromURL(finalURL)
+		if real == "" {
+			real = scrape.CourseTemplateIDFromURL(scrape.CanonicalURL(html))
+		}
+		if real != "" && real != id {
+			id = real
+			courseURL = portal.Get(portalKey).Courses + "/" + id
+			logx.Printf("(fetch_course_page) Resolved session link to course %s: %s\n", id, courseURL)
+			html, finalURL, err = sess.Navigate(courseURL, activitySettle)
+			if err != nil {
+				return id, err
+			}
+			html, err = ensureAuthenticated(sess, courseURL, html, finalURL, activitySettle, "course "+id)
+			if err != nil {
+				return id, err
+			}
+		} else if real != "" {
+			id = real
+		}
 	}
 
 	// Stored publish date, for the skip check.
@@ -53,12 +87,12 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 
 	meta, err := scrape.ParseCourseMetadata(html)
 	if err != nil {
-		return fmt.Errorf("metadata: %w", err)
+		return id, fmt.Errorf("metadata: %w", err)
 	}
 	// Skip (public only) when the publish date is unchanged and not forced.
 	if !force && !meta.Partner && meta.DatePublished != "" && meta.DatePublished == storedDate {
 		logx.Printf("(extract_course_metadata) Course %s already extracted. datePublished: %s\n", id, meta.DatePublished)
-		return nil
+		return id, nil
 	}
 
 	effectiveID := id
@@ -68,7 +102,7 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 
 	modules, err := scrape.ParseCourseOutline(html)
 	if err != nil {
-		return fmt.Errorf("outline: %w", err)
+		return effectiveID, fmt.Errorf("outline: %w", err)
 	}
 
 	dp := meta.DatePublished
@@ -99,21 +133,21 @@ func fetchCourse(sess *browser.Session, portalKey, id string, force, noMD, tocOn
 	}
 
 	if sess.Interrupted() {
-		return errInterrupted
+		return effectiveID, errInterrupted
 	}
 	if err := store.SaveCourseEntity(course); err != nil {
-		return err
+		return effectiveID, err
 	}
 	// Keep the courses collection name in sync.
 	_ = store.UpsertCollectionName(portalKey, "courses", effectiveID, course.Title)
 	if !noMD {
 		if _, err := store.WriteCourseMarkdown(course, mdgen.Course(course, mdgen.Options{TOCOnly: tocOnly, NoTranscript: noTranscript})); err != nil {
-			return err
+			return effectiveID, err
 		}
 	}
 	itemSaved("course", portalKey, effectiveID, course.Title, course.ScrapedTime)
 	logx.Printf("•-• COMPLETED: %s - %s\n", effectiveID, course.Title)
-	return nil
+	return effectiveID, nil
 }
 
 // processActivity ports process_step's per-type dispatch, enriching the activity
