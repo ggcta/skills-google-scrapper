@@ -38,6 +38,9 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 	if err != nil {
 		return err
 	}
+	if sess.ConnectionLost() {
+		return browser.ErrConnectionLost
+	}
 	if sess.Interrupted() {
 		return errInterrupted
 	}
@@ -60,7 +63,7 @@ func fetchPath(sess *browser.Session, portalKey, id string, force, noMD, tocOnly
 	corrected := make([]model.CourseRef, 0, len(path.Courses.Keys))
 	changed := false
 	for _, key := range path.Courses.Keys {
-		if sess.Interrupted() {
+		if stopRequested(sess) {
 			return errInterrupted
 		}
 		ref := path.Courses.Values[key]

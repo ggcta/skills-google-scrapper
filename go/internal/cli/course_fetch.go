@@ -132,6 +132,9 @@ func fetchCourse(sess *browser.Session, portalKey, id, fetchURL string, force, n
 		}
 	}
 
+	if sess.ConnectionLost() {
+		return effectiveID, browser.ErrConnectionLost
+	}
 	if sess.Interrupted() {
 		return effectiveID, errInterrupted
 	}
@@ -155,6 +158,12 @@ func fetchCourse(sess *browser.Session, portalKey, id, fetchURL string, force, n
 // Transcripts are always fetched into the model (#12); whether they render into
 // Markdown is decided later at generation time.
 func processActivity(sess *browser.Session, base, courseID, portalKey string, a *model.Activity, force bool) {
+	// Connection lost past the retry budget: stop touching the network so the
+	// remaining activities drain instantly and the course is left unsaved (its
+	// caller checks ConnectionLost before persisting).
+	if sess.ConnectionLost() {
+		return
+	}
 	// Fix session hrefs back to the template.
 	if a.Href != "" && strings.Contains(a.Href, "/course_sessions/") {
 		a.Href = sessionHrefRe.ReplaceAllString(a.Href, "/course_templates/"+courseID)

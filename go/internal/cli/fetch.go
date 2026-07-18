@@ -54,11 +54,36 @@ func itemSaved(kind, portalKey, id, name string, scrapedMs int64) {
 }
 
 // reportable is true when err is a real failure worth printing — not nil, not an
-// interrupt, and not an error produced while the run was being canceled (a
-// canceled navigation surfaces as a generic error before the loop's next
-// interrupt check).
+// interrupt, not a lost internet connection (reported once by the loop, not
+// per-item), and not an error produced while the run was being canceled (a
+// canceled navigation surfaces as a generic error before the loop's next stop
+// check).
 func reportable(sess *browser.Session, err error) bool {
-	return err != nil && !errors.Is(err, errInterrupted) && !sess.Interrupted()
+	return err != nil && !errors.Is(err, errInterrupted) &&
+		!errors.Is(err, browser.ErrConnectionLost) &&
+		!sess.Interrupted() && !sess.ConnectionLost()
+}
+
+// stopRequested reports whether the run should stop between items: the user
+// interrupted it (Ctrl+C) or the internet connection stayed down past the retry
+// budget. In both cases already-completed items are saved and the remaining ones
+// are left untouched.
+func stopRequested(sess *browser.Session) bool {
+	return sess.Interrupted() || sess.ConnectionLost()
+}
+
+// reportStop prints the appropriate final line when a run stopped early, and
+// returns the exit code to use (non-zero for a lost connection, since the run
+// did not finish). It is a no-op returning rc when neither condition holds.
+func reportStop(sess *browser.Session, rc int) int {
+	switch {
+	case sess.ConnectionLost():
+		logx.Errf("\nInternet connection lost — stopped after retrying for %s; completed items are saved. Re-run to resume.\n", browser.ConnRetryBudget)
+		return 1
+	case sess.Interrupted():
+		logx.Errf("\nInterrupted — stopped cleanly; completed items are saved.\n")
+	}
+	return rc
 }
 
 // cmdFetch scrapes content into Markdown + JSON: paths cascade to their courses
@@ -187,7 +212,7 @@ func cmdFetch(args []string) int {
 	rc := 0
 	// Paths first (cascade), then standalone courses, then standalone labs.
 	for _, raw := range splitIDs(pathIDs) {
-		if sess.Interrupted() {
+		if stopRequested(sess) {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
@@ -198,7 +223,7 @@ func cmdFetch(args []string) int {
 		}
 	}
 	for _, raw := range splitIDs(courseIDs) {
-		if sess.Interrupted() {
+		if stopRequested(sess) {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
@@ -209,7 +234,7 @@ func cmdFetch(args []string) int {
 		}
 	}
 	for _, raw := range splitIDs(labIDs) {
-		if sess.Interrupted() {
+		if stopRequested(sess) {
 			break
 		}
 		pk, id := resolvePortal(raw, p.portal)
@@ -219,10 +244,7 @@ func cmdFetch(args []string) int {
 			rc = 1
 		}
 	}
-	if sess.Interrupted() {
-		logx.Errf("\nInterrupted — stopped cleanly; completed items are saved.\n")
-	}
-	return rc
+	return reportStop(sess, rc)
 }
 
 // fetchNeedsBrowser reports whether any explicitly requested item (-p/-c/-l) is
@@ -263,6 +285,9 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 
 	rc := 0
 	for _, table := range tables {
+		if stopRequested(sess) {
+			break
+		}
 		logx.Printf("\nFetching ALL %s [%s]\n", table, portalKey)
 		if err := reloadListWith(sess, portalKey, table); err != nil {
 			// Non-fatal: fall back to whatever is already stored locally.
@@ -280,7 +305,7 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 		}
 		singular := map[string]string{"paths": "Path", "courses": "Course", "labs": "Lab"}[table]
 		for i, d := range docs {
-			if sess.Interrupted() {
+			if stopRequested(sess) {
 				break
 			}
 			id := d.ID()
@@ -306,14 +331,11 @@ func fetchAll(sess *browser.Session, portalKey, kind string, force, noMD, tocOnl
 				rc = 1
 			}
 		}
-		if sess.Interrupted() {
+		if stopRequested(sess) {
 			break
 		}
 	}
-	if sess.Interrupted() {
-		logx.Errf("\nInterrupted — stopped cleanly; completed items are saved.\n")
-	}
-	return rc
+	return reportStop(sess, rc)
 }
 
 // kindTables maps a --all kind argument to the catalog tables to sweep.
@@ -399,6 +421,9 @@ func fetchLab(sess *browser.Session, portalKey, id, fetchURL string, force, noMD
 		return id, fmt.Errorf("could not determine lab name (page may require sign-in)")
 	}
 
+	if sess.ConnectionLost() {
+		return id, browser.ErrConnectionLost
+	}
 	if sess.Interrupted() {
 		return id, errInterrupted
 	}
