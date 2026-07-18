@@ -162,6 +162,67 @@ fn kind_flag(kind: &str, long: bool) -> &'static str {
     }
 }
 
+/// Build the `fetch` argv for the binary from the Fetch-tab inputs. Extracted so
+/// the id/all handling is unit-tested.
+///
+/// The frontend already splits the "IDs or URLs" box on spaces/commas into a
+/// list. Two things the binary needs:
+///   - "all" (any case) means bulk-fetch the whole catalog for the selected type,
+///     which the binary exposes as `--all <type>` (not an id).
+///   - otherwise the ids must be ONE comma-joined value, because the binary's
+///     -p/-c/-l flag consumes a single token (which it then splits on comma/
+///     space). Passing them as separate args would drop all but the first.
+fn fetch_args(
+    portal: &str,
+    kind: &str,
+    ids: &[String],
+    force: bool,
+    signin: bool,
+    toc: bool,
+    no_transcript: bool,
+    headless: bool,
+) -> Vec<String> {
+    let mut args: Vec<String> = vec!["fetch".into(), portal_flag(portal).into()];
+
+    let cleaned: Vec<String> = ids
+        .iter()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if cleaned.iter().any(|s| s.eq_ignore_ascii_case("all")) {
+        // Bulk mode for the selected type: --all paths|courses|labs.
+        args.push("--all".into());
+        args.push(kind_flag(kind, true).trim_start_matches('-').to_string());
+    } else {
+        args.push(kind_flag(kind, false).into());
+        args.push(cleaned.join(","));
+    }
+
+    if force {
+        args.push("--force".into());
+    }
+    // #11: open the sign-in page and wait (the fetch-auth-required event drives
+    // the modal; Continue answers it via continue_fetch).
+    if signin {
+        args.push("--signin".into());
+    }
+    if toc {
+        args.push("--toc".into());
+    }
+    // #12: transcripts are always fetched into the JSON; this only omits them from
+    // the generated Markdown.
+    if no_transcript {
+        args.push("--md-no-transcript".into());
+    }
+    if headless {
+        args.push("--headless".into());
+    }
+    // Ask the binary for machine-readable "@@ITEM {json}" markers so we can
+    // refresh the Browse badges live as each item is saved.
+    args.push("--emit-progress".into());
+    args
+}
+
 /// Run `csb` to completion and return stdout (used for the --json commands).
 fn run_csb(args: &[String]) -> Result<String, String> {
     let bin = resolve_csb()?;
@@ -296,34 +357,16 @@ async fn fetch(
         return Err(BUSY_MSG.into());
     }
 
-    let mut args: Vec<String> = vec![
-        "fetch".into(),
-        portal_flag(&portal).into(),
-        kind_flag(&kind, false).into(),
-    ];
-    args.extend(ids.into_iter().filter(|s| !s.trim().is_empty()));
-    if force {
-        args.push("--force".into());
-    }
-    // #11: open the sign-in page and wait (the fetch-auth-required event drives
-    // the modal; Continue answers it via continue_fetch).
-    if signin {
-        args.push("--signin".into());
-    }
-    if toc {
-        args.push("--toc".into());
-    }
-    // #12: transcripts are always fetched into the JSON; this only omits them from
-    // the generated Markdown.
-    if no_transcript {
-        args.push("--md-no-transcript".into());
-    }
-    if headless {
-        args.push("--headless".into());
-    }
-    // Ask the binary for machine-readable "@@ITEM {json}" markers so we can
-    // refresh the Browse badges live as each item is saved.
-    args.push("--emit-progress".into());
+    let args = fetch_args(
+        &portal,
+        &kind,
+        &ids,
+        force,
+        signin,
+        toc,
+        no_transcript,
+        headless,
+    );
 
     // Spawn in-command so a launch failure rejects the promise (and frees the
     // guard); release on every early-error path.
@@ -715,5 +758,59 @@ mod tests {
         // A clone shares the same flag, so it also sees "held".
         assert!(!g.clone().try_acquire(), "clone must observe the held flag");
         g.release();
+    }
+
+    // Multiple ids must reach the binary as ONE comma-joined value (the -p/-c/-l
+    // flag takes a single token). Both "1, 2, 3" and "1 2 3" arrive here already
+    // split by the frontend, so we just verify the join.
+    #[test]
+    fn fetch_args_joins_multiple_ids() {
+        let ids = vec!["1".to_string(), "2".to_string(), "3".to_string()];
+        let a = fetch_args("public", "path", &ids, false, false, false, false, false);
+        assert_eq!(a, vec!["fetch", "-A", "-p", "1,2,3", "--emit-progress"]);
+    }
+
+    // A single id still works and empties are dropped.
+    #[test]
+    fn fetch_args_single_id() {
+        let ids = vec!["16".to_string(), "".to_string()];
+        let a = fetch_args("partner", "course", &ids, false, false, false, false, false);
+        assert_eq!(a, vec!["fetch", "-B", "-c", "16", "--emit-progress"]);
+    }
+
+    // "all" (any case) switches to bulk mode for the selected type.
+    #[test]
+    fn fetch_args_all_is_bulk_mode() {
+        let a = fetch_args(
+            "partner",
+            "lab",
+            &["ALL".to_string()],
+            false,
+            false,
+            false,
+            false,
+            false,
+        );
+        assert_eq!(a, vec!["fetch", "-B", "--all", "labs", "--emit-progress"]);
+    }
+
+    // Flags are appended after the ids.
+    #[test]
+    fn fetch_args_forwards_flags() {
+        let ids = vec!["5".to_string()];
+        let a = fetch_args("public", "path", &ids, true, true, false, false, true);
+        assert_eq!(
+            a,
+            vec![
+                "fetch",
+                "-A",
+                "-p",
+                "5",
+                "--force",
+                "--signin",
+                "--headless",
+                "--emit-progress"
+            ]
+        );
     }
 }
