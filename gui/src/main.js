@@ -119,7 +119,7 @@ function logLine(line) {
 function setBrowserBusy(on) {
   // Note: the Browser button is intentionally NOT disabled — fetches are meant to
   // run while the persistent browser is open and reuse it (backlog #13).
-  ["#fetchBtn", "#browseSyncBtn"].forEach((sel) => {
+  ["#fetchBtn", "#browseSyncBtn", "#queueRunBtn"].forEach((sel) => {
     const b = $(sel);
     if (b) b.disabled = on;
   });
@@ -127,6 +127,8 @@ function setBrowserBusy(on) {
 
 // Tracks whether the persistent, reusable browser is open (backlog #13).
 let browserOpen = false;
+// The fetching-list runner awaits each fetch group's fetch-done via this resolver.
+let queueDoneResolver = null;
 if (listen) {
   listen("fetch-log", (e) => logLine(e.payload));
   // Each item the binary saves arrives as a fetch-item event, so Browse/Search
@@ -148,6 +150,8 @@ if (listen) {
     const active = $(".panel.active")?.dataset.panel;
     if (active === "browse") $("#browseBtn").click();
     else if (active === "search" && lastSearchQuery) $("#searchBtn").click();
+    // Advance the fetching-list runner (it awaits each group's fetch-done).
+    if (queueDoneResolver) { const r = queueDoneResolver; queueDoneResolver = null; r(); }
   });
 }
 
@@ -171,6 +175,8 @@ function applyItemSaved(payload) {
   };
   if (patch(browseItems)) scheduleRender("browse");
   if (patch(searchItems)) scheduleRender("search");
+  // A fetched item auto-completes its fetching-list entry (if queued).
+  markQueueDone(it.portal, it.kind, it.id, it.name);
 }
 
 const renderTimers = {};
@@ -583,5 +589,195 @@ $("#renameConfirm").addEventListener("click", async () => {
   }
 });
 $("#renameInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#renameConfirm").click(); });
+
+// --- Fetching list: a persistent queue (FEAT) -------------------------------
+// One stateful list built from the Browse right-click menu or the Fetch tab,
+// saved to disk (queue_load/queue_save) so it survives restarts and reflects
+// live across tabs. Entry: { portal, kind, id, name, addedOn, completedOn,
+// removedOn }; status is derived (removed → done → waiting).
+let fetchQueue = [];
+let queueRunning = false;
+
+const qKey = (it) => `${it.portal}:${it.kind}:${it.id}`;
+const qWaiting = (it) => !it.completedOn && !it.removedOn;
+const qFinished = (it) => !!it.completedOn || !!it.removedOn;
+const nowISO = () => new Date().toISOString();
+const fmtDate = (iso) => (iso ? String(iso).slice(0, 10) : "—");
+
+async function saveQueue() {
+  if (!invoke) return;
+  try { await invoke("queue_save", { data: JSON.stringify({ items: fetchQueue }) }); }
+  catch (err) { console.warn("queue save failed", err); }
+}
+
+async function loadQueue() {
+  if (invoke) {
+    try {
+      const raw = await invoke("queue_load");
+      const parsed = JSON.parse(raw || "{}");
+      fetchQueue = Array.isArray(parsed.items) ? parsed.items : [];
+    } catch (_) { fetchQueue = []; }
+  }
+  renderQueue();
+}
+
+// Best-effort display name for a raw id, from the loaded Browse list.
+function resolveName(portal, kind, id) {
+  const hit = browseItems.find(
+    (r) => String(r.id) === String(id) && r.portal === portal && String(r.type).toLowerCase() === kind
+  );
+  return hit ? hit.name : "";
+}
+
+function addToQueue({ portal, kind, id, name }) {
+  if (!portal || !kind || !id) return;
+  const key = `${portal}:${kind}:${id}`;
+  const existing = fetchQueue.find((it) => qKey(it) === key);
+  if (existing) {
+    if (qWaiting(existing)) { setStatus(`“${existing.name || id}” is already in the list.`); return; }
+    // Re-activate a finished entry.
+    existing.completedOn = null;
+    existing.removedOn = null;
+    existing.addedOn = nowISO();
+    if (name) existing.name = name;
+  } else {
+    fetchQueue.push({ portal, kind, id: String(id), name: name || "", addedOn: nowISO(), completedOn: null, removedOn: null });
+  }
+  saveQueue();
+  renderQueue();
+  setStatus(`Added ${kind} ${id} to the fetching list.`, "ok");
+}
+
+function removeFromQueue(key) {
+  const it = fetchQueue.find((x) => qKey(x) === key);
+  if (!it) return;
+  // Soft-remove a waiting item (keeps a Removed timestamp); drop a finished row.
+  if (qWaiting(it)) it.removedOn = nowISO();
+  else fetchQueue = fetchQueue.filter((x) => qKey(x) !== key);
+  saveQueue();
+  renderQueue();
+}
+
+function clearFinished() {
+  const before = fetchQueue.length;
+  fetchQueue = fetchQueue.filter(qWaiting);
+  if (fetchQueue.length !== before) { saveQueue(); renderQueue(); setStatus("Cleared finished items."); }
+}
+
+function markQueueDone(portal, kind, id, name) {
+  const it = fetchQueue.find((x) => x.portal === portal && x.kind === kind && String(x.id) === String(id));
+  if (!it || !qWaiting(it)) return;
+  it.completedOn = nowISO();
+  if (!it.name && name) it.name = name;
+  saveQueue();
+  renderQueue();
+}
+
+function renderQueue() {
+  const tbody = $("#queueTable tbody");
+  if (!tbody) return;
+  const waiting = fetchQueue.filter(qWaiting);
+  const finished = fetchQueue.filter(qFinished).reverse(); // most-recent finished first
+  const rows = [...waiting, ...finished];
+  tbody.innerHTML = "";
+  if (!rows.length) {
+    tbody.innerHTML =
+      `<tr class="q-empty"><td colspan="8">Nothing queued. Right-click a Browse item → “Add to Fetching list”.</td></tr>`;
+  } else {
+    for (const it of rows) {
+      const tr = document.createElement("tr");
+      tr.className = it.removedOn ? "q-removed" : it.completedOn ? "q-done" : "q-waiting";
+      tr.innerHTML =
+        `<td class="cell-id">${it.id}</td>` +
+        `<td>${escapeHtml(it.name || "—")}</td>` +
+        `<td class="cell-type">${it.kind}</td>` +
+        `<td class="cell-portal"><span class="badge badge-${it.portal}">${it.portal}</span></td>` +
+        `<td class="q-time">${fmtDate(it.addedOn)}</td>` +
+        `<td class="q-time q-done-time">${fmtDate(it.completedOn)}</td>` +
+        `<td class="q-time">${fmtDate(it.removedOn)}</td>` +
+        `<td class="q-act"><button class="q-remove" title="Remove from list" data-key="${qKey(it)}">✕</button></td>`;
+      tbody.appendChild(tr);
+    }
+  }
+  const n = waiting.length;
+  $("#queueCount").textContent = fetchQueue.length
+    ? `${n} waiting · ${fetchQueue.length} total`
+    : "empty";
+  $("#queueRunBtn").disabled = queueRunning || n === 0;
+}
+
+// Remove-button clicks (delegated over the queue tbody).
+$("#queueTable tbody").addEventListener("click", (e) => {
+  const btn = e.target.closest(".q-remove");
+  if (btn) removeFromQueue(btn.dataset.key);
+});
+
+// Add the right-clicked Browse row to the list.
+$("#ctxAddQueue").addEventListener("click", () => {
+  if (!ctxTarget) return;
+  addToQueue({ portal: ctxTarget.portal, kind: ctxTarget.kind, id: ctxTarget.id, name: ctxTarget.name });
+});
+
+// Add the ids typed on the Fetch tab (names resolved best-effort).
+$("#addQueueBtn").addEventListener("click", () => {
+  const ids = $("#fetchIds").value.split(/[\s,]+/).filter(Boolean);
+  if (!ids.length) { setStatus("Enter at least one ID to add."); return; }
+  const kind = selected("#fetchKind", "kind");
+  const pk = concretePortal();
+  for (const id of ids) addToQueue({ portal: pk, kind, id, name: resolveName(pk, kind, id) });
+  $("#fetchIds").value = "";
+});
+
+$("#queueClearBtn").addEventListener("click", clearFinished);
+$("#queueRunBtn").addEventListener("click", () => runQueue());
+
+// Run every waiting item: group by portal+type, fetch each group sequentially,
+// awaiting its fetch-done before the next. Items auto-complete via fetch-item.
+async function runQueue() {
+  if (queueRunning) return;
+  const waiting = fetchQueue.filter(qWaiting);
+  if (!waiting.length) { setStatus("The fetching list has no waiting items."); return; }
+  // If a reusable browser is open but unresponsive, a fetch can't reuse it (#13).
+  if (browserOpen) {
+    try {
+      const status = await invoke("browser_status");
+      if (status === "stale") { $("#browserStaleModal").hidden = false; return; }
+      if (status === "none") { browserOpen = false; }
+    } catch (_) { /* proceed */ }
+  }
+  const groups = [];
+  const byKey = new Map();
+  for (const it of waiting) {
+    const key = `${it.portal}:${it.kind}`;
+    let g = byKey.get(key);
+    if (!g) { g = { portal: it.portal, kind: it.kind, ids: [] }; byKey.set(key, g); groups.push(g); }
+    g.ids.push(it.id);
+  }
+  queueRunning = true;
+  consoleEl.textContent = "";
+  setBrowserBusy(true);
+  for (const g of groups) {
+    setStatus(`Fetching ${g.ids.length} ${g.kind}(s) from ${g.portal}…`, "busy");
+    $("#stopBtn").hidden = false;
+    $("#stopBtn").disabled = false;
+    const done = new Promise((resolve) => { queueDoneResolver = resolve; });
+    try {
+      await invoke("fetch", {
+        portal: g.portal, kind: g.kind, ids: g.ids,
+        force: toggleOn("force"), signin: toggleOn("signin"), toc: toggleOn("toc"),
+        noTranscript: toggleOn("noTranscript"), headless: toggleOn("headless"),
+      });
+    } catch (err) {
+      logLine("ERROR: " + err);
+      queueDoneResolver = null;
+      break; // stop the runner on a launch failure (e.g. a browser op already running)
+    }
+    await done; // fetch-done resolves this; fetch-item events mark items complete
+  }
+  queueRunning = false;
+  setStatus("Fetch queue finished.", "ok");
+}
+
+loadQueue();
 
 setStatus("Ready.");

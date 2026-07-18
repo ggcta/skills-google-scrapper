@@ -208,6 +208,29 @@ tr.selected td.cell-id { box-shadow: inset 3px 0 0 var(--accent); }
 .ctx-danger:hover { background: rgba(214,69,69,.14); }
 #renameInput { width: 100%; margin-bottom: 4px; }
 
+/* Fetching list (queue) */
+.queue-head { margin-top: 6px; }
+.queue-head label { width: auto; }
+.queue-wrap { max-height: 240px; overflow: auto; margin-bottom: 14px; }
+#queueTable th {
+  text-align: left; padding: 7px 12px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface-2); z-index: 1;
+}
+.q-time { width: 96px; white-space: nowrap; }
+#queueTable td.q-time { color: var(--muted); font-size: 12px; }
+#queueTable td.q-done-time { color: var(--ok); }
+.q-act { width: 44px; text-align: center; }
+/* Finished (done/removed) rows are dimmed. */
+#queueTable tr.q-done td, #queueTable tr.q-removed td { opacity: .55; }
+.q-remove {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 15px; line-height: 1; padding: 2px 7px; border-radius: 6px;
+}
+.q-remove:hover { color: #d64545; background: rgba(214,69,69,.14); }
+.q-empty td { color: var(--muted); padding: 14px 12px; text-align: center; }
+
 /* Modal */
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,.45);

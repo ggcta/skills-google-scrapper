@@ -46,6 +46,7 @@
         <div class="row">
           <label>IDs or URLs</label>
           <input id="fetchIds" type="text" placeholder="e.g. 16 53  or a full skills.google URL" />
+          <button class="btn ghost" id="addQueueBtn" title="Add these IDs to the fetching list instead of fetching now">+ List</button>
         </div>
         <div class="row toggles" id="fetchToggles">
           <button type="button" class="toggle" data-opt="force">Force re-fetch</button>
@@ -59,6 +60,33 @@
           <button class="btn danger" id="stopBtn" hidden>■ Stop</button>
           <span class="hint">Paths cascade to courses → labs. Sign in first for gated content.</span>
         </div>
+
+        <!-- Fetching list: a persistent queue (add from here or the Browse
+             right-click menu); "Fetch queue" runs all waiting items. -->
+        <div class="row queue-head">
+          <label>Fetching list</label>
+          <span class="count" id="queueCount">empty</span>
+          <button class="btn" id="queueRunBtn">Fetch queue</button>
+          <button class="btn ghost" id="queueClearBtn">Clear finished</button>
+        </div>
+        <div class="table-wrap queue-wrap">
+          <table id="queueTable">
+            <thead>
+              <tr>
+                <th class="cell-id">ID</th>
+                <th>Name</th>
+                <th class="cell-type">Type</th>
+                <th class="cell-portal">Portal</th>
+                <th class="q-time">Added</th>
+                <th class="q-time">Completed</th>
+                <th class="q-time">Removed</th>
+                <th class="q-act"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
         <pre class="console" id="console" aria-live="polite"></pre>
       </section>
 
@@ -143,6 +171,7 @@
 
     <!-- Item management: right-click context menu on Browse rows (#17) -->
     <div class="context-menu" id="rowMenu" hidden>
+      <button class="ctx-item" id="ctxAddQueue">Add to Fetching list</button>
       <button class="ctx-item" id="ctxRename">Rename…</button>
       <button class="ctx-item ctx-danger" id="ctxDelete">Delete</button>
     </div>
