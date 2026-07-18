@@ -701,6 +701,36 @@ async fn rename_item(
     Ok(())
 }
 
+/// Path to the persistent fetching-list file, in the app data dir. The frontend
+/// owns the JSON schema; these commands only do file I/O so the list survives
+/// restarts and is a real, inspectable file on disk.
+fn queue_file(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("could not resolve app data dir: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("fetch-queue.json"))
+}
+
+/// Load the persisted fetching list (raw JSON). Returns "{}" when no file exists.
+#[tauri::command]
+fn queue_load(app: AppHandle) -> Result<String, String> {
+    let path = queue_file(&app)?;
+    match std::fs::read_to_string(&path) {
+        Ok(s) => Ok(s),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok("{}".into()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Persist the fetching list — the frontend passes the serialized JSON verbatim.
+#[tauri::command]
+fn queue_save(app: AppHandle, data: String) -> Result<(), String> {
+    let path = queue_file(&app)?;
+    std::fs::write(&path, data).map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(BrowserSession(Mutex::new(None)))
@@ -738,7 +768,9 @@ fn main() {
             generate_pdf,
             open_pdf,
             delete_item,
-            rename_item
+            rename_item,
+            queue_load,
+            queue_save
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
