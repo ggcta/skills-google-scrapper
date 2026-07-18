@@ -10,7 +10,7 @@ from models.collection import Collection
 from models.course import Course
 from models.lab import Lab
 from models.path import Path
-from utils.utils import util_replace_quote_marks, util_strip_html_tags, util_ensure_authenticated
+from utils.utils import util_replace_quote_marks, util_strip_html_tags, util_ensure_authenticated, util_safe_get
 
 class DataManagement():
     def __init__(self, driver=None):
@@ -43,7 +43,7 @@ class DataManagement():
                 return {}
 
             # Navigate to the path URL
-            self.driver.get(a_path.url)
+            util_safe_get(self.driver, a_path.url)
             
             if not util_ensure_authenticated(self.driver, a_path.url, f"path {path_id}"):
                 return {}
@@ -101,7 +101,7 @@ class DataManagement():
                 print("fetch_course_data(): Webdriver is required.")
                 return
 
-            self.driver.get(a_course.url)
+            util_safe_get(self.driver, a_course.url)
             if not util_ensure_authenticated(self.driver, a_course.url, f"course {course_id}"):
                 return
                      
@@ -179,7 +179,7 @@ class DataManagement():
                 print("fetch_lab_data(): Webdriver is required.")
                 return
 
-            self.driver.get(a_lab.url)
+            util_safe_get(self.driver, a_lab.url)
             if not util_ensure_authenticated(self.driver, a_lab.url, f"lab {lab_id}"):
                 return
 

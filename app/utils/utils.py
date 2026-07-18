@@ -1,8 +1,86 @@
 import os
 import re
 import tempfile
+import time
 from html.parser import HTMLParser
 from urllib.parse import urlparse
+
+
+# Chrome/Selenium net-stack error tokens that indicate a lost or broken internet
+# connection (not a page- or app-level failure), so a navigation that hits one is
+# worth retrying once connectivity returns. Mirrors the Go browser connErrCodes.
+UTIL_CONN_ERR_CODES = (
+    "ERR_INTERNET_DISCONNECTED",
+    "ERR_NETWORK_CHANGED",
+    "ERR_CONNECTION_TIMED_OUT",
+    "ERR_CONNECTION_RESET",
+    "ERR_CONNECTION_CLOSED",
+    "ERR_CONNECTION_REFUSED",
+    "ERR_CONNECTION_ABORTED",
+    "ERR_CONNECTION_FAILED",
+    "ERR_NAME_NOT_RESOLVED",
+    "ERR_NAME_RESOLUTION_FAILED",
+    "ERR_ADDRESS_UNREACHABLE",
+    "ERR_PROXY_CONNECTION_FAILED",
+    "ERR_QUIC_PROTOCOL_ERROR",
+    "ERR_SOCKET_NOT_CONNECTED",
+    "ERR_TIMED_OUT",
+)
+
+# How long a navigation keeps retrying while the connection is down before the run
+# gives up (a period of time, not a fixed count), and the wait between attempts.
+UTIL_CONN_RETRY_BUDGET = 180  # seconds (3 minutes)
+UTIL_CONN_RETRY_INTERVAL = 5  # seconds
+
+
+class UtilConnectionLostError(BaseException):
+    """
+    Raised by util_safe_get once the internet connection has stayed down past
+    UTIL_CONN_RETRY_BUDGET.
+
+    It subclasses BaseException (like KeyboardInterrupt) on purpose: the fetch
+    loops wrap each item in a broad `except Exception`, and this must NOT be
+    swallowed there. Instead it propagates up to main(), which stops the run
+    cleanly — every completed item is already saved atomically — rather than
+    pushing on to the next item against a dead connection.
+    """
+
+
+def util_is_connection_error(message: str) -> bool:
+    """Return True if message looks like a transient internet-connectivity error."""
+    if not message:
+        return False
+    return any(code in message for code in UTIL_CONN_ERR_CODES)
+
+
+def util_safe_get(driver, url: str) -> None:
+    """
+    driver.get(url) that survives a flaky internet connection.
+
+    While the navigation fails with a connectivity error (one of
+    UTIL_CONN_ERR_CODES), it keeps retrying until the connection recovers or
+    UTIL_CONN_RETRY_BUDGET elapses, then raises UtilConnectionLostError so the run
+    stops gracefully. Any other error (a real page/app failure) is re-raised at
+    once. A Ctrl+C during the wait aborts immediately (KeyboardInterrupt).
+    """
+    deadline = time.monotonic() + UTIL_CONN_RETRY_BUDGET
+    warned = False
+    while True:
+        try:
+            driver.get(url)
+            return
+        except UtilConnectionLostError:
+            raise
+        except Exception as error:
+            if not util_is_connection_error(str(error)):
+                raise
+            if not warned:
+                print(f"Internet connection error ({error}) — retrying for up to {UTIL_CONN_RETRY_BUDGET}s…")
+                warned = True
+            if time.monotonic() >= deadline:
+                print(f"Internet connection still down after {UTIL_CONN_RETRY_BUDGET}s — giving up.")
+                raise UtilConnectionLostError(str(error))
+            time.sleep(UTIL_CONN_RETRY_INTERVAL)
 
 
 def util_atomic_write_text(path, text: str, encoding: str = 'utf-8', newline: str = '\n') -> None:
@@ -145,7 +223,7 @@ def util_ensure_authenticated(driver, url: str, entity_desc: str = "") -> bool:
         except (KeyboardInterrupt, EOFError):
             print("\n\033[91mAborted authentication.\033[0m")
             return False
-        driver.get(url)
+        util_safe_get(driver, url)
         
         if "sign_in" in driver.current_url:
             print("\n\033[91m[!] Still on sign-in page. Please ensure login is complete before pressing Enter.\033[0m")

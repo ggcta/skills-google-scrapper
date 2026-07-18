@@ -16,7 +16,7 @@ from models.courses import Courses
 from models.labs import Labs
 from services.launch_browser import launch_browser
 from services import browser_endpoint
-from utils.utils import util_portal_and_id, util_ensure_authenticated
+from utils.utils import util_portal_and_id, util_ensure_authenticated, util_safe_get, UtilConnectionLostError, UTIL_CONN_RETRY_BUDGET
 from utils.completeness import item_complete, path_complete, course_complete
 
 
@@ -285,7 +285,7 @@ def _proactive_signin(portal, headless):
         print("\n\033[35mLaunching browser to sign in...\033[0m")
         driver = launch_browser(headless=headless, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
         print(f"Opening sign-in page: {sign_in_url}")
-        driver.get(sign_in_url)
+        util_safe_get(driver, sign_in_url)
         util_ensure_authenticated(driver, sign_in_url, "")
     except Exception as e:
         print(f"(signin) Error during sign-in: {e}")
@@ -562,7 +562,7 @@ def cmd_login(args):
     # Login is always visible so the user can interact with the sign-in flow.
     driver = launch_browser(headless=False, browser="chrome", profile_folder=WEBDRIVER_PROFILE_FOLDER_NAME)
     try:
-        driver.get(url)
+        util_safe_get(driver, url)
         print("Sign in to the portal in the browser window.")
         try:
             input("Press Enter when you are done to close the browser...")
@@ -662,7 +662,7 @@ def cmd_browser(args):
         # Chrome is up and listening on the debug port now; advertise it so
         # fetch/list can reuse this window.
         browser_endpoint.save_endpoint(port)
-        driver.get(url)
+        util_safe_get(driver, url)
         print("Browser is open. Sign in and browse freely; fetches will reuse this window.")
         try:
             input("Press Enter to close the browser and exit...")
@@ -920,6 +920,16 @@ def main():
         else:
             print("\nInterrupted.")
         sys.exit(130)
+    except UtilConnectionLostError:
+        # The internet connection stayed down past the retry budget. Like a
+        # Ctrl+C, each browser is closed by its own finally block during
+        # unwinding and every completed item is already saved atomically, so we
+        # stop here rather than pushing on to the remaining items.
+        if is_fetch:
+            print(f"\nInternet connection lost — stopped after retrying for {UTIL_CONN_RETRY_BUDGET}s; completed items are saved. Re-run to resume.")
+        else:
+            print("\nInternet connection lost.")
+        sys.exit(1)
     finally:
         if is_fetch:
             from utils import logx

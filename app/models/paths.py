@@ -1,5 +1,6 @@
 from models.collection import Collection
 from config.settings import DEFAULT_PORTAL, portal_config
+from utils.utils import util_safe_get
 import json
 
 class Paths(Collection):
@@ -49,7 +50,7 @@ class Paths(Collection):
                 url = f"{api_url_paths}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
-                self.driver.get(url)
+                util_safe_get(self.driver, url)
 
                 # The browser will likely display raw JSON. We can extract it from the <body> or <pre>
                 try:

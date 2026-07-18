@@ -2,7 +2,7 @@
 import re
 from bs4 import BeautifulSoup
 from .base_entity import BaseEntity
-from utils.utils import util_ensure_authenticated
+from utils.utils import util_ensure_authenticated, util_safe_get
 from utils.completeness import lab_complete
 
 # Selectors for extracting a lab's data from its page.
@@ -128,7 +128,7 @@ class Lab(BaseEntity):
         target_url = fetch_url or self.url
         try:
             print(f"(Lab.fetch_data) Fetching: {target_url}")
-            self.driver.get(target_url)
+            util_safe_get(self.driver, target_url)
 
             if not util_ensure_authenticated(self.driver, target_url, f"lab {self.id}"):
                 return False
@@ -143,7 +143,7 @@ class Lab(BaseEntity):
                 if real_id and real_id != self.id:
                     self.id = real_id
                     target_url = self.url
-                    self.driver.get(target_url)
+                    util_safe_get(self.driver, target_url)
                     if not util_ensure_authenticated(self.driver, target_url, f"lab {self.id}"):
                         return False
 

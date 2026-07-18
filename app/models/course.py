@@ -12,7 +12,7 @@ from config.settings import QL_IFRAME, OUTPUT_FOLDER_NAME, MATERIALS_DIR
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags, util_ensure_authenticated
+from utils.utils import util_replace_quote_marks, util_replace_special_chars, util_strip_html_tags, util_ensure_authenticated, util_safe_get
 from utils.completeness import course_complete
 
 # TODO: Convert these constants to Enums
@@ -136,7 +136,7 @@ class Course(BaseEntity):
         fix). Returns None if it can't be resolved.
         """
         try:
-            self.driver.get(fetch_url)
+            util_safe_get(self.driver, fetch_url)
             if not util_ensure_authenticated(self.driver, fetch_url, f"course session {self.id}"):
                 return None
             match = re.search(r'/course_templates/(\d+)', self.driver.current_url or '')
@@ -162,7 +162,7 @@ class Course(BaseEntity):
                 return None
 
             print(f"(fetch_course_page) Fetching with driver: {self.url}")
-            self.driver.get(self.url)
+            util_safe_get(self.driver, self.url)
 
             if not util_ensure_authenticated(self.driver, self.url, f"course {self.id}"):
                 return None
@@ -334,7 +334,7 @@ class Course(BaseEntity):
                 print("(process_video) Error: Webdriver is required.")
                 return
 
-            self.driver.get(url)
+            util_safe_get(self.driver, url)
 
             if not util_ensure_authenticated(self.driver, url, f"video {activity['id']}"):
                 return
@@ -381,7 +381,7 @@ class Course(BaseEntity):
                 print("(process_lab) Error: Webdriver is required.")
                 return
 
-            self.driver.get(template_url)
+            util_safe_get(self.driver, template_url)
 
             if not util_ensure_authenticated(self.driver, template_url, f"lab {activity['id']}"):
                 return
@@ -446,7 +446,7 @@ class Course(BaseEntity):
 
             print(f"(fetch_external) Fetching external course data: {base_url}...")
             if self.driver:
-                self.driver.get(url)
+                util_safe_get(self.driver, url)
                 time.sleep(3) # Wait for scripts to load
 
                 # Execute __fetchCourse
@@ -613,7 +613,7 @@ class Course(BaseEntity):
                 print("(process_quiz) Error: Webdriver is required.")
                 return
 
-            self.driver.get(url)
+            util_safe_get(self.driver, url)
             if not util_ensure_authenticated(self.driver, url, f"quiz {activity['id']}"):
                 return
 
@@ -656,7 +656,7 @@ class Course(BaseEntity):
                 print("(process_link) Error: Webdriver is required.")
                 return
 
-            self.driver.get(url)
+            util_safe_get(self.driver, url)
             if not util_ensure_authenticated(self.driver, url, f"link {activity['id']}"):
                 return
 
@@ -707,7 +707,7 @@ class Course(BaseEntity):
                 print("(process_html_bundle) Error: Webdriver is required.")
                 return
 
-            self.driver.get(url)
+            util_safe_get(self.driver, url)
             if not util_ensure_authenticated(self.driver, url, f"html_bundle {activity['id']}"):
                 return
 
@@ -764,7 +764,7 @@ class Course(BaseEntity):
                 print("(process_document) Error: Webdriver is required.")
                 return
 
-            self.driver.get(url)
+            util_safe_get(self.driver, url)
             if not util_ensure_authenticated(self.driver, url, f"document {activity['id']}"):
                 return
 

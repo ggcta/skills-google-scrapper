@@ -1,6 +1,7 @@
 from models.collection import Collection
 from config.settings import DEFAULT_PORTAL, portal_config
 from models.course import Course
+from utils.utils import util_safe_get
 
 
 class Courses(Collection):
@@ -49,7 +50,7 @@ class Courses(Collection):
                 url = f"{api_url_courses}&page={page}"
                 print(f"Fetching page {page}...", end='\r')
                 
-                self.driver.get(url)
+                util_safe_get(self.driver, url)
 
                 try:
                     pre_element = self.driver.find_element("tag name", "pre")

@@ -1,7 +1,7 @@
 import json
 import re
 from bs4 import BeautifulSoup
-from utils.utils import util_replace_special_chars, util_ensure_authenticated
+from utils.utils import util_replace_special_chars, util_ensure_authenticated, util_safe_get
 from config.settings import *
 from models.base_entity import BaseEntity
 
@@ -57,7 +57,7 @@ class Path(BaseEntity):
                 return {}
 
             # Navigate to the path URL
-            self.driver.get(self.url)
+            util_safe_get(self.driver, self.url)
 
             if not util_ensure_authenticated(self.driver, self.url, f"path {self.id}"):
                 return {}
