@@ -6,6 +6,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"csb/internal/config"
+	"csb/internal/logx"
 	"github.com/chromedp/chromedp"
 )
 
@@ -47,6 +49,61 @@ type Options struct {
 // so tests can shorten it.
 var NavTimeout = 45 * time.Second
 
+// ErrConnectionLost is returned by a navigation once the internet connection has
+// been down continuously for longer than ConnRetryBudget. It marks the session
+// connection-lost (see ConnectionLost) so the fetch loops stop cleanly — saving
+// the items already completed — instead of churning through the remaining items
+// against a dead connection.
+var ErrConnectionLost = errors.New("internet connection lost")
+
+// ConnRetryBudget bounds how long a navigation keeps retrying while the internet
+// connection is down before the run gives up. The user asked for a period of
+// time (not a fixed count), so a wall-clock budget is used. A var so tests can
+// shorten it.
+var ConnRetryBudget = 3 * time.Minute
+
+// connRetryInterval is the wait between connection-retry attempts. A short, fixed
+// interval keeps the run responsive to the connection coming back (over the
+// 3-minute budget that is ~36 attempts).
+var connRetryInterval = 5 * time.Second
+
+// connErrCodes are the Chrome/CDP net-stack error tokens that indicate a lost or
+// broken *internet connection* (as opposed to a page- or app-level failure), so a
+// navigation that hits one is worth retrying once connectivity returns. chromedp
+// surfaces these as "page load error net::ERR_…".
+var connErrCodes = []string{
+	"ERR_INTERNET_DISCONNECTED",
+	"ERR_NETWORK_CHANGED",
+	"ERR_CONNECTION_TIMED_OUT",
+	"ERR_CONNECTION_RESET",
+	"ERR_CONNECTION_CLOSED",
+	"ERR_CONNECTION_REFUSED",
+	"ERR_CONNECTION_ABORTED",
+	"ERR_CONNECTION_FAILED",
+	"ERR_NAME_NOT_RESOLVED",
+	"ERR_NAME_RESOLUTION_FAILED",
+	"ERR_ADDRESS_UNREACHABLE",
+	"ERR_PROXY_CONNECTION_FAILED",
+	"ERR_QUIC_PROTOCOL_ERROR",
+	"ERR_SOCKET_NOT_CONNECTED",
+	"ERR_TIMED_OUT",
+}
+
+// isConnErr reports whether err looks like a transient internet-connectivity
+// failure (one of connErrCodes) rather than a page- or app-level error.
+func isConnErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	for _, code := range connErrCodes {
+		if strings.Contains(msg, code) {
+			return true
+		}
+	}
+	return false
+}
+
 // Session is a running browser. Call Close when done. It is self-healing: if the
 // underlying browser/tab dies (its context is canceled), the next navigation
 // transparently relaunches it, reusing the same on-disk profile so the sign-in
@@ -64,6 +121,10 @@ type Session struct {
 	// (opts.RemoteWS): Close must NOT terminate that shared browser, and a lost
 	// connection must NOT spawn a colliding replacement.
 	borrowed bool
+	// connLost is set once a navigation gave up after the internet connection
+	// stayed down past ConnRetryBudget. It drives ConnectionLost(), which the
+	// fetch loops check to stop the run cleanly. Guarded by mu.
+	connLost bool
 }
 
 // Close shuts the browser down gracefully and tears down the allocator. It first
@@ -169,6 +230,69 @@ func (s *Session) alive() bool { return s.Ctx != nil && s.Ctx.Err() == nil }
 // items and avoid persisting a half-scraped one.
 func (s *Session) Interrupted() bool { return s.interrupt != nil && s.interrupt.Err() != nil }
 
+// ConnectionLost reports whether a navigation gave up after the internet
+// connection stayed down past ConnRetryBudget. Fetch loops check it (alongside
+// Interrupted) to stop the run cleanly rather than pushing on with a dead
+// connection and saving half-scraped items.
+func (s *Session) ConnectionLost() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.connLost
+}
+
+// markConnLost records that the connection-retry budget was exhausted.
+func (s *Session) markConnLost() {
+	s.mu.Lock()
+	s.connLost = true
+	s.mu.Unlock()
+}
+
+// interruptDone returns the interrupt context's Done channel, or a nil channel
+// (which blocks forever in a select) when there is no interrupt context, so the
+// connection-retry wait can be woken by Ctrl+C when one is wired up.
+func (s *Session) interruptDone() <-chan struct{} {
+	if s.interrupt == nil {
+		return nil
+	}
+	return s.interrupt.Done()
+}
+
+// withConnRetry runs attempt and, while it fails with a transient internet
+// connectivity error, keeps retrying until the connection recovers or
+// ConnRetryBudget elapses. On budget exhaustion it marks the session
+// connection-lost (so later navigations short-circuit) and returns
+// ErrConnectionLost. Success, or any non-connectivity error, returns at once. A
+// user interrupt aborts the wait immediately (returning the last error).
+func (s *Session) withConnRetry(attempt func() error) error {
+	// Once the budget has been spent, don't retry again for every remaining
+	// navigation in the run — fail fast so the loops can stop.
+	if s.ConnectionLost() {
+		return ErrConnectionLost
+	}
+	deadline := time.Now().Add(ConnRetryBudget)
+	warned := false
+	for {
+		err := attempt()
+		if err == nil || !isConnErr(err) {
+			return err
+		}
+		if !warned {
+			logx.Errf("Internet connection error (%v) — retrying for up to %s…\n", err, ConnRetryBudget)
+			warned = true
+		}
+		if time.Now().After(deadline) {
+			s.markConnLost()
+			logx.Errf("Internet connection still down after %s — giving up.\n", ConnRetryBudget)
+			return ErrConnectionLost
+		}
+		select {
+		case <-time.After(connRetryInterval):
+		case <-s.interruptDone():
+			return err
+		}
+	}
+}
+
 // allocFlags mirrors the Chrome flags used by the Python launcher.
 func allocFlags(o Options) []chromedp.ExecAllocatorOption {
 	flags := []chromedp.ExecAllocatorOption{
@@ -250,10 +374,22 @@ func Launch(interrupt context.Context, o Options) (*Session, error) {
 // NavTimeout, and if the session has died it relaunches and retries once so a
 // single crashed page doesn't cascade "context canceled" across the whole run.
 func (s *Session) Navigate(url string, settle time.Duration) (html, finalURL string, err error) {
+	err = s.withConnRetry(func() error {
+		html, finalURL = "", ""
+		return s.navOnce(url, settle, &html, &finalURL)
+	})
+	return html, finalURL, err
+}
+
+// navOnce performs a single navigation attempt, including the one dead-session
+// relaunch retry. Retrying a *lost internet connection* is left to the caller
+// (withConnRetry); this returns the raw error so it can classify it.
+func (s *Session) navOnce(url string, settle time.Duration, html, finalURL *string) error {
+	var err error
 	for attempt := 0; attempt < 2; attempt++ {
 		if !s.alive() {
 			if rerr := s.relaunch(); rerr != nil {
-				return "", "", fmt.Errorf("browser relaunch failed: %w", rerr)
+				return fmt.Errorf("browser relaunch failed: %w", rerr)
 			}
 		}
 		ctx, cancel := context.WithTimeout(s.Ctx, NavTimeout)
@@ -261,21 +397,21 @@ func (s *Session) Navigate(url string, settle time.Duration) (html, finalURL str
 			chromedp.Navigate(url),
 			chromedp.WaitReady("body", chromedp.ByQuery),
 			sleep(settle),
-			chromedp.Location(&finalURL),
-			chromedp.OuterHTML("html", &html, chromedp.ByQuery),
+			chromedp.Location(finalURL),
+			chromedp.OuterHTML("html", html, chromedp.ByQuery),
 		)
 		cancel()
 		if err == nil {
-			return html, finalURL, nil
+			return nil
 		}
 		// If the session itself crashed (parent ctx canceled), relaunch and
 		// retry once. A per-nav timeout (parent still alive) is just reported.
 		if !s.alive() && attempt == 0 {
 			continue
 		}
-		return html, finalURL, err
+		return err
 	}
-	return html, finalURL, err
+	return err
 }
 
 // run executes actions bounded by timeout on the current session context. Used

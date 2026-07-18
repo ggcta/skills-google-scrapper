@@ -54,26 +54,37 @@ func (s *Session) PageHTML() (string, error) {
 // Navigate, it is bounded by NavTimeout and relaunches a dead session once.
 func (s *Session) FetchText(url string) (string, error) {
 	var text string
+	err := s.withConnRetry(func() error {
+		text = ""
+		return s.fetchTextOnce(url, &text)
+	})
+	return text, err
+}
+
+// fetchTextOnce performs a single FetchText attempt (with the dead-session
+// relaunch retry), leaving lost-connection retrying to withConnRetry.
+func (s *Session) fetchTextOnce(url string, text *string) error {
+	var err error
 	for attempt := 0; attempt < 2; attempt++ {
 		if !s.alive() {
 			if rerr := s.relaunch(); rerr != nil {
-				return "", rerr
+				return rerr
 			}
 		}
 		ctx, cancel := context.WithTimeout(s.Ctx, NavTimeout)
-		err := chromedp.Run(ctx,
+		err = chromedp.Run(ctx,
 			chromedp.Navigate(url),
 			chromedp.WaitReady("body", chromedp.ByQuery),
-			chromedp.Evaluate(`document.body.innerText`, &text),
+			chromedp.Evaluate(`document.body.innerText`, text),
 		)
 		cancel()
 		if err == nil {
-			return text, nil
+			return nil
 		}
 		if !s.alive() && attempt == 0 {
 			continue
 		}
-		return text, err
+		return err
 	}
-	return text, nil
+	return err
 }
