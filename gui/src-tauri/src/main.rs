@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -731,6 +732,74 @@ fn queue_save(app: AppHandle, data: String) -> Result<(), String> {
     std::fs::write(&path, data).map_err(|e| e.to_string())
 }
 
+/// Path to the persistent session file, in the app data dir. Holds the GUI's
+/// stateful session (portal, active tab, in-progress fetch descriptor, and the
+/// started/ended/clean-exit lifecycle markers) so a relaunch can restore an
+/// in-progress session and tell a graceful stop from a sudden interruption. The
+/// frontend owns the schema; these commands only do file I/O.
+fn session_file(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("could not resolve app data dir: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("session.json"))
+}
+
+/// Load the persisted session (raw JSON). Returns "{}" when no file exists.
+#[tauri::command]
+fn session_load(app: AppHandle) -> Result<String, String> {
+    let path = session_file(&app)?;
+    match std::fs::read_to_string(&path) {
+        Ok(s) => Ok(s),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok("{}".into()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Persist the session — the frontend passes the serialized JSON verbatim.
+#[tauri::command]
+fn session_save(app: AppHandle, data: String) -> Result<(), String> {
+    let path = session_file(&app)?;
+    std::fs::write(&path, data).map_err(|e| e.to_string())
+}
+
+/// Current wall-clock time in milliseconds since the Unix epoch (matches the
+/// frontend's Date.now(), so session timestamps are consistent across both).
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// Return the session JSON stamped as gracefully stopped: endedAt=now,
+/// cleanExit=true, fetchActive=false. This is the authoritative "clean close"
+/// marker — a crash or force-kill never runs it, so the next launch sees
+/// cleanExit still false and knows the previous session was interrupted. Pure and
+/// tolerant of an empty/invalid file (starts from an empty object), so the
+/// close-handler can call it best-effort.
+fn stopped_session_json(existing: &str, now: u64) -> String {
+    let mut v = serde_json::from_str::<serde_json::Value>(existing).unwrap_or_else(|_| serde_json::json!({}));
+    if !v.is_object() {
+        v = serde_json::json!({});
+    }
+    let obj = v.as_object_mut().expect("value is an object");
+    obj.insert("endedAt".into(), serde_json::json!(now));
+    obj.insert("cleanExit".into(), serde_json::json!(true));
+    obj.insert("fetchActive".into(), serde_json::json!(false));
+    v.to_string()
+}
+
+/// On a clean window close, stamp the session file as gracefully stopped.
+/// Best-effort: any I/O error is ignored (a missing marker just makes the next
+/// launch treat this session as interrupted, which is the safe default).
+fn mark_session_stopped(app: &AppHandle) {
+    let Ok(path) = session_file(app) else { return };
+    let existing = std::fs::read_to_string(&path).unwrap_or_default();
+    let _ = std::fs::write(&path, stopped_session_json(&existing, now_ms()));
+}
+
 fn main() {
     tauri::Builder::default()
         .manage(BrowserSession(Mutex::new(None)))
@@ -749,6 +818,9 @@ fn main() {
                 if let Some(child) = window.state::<BrowserSession>().0.lock().unwrap().as_ref() {
                     sigterm(child.id());
                 }
+                // Record a graceful stop so the next launch can tell this clean
+                // close from a crash (which never reaches here).
+                mark_session_stopped(window.app_handle());
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -770,7 +842,9 @@ fn main() {
             delete_item,
             rename_item,
             queue_load,
-            queue_save
+            queue_save,
+            session_load,
+            session_save
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -824,6 +898,33 @@ mod tests {
             false,
         );
         assert_eq!(a, vec!["fetch", "-B", "--all", "labs", "--emit-progress"]);
+    }
+
+    // A clean close stamps the lifecycle markers while preserving the frontend's
+    // other session fields (portal, tab, …) untouched.
+    #[test]
+    fn stopped_session_preserves_fields_and_marks_clean() {
+        let existing = r#"{"startedAt":1000,"portal":"partner","tab":"browse","fetchActive":true}"#;
+        let out = stopped_session_json(existing, 2000);
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v["startedAt"], 1000);
+        assert_eq!(v["portal"], "partner");
+        assert_eq!(v["tab"], "browse");
+        assert_eq!(v["endedAt"], 2000);
+        assert_eq!(v["cleanExit"], true);
+        assert_eq!(v["fetchActive"], false); // a closed window has nothing running
+    }
+
+    // An empty or corrupt session file still yields a valid clean-close marker.
+    #[test]
+    fn stopped_session_tolerates_empty_or_invalid() {
+        for input in ["", "{}", "not json", "[1,2,3]"] {
+            let v: serde_json::Value =
+                serde_json::from_str(&stopped_session_json(input, 5)).unwrap();
+            assert_eq!(v["cleanExit"], true);
+            assert_eq!(v["endedAt"], 5);
+            assert_eq!(v["fetchActive"], false);
+        }
     }
 
     // Flags are appended after the ids.
