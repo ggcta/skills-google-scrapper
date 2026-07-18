@@ -16,6 +16,7 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <span class="session-chip" id="sessionChip" hidden></span>
         <div class="portal-toggle" id="portalToggle" title="Portal — applies to every tab">
           <button data-portal="all">All</button>
           <button data-portal="public" class="active">Public</button>
@@ -31,6 +32,18 @@
       <button data-tab="browse">Browse</button>
       <button data-tab="search">Search</button>
     </nav>
+
+    <!-- Session banner: appears on relaunch when the previous session was
+         interrupted (crash/force-quit while running) and/or the fetching list
+         still has waiting items, offering to resume them. -->
+    <div class="session-banner" id="sessionBanner" hidden>
+      <span class="session-banner-icon" id="sessionBannerIcon">⚠</span>
+      <span id="sessionBannerText"></span>
+      <span class="session-banner-actions">
+        <button class="btn primary" id="sessionResume">Resume queue</button>
+        <button class="btn ghost" id="sessionDismiss">Dismiss</button>
+      </span>
+    </div>
 
     <main>
       <!-- FETCH -->

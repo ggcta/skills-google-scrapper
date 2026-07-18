@@ -33,6 +33,12 @@ function wireGroup(rootSel, attr, onSelect) {
 }
 const selected = (rootSel, attr) => $(`${rootSel} button.active`)?.dataset[attr];
 
+// Activate the button whose data-<attr> === val without firing a click event —
+// used to restore saved portal/tab state on launch.
+function setGroupActive(rootSel, attr, val) {
+  $$(`${rootSel} button`).forEach((b) => b.classList.toggle("active", b.dataset[attr] === val));
+}
+
 // Selector changes take effect immediately — no extra button press. Explicit
 // buttons remain only where input/confirmation is needed (Fetch IDs, Search query).
 function refreshActiveTab() {
@@ -47,12 +53,14 @@ wireGroup("#tabs", "tab", (tab) => {
   // Entering Browse shows the current portal's items right away.
   if (tab === "browse") $("#browseBtn").click();
   else if (tab === "search" && lastSearchQuery) $("#searchBtn").click();
+  touchSession({ tab }); // remember the active tab for the next launch
 });
 wireGroup("#portalToggle", "portal", (p) => {
   portal = p;
   setStatus(portal === "all" ? "Portal: All (public + partner)" : `Portal: ${portal}`);
   // Portal is global: reflect it in the active tab immediately.
   refreshActiveTab();
+  touchSession({ portal }); // remember the portal for the next launch
 });
 wireGroup("#fetchKind", "kind", () => {});
 wireGroup("#browseKind", "kind", () => $("#browseBtn").click());
@@ -150,6 +158,9 @@ if (listen) {
     const active = $(".panel.active")?.dataset.panel;
     if (active === "browse") $("#browseBtn").click();
     else if (active === "search" && lastSearchQuery) $("#searchBtn").click();
+    // A manual (non-queue) fetch is done, so the session is no longer fetching.
+    // Queue runs manage this themselves (they span several fetch-done events).
+    if (!queueRunning) setSessionFetch(false);
     // Advance the fetching-list runner (it awaits each group's fetch-done).
     if (queueDoneResolver) { const r = queueDoneResolver; queueDoneResolver = null; r(); }
   });
@@ -199,10 +210,12 @@ async function runFetch() {
   if (portal === "all") {
     logLine("Note: portal is 'All' — bare IDs fetch as Public; full URLs use their own portal.");
   }
+  const kind = selected("#fetchKind", "kind");
+  setSessionFetch(true, { portal: concretePortal(), kind, ids, source: "manual" });
   try {
     await invoke("fetch", {
       portal: concretePortal(),
-      kind: selected("#fetchKind", "kind"),
+      kind,
       ids,
       force: toggleOn("force"),
       signin: toggleOn("signin"),
@@ -215,6 +228,7 @@ async function runFetch() {
     setStatus("Fetch failed.", "");
     setBrowserBusy(false);
     $("#stopBtn").hidden = true;
+    setSessionFetch(false);
   }
 }
 $("#fetchBtn").addEventListener("click", async () => {
@@ -704,6 +718,7 @@ function renderQueue() {
     ? `${n} waiting · ${fetchQueue.length} total`
     : "empty";
   $("#queueRunBtn").disabled = queueRunning || n === 0;
+  updateSessionChip(); // keep the topbar session indicator in sync
 }
 
 // Remove-button clicks (delegated over the queue tbody).
@@ -756,6 +771,7 @@ async function runQueue() {
   queueRunning = true;
   consoleEl.textContent = "";
   setBrowserBusy(true);
+  setSessionFetch(true, { source: "queue", ids: waiting.map((w) => w.id) });
   for (const g of groups) {
     setStatus(`Fetching ${g.ids.length} ${g.kind}(s) from ${g.portal}…`, "busy");
     $("#stopBtn").hidden = false;
@@ -775,9 +791,144 @@ async function runQueue() {
     await done; // fetch-done resolves this; fetch-item events mark items complete
   }
   queueRunning = false;
+  setSessionFetch(false);
   setStatus("Fetch queue finished.", "ok");
 }
 
-loadQueue();
+// --- Stateful session (FEAT) ------------------------------------------------
+// A small session persisted to disk (session_load/session_save → session.json)
+// so relaunching restores the portal + active tab, indicates in-progress work,
+// and can tell a graceful stop from a sudden interruption: a clean window close
+// stamps cleanExit/endedAt (Rust close handler), which a crash never reaches, so
+// a leftover cleanExit=false means the previous run was interrupted. Timestamps
+// are epoch millis (Date.now()) to match the Rust markers.
+let session = null;
 
+const activeTabName = () => $(".panel.active")?.dataset.panel || "fetch";
+const fmtTime = (ms) => {
+  if (!ms) return "?";
+  try { return new Date(ms).toLocaleString(); } catch (_) { return "?"; }
+};
+
+async function sessionSave() {
+  if (!invoke || !session) return;
+  try { await invoke("session_save", { data: JSON.stringify(session) }); }
+  catch (err) { console.warn("session save failed", err); }
+}
+
+// Merge a change into the live session and persist it, so the on-disk file always
+// reflects the latest portal/tab/fetch state — even if the app is then killed.
+function touchSession(patch) {
+  if (!session) return;
+  Object.assign(session, patch);
+  sessionSave();
+  updateSessionChip();
+}
+
+// Reflect the live session in the topbar chip: a running fetch, waiting items,
+// or idle. Hover shows when this session started.
+function updateSessionChip() {
+  const chip = $("#sessionChip");
+  if (!chip || !session) return;
+  const waiting = fetchQueue.filter(qWaiting).length;
+  let cls = "running", text = "Session: idle";
+  if (session.fetchActive) { cls = "fetching"; text = "Session: fetching…"; }
+  else if (waiting) { cls = "waiting"; text = `Session: ${waiting} queued`; }
+  chip.className = "session-chip " + cls;
+  chip.textContent = text;
+  chip.title = `Session started ${fmtTime(session.startedAt)}`;
+  chip.hidden = false;
+}
+
+// Record a fetch as in progress (or finished) in the session, so an interruption
+// mid-fetch is preserved on disk and surfaced on the next launch.
+function setSessionFetch(active, info) {
+  if (!session) return;
+  session.fetchActive = active;
+  session.fetch = active ? { startedAt: Date.now(), ...info } : null;
+  sessionSave();
+  updateSessionChip();
+}
+
+// Restore the previous UI state, then open a fresh session. Must run after
+// loadQueue so the banner can count waiting items.
+async function initSession() {
+  let prev = {};
+  if (invoke) {
+    try { prev = JSON.parse((await invoke("session_load")) || "{}") || {}; }
+    catch (_) { prev = {}; }
+  }
+
+  // Restore the saved portal + active tab (low-risk UI state).
+  if (["all", "public", "partner"].includes(prev.portal)) {
+    portal = prev.portal;
+    setGroupActive("#portalToggle", "portal", portal);
+  }
+  if (["fetch", "browse", "search"].includes(prev.tab)) {
+    setGroupActive("#tabs", "tab", prev.tab);
+    $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === prev.tab));
+  }
+
+  // A previous session that started but never marked a clean exit was interrupted
+  // (crash / force-quit); if it was mid-fetch, fetchActive is still set.
+  const interrupted = !!prev.startedAt && !prev.cleanExit;
+  const wasFetching = interrupted && !!prev.fetchActive;
+
+  // Open a fresh session carrying the restored UI state.
+  session = {
+    startedAt: Date.now(), endedAt: null, cleanExit: false,
+    portal, tab: activeTabName(), fetchActive: false, fetch: null,
+  };
+  await sessionSave();
+  updateSessionChip();
+
+  // If we restored the Browse tab, list it so the restore is actually visible.
+  if (activeTabName() === "browse") $("#browseBtn").click();
+
+  showSessionBanner(interrupted, wasFetching, prev);
+}
+
+// Show the relaunch banner when the previous session was interrupted and/or the
+// fetching list still has waiting items. Silent when there's nothing to resume.
+function showSessionBanner(interrupted, wasFetching, prev) {
+  const banner = $("#sessionBanner");
+  if (!banner) return;
+  const waiting = fetchQueue.filter(qWaiting).length;
+  const plural = (n) => (n === 1 ? "" : "s");
+  let msg = "";
+  if (wasFetching) {
+    const f = prev.fetch || {};
+    const count = (f.ids || []).length;
+    const what = f.kind ? `${count || ""} ${f.kind}${plural(count)}`.trim() : "a fetch";
+    msg = `The previous session ended unexpectedly while fetching ${what}. ` +
+      (waiting ? `${waiting} item${plural(waiting)} still waiting in the list.` : "It didn't finish.");
+  } else if (interrupted) {
+    msg = `The previous session (started ${fmtTime(prev.startedAt)}) didn't close cleanly.` +
+      (waiting ? ` ${waiting} item${plural(waiting)} waiting in the list.` : "");
+  } else if (waiting) {
+    msg = `You have ${waiting} item${plural(waiting)} waiting in the fetching list.`;
+  }
+  if (!msg) { banner.hidden = true; return; }
+  $("#sessionBannerIcon").textContent = (interrupted || wasFetching) ? "⚠" : "•";
+  $("#sessionBannerText").textContent = msg;
+  $("#sessionResume").hidden = waiting === 0; // nothing to resume if none waiting
+  banner.hidden = false;
+}
+
+$("#sessionDismiss").addEventListener("click", () => { $("#sessionBanner").hidden = true; });
+$("#sessionResume").addEventListener("click", () => {
+  $("#sessionBanner").hidden = true;
+  // Make the Fetch tab visible so the run is observable.
+  setGroupActive("#tabs", "tab", "fetch");
+  $$(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === "fetch"));
+  touchSession({ tab: "fetch" });
+  runQueue();
+});
+
+// Boot: restore the queue first (the session banner counts its waiting items),
+// then open/restore the session.
 setStatus("Ready.");
+(async () => {
+  await loadQueue();
+  await initSession();
+})();

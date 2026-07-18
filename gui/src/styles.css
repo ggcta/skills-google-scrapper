@@ -243,6 +243,37 @@ tr.selected td.cell-id { box-shadow: inset 3px 0 0 var(--accent); }
 .modal p { color: var(--muted); margin: 0 0 18px; }
 .modal-actions { display: flex; justify-content: flex-end; }
 
+/* Session status chip (topbar): a compact live indicator of the session —
+   idle, a running fetch, or waiting queue items. Hover for started-at. */
+.session-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+  white-space: nowrap; cursor: default;
+}
+.session-chip[hidden] { display: none; }
+.session-chip::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted);
+}
+.session-chip.running::before { background: var(--ok); }
+.session-chip.fetching::before { background: var(--accent); animation: session-pulse 1.2s ease-in-out infinite; }
+.session-chip.waiting::before { background: #c98a1a; }
+@keyframes session-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* Session banner: shown on relaunch to surface an interrupted/in-progress
+   session and offer to resume the waiting items. */
+.session-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; background: rgba(214,158,46,.14);
+  border-bottom: 1px solid rgba(214,158,46,.34); color: var(--text); font-size: 13px;
+}
+.session-banner[hidden] { display: none; }
+.session-banner-icon { font-size: 16px; }
+.session-banner-actions { margin-left: auto; display: flex; gap: 8px; white-space: nowrap; }
+@media (prefers-color-scheme: dark) {
+  .session-banner { background: rgba(214,158,46,.12); }
+}
+
 /* Status bar */
 .statusbar {
   padding: 7px 18px; background: var(--surface); border-top: 1px solid var(--border);
