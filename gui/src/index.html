@@ -64,6 +64,7 @@
 
       <!-- BROWSE -->
       <section class="panel" data-panel="browse">
+        <div class="sticky-toolbar">
         <div class="row filters">
           <label>Type</label>
           <div class="segmented" id="browseKind">
@@ -84,11 +85,13 @@
           <button class="btn" id="genPdfBtn" title="Select a row, then generate its PDF" disabled>Generate PDF</button>
           <span class="count" id="browseCount"></span>
         </div>
+        </div>
         <div class="table-wrap"><table id="browseTable"><tbody></tbody></table></div>
       </section>
 
       <!-- SEARCH -->
       <section class="panel" data-panel="search">
+        <div class="sticky-toolbar">
         <div class="row">
           <input id="searchQuery" type="text" placeholder="Search titles and metadata…" />
           <button class="btn" id="searchBtn">Search</button>
@@ -108,6 +111,7 @@
             <button data-sort="id">ID</button>
             <button data-sort="status">Status</button>
           </div>
+        </div>
         </div>
         <div class="table-wrap"><table id="searchTable"><tbody></tbody></table></div>
       </section>

@@ -152,6 +152,35 @@ tr.openable { cursor: pointer; }
 /* Filter row: compact inline labels */
 .filters label { width: auto; }
 
+/* Browse/Search toolbar stays fixed while the list scrolls (like the Fetch tab).
+   It sticks to the top of the scrolling <main>; the opaque background and z-index
+   keep rows hidden as they scroll underneath. The negative top margin cancels
+   main's 18px top padding so the toolbar sticks flush against the tabs, and the
+   matching padding keeps its original spacing; a bottom border divides it from
+   the list. */
+.sticky-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bg);
+  margin: 0 -18px 14px;
+  padding: 0 18px 10px;
+  border-bottom: 1px solid var(--border);
+}
+/* Cover main's 18px top padding so rows can't peek above the toolbar while
+   scrolling (a real overlay in the toolbar's stacking context, above the rows). */
+.sticky-toolbar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18px;
+  height: 18px;
+  background: var(--bg);
+}
+/* The wrapper supplies the bottom spacing, so its last control row shouldn't. */
+.sticky-toolbar .row:last-child { margin-bottom: 0; }
+
 /* PDF theme picker */
 .select {
   padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border);
