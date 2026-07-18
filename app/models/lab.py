@@ -79,6 +79,25 @@ class Lab(BaseEntity):
         return lab_steps
 
     # MARK: fetch_data
+    def _resolve_session_lab_id(self):
+        """
+        Return the real lab id (catalog_lab/<id> or focuses/<id>) from the
+        current page's resolved URL or canonical (partner path fix), or None.
+        Assumes the deep-link page is already loaded in the driver.
+        """
+        try:
+            pattern = r'/(?:catalog_lab|focuses)/(\d+)'
+            match = re.search(pattern, self.driver.current_url or '')
+            if not match:
+                soup = BeautifulSoup(self.driver.page_source, "html.parser")
+                link = soup.select_one("link[rel='canonical']") or soup.select_one("meta[property='og:url']")
+                href = ((link.get('href') or link.get('content')) if link else '') or ''
+                match = re.search(pattern, href)
+            return match.group(1) if match else None
+        except Exception as error:
+            print(f"(_resolve_session_lab_id) could not resolve session link: {error}")
+            return None
+
     def fetch_data(self, force: bool = False, fetch_url: str | None = None) -> bool:
         """
         Fetch this lab's data (name, description, steps).
@@ -113,6 +132,20 @@ class Lab(BaseEntity):
 
             if not util_ensure_authenticated(self.driver, target_url, f"lab {self.id}"):
                 return False
+
+            # Partner path fix: a session deep-link (…/course_sessions/…) has no
+            # catalog id, so resolve the real lab id from the resolved URL /
+            # canonical, then reload the lab's own catalog page. Focus/catalog_lab
+            # URLs already carry the id and skip this.
+            if fetch_url and '/course_sessions/' in fetch_url \
+                    and not re.search(r'/(?:catalog_lab|focuses)/\d+', fetch_url):
+                real_id = self._resolve_session_lab_id()
+                if real_id and real_id != self.id:
+                    self.id = real_id
+                    target_url = self.url
+                    self.driver.get(target_url)
+                    if not util_ensure_authenticated(self.driver, target_url, f"lab {self.id}"):
+                        return False
 
             lab_page_html = BeautifulSoup(self.driver.page_source, "html.parser")
 
