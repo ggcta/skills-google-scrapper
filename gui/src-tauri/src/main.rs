@@ -1,7 +1,7 @@
 // Prevent an extra console window on Windows in release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-//! Google Skills Scraper — a thin Tauri desktop shell over the validated
+//! Skill Scraper — a thin Tauri desktop shell over the validated
 //! `skills-scraper` Go binary. Every operation shells out to it; the GUI never
 //! reimplements scraping logic, so it inherits the CLI's verified behaviour.
 
