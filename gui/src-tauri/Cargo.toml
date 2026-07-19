@@ -19,3 +19,13 @@ serde_json = "1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[profile.release]
+# Strip debug symbols from the binary
+strip = "symbols"
+
+# Optimize heavily for the smallest possible binary size
+opt-level = "z"
+
+# Merge and optimize cross-crate dead code
+lto = "fat"
