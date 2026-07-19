@@ -935,6 +935,13 @@ let settingsDefaults = { paths: {}, portal: "public" };
 
 const settingsInput = (key) => $(`#settingsModal input[data-key="${key}"]`);
 
+// A path pointing inside a macOS .app bundle (e.g. the built-in themes under
+// Contents/Resources) is never a durable user setting — it breaks when the app is
+// renamed/moved/updated. Ignore such a persisted value so the live default (the
+// current bundle) shows instead. Mirrors is_bundle_internal in the Rust side.
+const isBundleInternal = (p) =>
+  typeof p === "string" && (p.includes("/Contents/Resources/") || p.includes(".app/"));
+
 // Populate the dialog from settings.json (values) + settings_defaults
 // (placeholders). Reloads on every open so external edits are reflected.
 async function loadSettings() {
@@ -949,7 +956,9 @@ async function loadSettings() {
   for (const key of SETTINGS_PATH_KEYS) {
     const input = settingsInput(key);
     if (!input) continue;
-    input.value = paths[key] || "";
+    const saved = paths[key] || "";
+    // Drop a stale bundle-internal value so its live default placeholder shows.
+    input.value = isBundleInternal(saved) ? "" : saved;
     input.placeholder = defPaths[key] || "";
   }
   const sel = $("#setPortal");

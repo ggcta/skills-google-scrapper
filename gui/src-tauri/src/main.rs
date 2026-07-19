@@ -867,10 +867,20 @@ fn json_path_str(root: &serde_json::Value, section: &str, key: &str) -> String {
     node.and_then(|x| x.as_str()).unwrap_or("").trim().to_string()
 }
 
+/// True when a path points inside a macOS .app bundle (e.g. a themes folder under
+/// Contents/Resources). Such a path is never a durable user setting — it breaks
+/// the moment the app is renamed, moved, or updated — so a persisted value like
+/// this is ignored and the live default (the current bundle) is used instead.
+fn is_bundle_internal(path: &str) -> bool {
+    path.contains("/Contents/Resources/") || path.contains(".app/")
+}
+
 /// Build the CSB_* env overrides from the settings JSON. A configured (non-empty)
 /// value maps to its env var; a blank/absent key falls back to `defaults` only
-/// when `use_defaults` is true (a bundle). Pure and tolerant of invalid JSON, so
-/// it is unit-tested and safe to call best-effort.
+/// when `use_defaults` is true (a bundle). A persisted value that points inside an
+/// app bundle is treated as unset (see is_bundle_internal), so the live default
+/// wins — this self-heals a stale themes path baked in by an older build. Pure and
+/// tolerant of invalid JSON, so it is unit-tested and safe to call best-effort.
 fn env_overrides_from(
     settings_json: &str,
     defaults: &serde_json::Value,
@@ -890,6 +900,9 @@ fn env_overrides_from(
     let mut out = Vec::new();
     for (env, section, key) in mapping {
         let mut val = json_path_str(&v, section, key);
+        if is_bundle_internal(&val) {
+            val = String::new();
+        }
         if val.is_empty() && use_defaults {
             val = json_path_str(defaults, section, key);
         }
@@ -900,11 +913,12 @@ fn env_overrides_from(
     out
 }
 
-/// The effective default directory for each configurable path. Used to seed a
-/// bundle's first-run settings and as the placeholder values shown in the dialog.
-/// In dev the defaults mirror the Go core's repo-relative names exactly; in a
-/// bundle they are writable absolutes under the app data dir (theme comes from
-/// the bundled resources).
+/// The effective default directory for each configurable path — what a blank
+/// field resolves to. Used as the live env fallback and as the placeholder values
+/// shown in the dialog (recomputed each time, so the themes path always tracks the
+/// current app bundle). In dev the defaults mirror the Go core's repo-relative
+/// names exactly; in a bundle they are writable absolutes under ~/Documents
+/// (theme comes from the bundled resources).
 fn default_paths(app: &AppHandle) -> serde_json::Value {
     if is_dev_checkout() {
         let root = repo_root();
@@ -952,26 +966,14 @@ fn refresh_settings_env(app: &AppHandle, settings_json: &str) {
     set_csb_env(env_overrides_from(settings_json, &defaults, use_defaults));
 }
 
-/// On startup: seed a bundle's first run with writable defaults (so a fresh
-/// install writes somewhere real), then load whatever is on disk into the live
-/// env overrides applied to every spawn.
+/// On startup: load whatever settings are on disk (empty when none) into the live
+/// env overrides applied to every spawn. Deliberately does NOT seed a file — a
+/// bundle's writable defaults are resolved live by env_overrides_from, so nothing
+/// absolute is baked in (which is what let an old themes path go stale). The file
+/// is written only when the user actually saves a choice.
 fn init_settings_env(app: &AppHandle) {
     let json = match settings_file(app) {
-        Ok(path) => match std::fs::read_to_string(&path) {
-            Ok(s) => s,
-            Err(_) => {
-                // No settings yet. In a bundle, seed writable defaults so the file
-                // exists and is inspectable/editable; in dev leave it unwritten so
-                // the core keeps its repo-relative behavior.
-                if is_dev_checkout() {
-                    "{}".to_string()
-                } else {
-                    let seed = default_paths(app).to_string();
-                    let _ = std::fs::write(&path, &seed);
-                    seed
-                }
-            }
-        },
+        Ok(path) => std::fs::read_to_string(&path).unwrap_or_else(|_| "{}".to_string()),
         Err(_) => "{}".to_string(),
     };
     refresh_settings_env(app, &json);
@@ -1251,5 +1253,27 @@ mod tests {
         let env = env_overrides_from("not json", &defaults, true);
         assert!(env.contains(&("CSB_DATA".into(), "/def/data".into())));
         assert!(!env.iter().any(|(k, _)| k == "CSB_PORTAL"));
+    }
+
+    // A persisted path baked inside an app bundle (a stale themes seed from an
+    // older build) is ignored, so the live default — the current bundle — wins.
+    #[test]
+    fn env_overrides_ignores_stale_bundle_internal_path() {
+        assert!(is_bundle_internal(
+            "/Applications/Google Skills Scraper.app/Contents/Resources/theme"
+        ));
+        assert!(!is_bundle_internal("/Users/me/Documents/skill-scraper/themes"));
+
+        let defaults = serde_json::json!({
+            "paths": {"themes": "/Applications/Skill Scraper.app/Contents/Resources/theme"}
+        });
+        let settings =
+            r#"{"paths":{"themes":"/Applications/Google Skills Scraper.app/Contents/Resources/theme"}}"#;
+        let env = env_overrides_from(settings, &defaults, true);
+        // The stale saved value is dropped; the live (current-bundle) default wins.
+        assert!(env.contains(&(
+            "CSB_THEME_DIR".into(),
+            "/Applications/Skill Scraper.app/Contents/Resources/theme".into()
+        )));
     }
 }
