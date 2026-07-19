@@ -6,7 +6,7 @@
 //! reimplements scraping logic, so it inherits the CLI's verified behaviour.
 
 use std::io::{BufRead, BufReader, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -746,22 +746,31 @@ fn session_file(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("session.json"))
 }
 
-/// Load the persisted session (raw JSON). Returns "{}" when no file exists.
-#[tauri::command]
-fn session_load(app: AppHandle) -> Result<String, String> {
-    let path = session_file(&app)?;
-    match std::fs::read_to_string(&path) {
+/// Read the session JSON at path, returning "{}" when the file doesn't exist
+/// (a first run). Path-based so it can be exercised against a real temp file.
+fn read_session(path: &Path) -> Result<String, String> {
+    match std::fs::read_to_string(path) {
         Ok(s) => Ok(s),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok("{}".into()),
         Err(e) => Err(e.to_string()),
     }
 }
 
+/// Write the session JSON verbatim to path.
+fn write_session(path: &Path, data: &str) -> Result<(), String> {
+    std::fs::write(path, data).map_err(|e| e.to_string())
+}
+
+/// Load the persisted session (raw JSON). Returns "{}" when no file exists.
+#[tauri::command]
+fn session_load(app: AppHandle) -> Result<String, String> {
+    read_session(&session_file(&app)?)
+}
+
 /// Persist the session — the frontend passes the serialized JSON verbatim.
 #[tauri::command]
 fn session_save(app: AppHandle, data: String) -> Result<(), String> {
-    let path = session_file(&app)?;
-    std::fs::write(&path, data).map_err(|e| e.to_string())
+    write_session(&session_file(&app)?, &data)
 }
 
 /// Current wall-clock time in milliseconds since the Unix epoch (matches the
@@ -791,13 +800,19 @@ fn stopped_session_json(existing: &str, now: u64) -> String {
     v.to_string()
 }
 
+/// Stamp the session file at path as gracefully stopped. Best-effort and
+/// path-based so the close path is testable against a real temp file.
+fn mark_stopped_at(path: &Path) {
+    let existing = std::fs::read_to_string(path).unwrap_or_default();
+    let _ = std::fs::write(path, stopped_session_json(&existing, now_ms()));
+}
+
 /// On a clean window close, stamp the session file as gracefully stopped.
 /// Best-effort: any I/O error is ignored (a missing marker just makes the next
 /// launch treat this session as interrupted, which is the safe default).
 fn mark_session_stopped(app: &AppHandle) {
     let Ok(path) = session_file(app) else { return };
-    let existing = std::fs::read_to_string(&path).unwrap_or_default();
-    let _ = std::fs::write(&path, stopped_session_json(&existing, now_ms()));
+    mark_stopped_at(&path);
 }
 
 fn main() {
@@ -913,6 +928,45 @@ mod tests {
         assert_eq!(v["endedAt"], 2000);
         assert_eq!(v["cleanExit"], true);
         assert_eq!(v["fetchActive"], false); // a closed window has nothing running
+    }
+
+    // End-to-end against a REAL file on disk: first-run default, save/load
+    // round-trip, crash leaves cleanExit=false, and a clean close stamps the file
+    // gracefully stopped while preserving the frontend's other fields.
+    #[test]
+    fn session_file_roundtrip_and_markers() {
+        let dir = std::env::temp_dir().join(format!(
+            "csbgui-sess-test-{}-{}",
+            std::process::id(),
+            now_ms()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("session.json");
+
+        // A missing file reads back as "{}" (first run).
+        assert_eq!(read_session(&path).unwrap(), "{}");
+
+        // Save a running session (cleanExit=false) and read it back verbatim.
+        let running = r#"{"startedAt":1000,"cleanExit":false,"portal":"partner","tab":"browse","fetchActive":true}"#;
+        write_session(&path, running).unwrap();
+        let loaded: serde_json::Value =
+            serde_json::from_str(&read_session(&path).unwrap()).unwrap();
+        // A session never marked clean reads back as interrupted — the crash case.
+        assert_eq!(loaded["cleanExit"], false);
+        assert_eq!(loaded["fetchActive"], true);
+        assert_eq!(loaded["portal"], "partner");
+
+        // A clean close stamps the real file and preserves the other fields.
+        mark_stopped_at(&path);
+        let after: serde_json::Value =
+            serde_json::from_str(&read_session(&path).unwrap()).unwrap();
+        assert_eq!(after["cleanExit"], true);
+        assert_eq!(after["fetchActive"], false);
+        assert!(after["endedAt"].as_u64().unwrap() > 0); // a real timestamp was written
+        assert_eq!(after["startedAt"], 1000); // untouched
+        assert_eq!(after["tab"], "browse"); // untouched
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     // An empty or corrupt session file still yields a valid clean-close marker.
