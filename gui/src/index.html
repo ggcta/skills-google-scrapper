@@ -24,6 +24,7 @@
         </div>
         <button class="btn" id="browserBtn" title="Open a browser you can sign in and browse in; it stays open and your fetches reuse it">Browser</button>
         <button class="btn ghost" id="vaultBtn">Open vault</button>
+        <button class="btn ghost icon-btn" id="settingsBtn" title="Settings — choose where files are saved" aria-label="Settings">⚙</button>
       </div>
     </header>
 
@@ -232,6 +233,61 @@
         <p>The site asked you to sign in. Sign in to Google Skills in the browser window that opened, then click Continue — the fetch resumes in the same session.</p>
         <div class="modal-actions">
           <button class="btn primary" id="authContinue">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings dialog: choose where the app reads/writes files. Blank fields
+         fall back to the default shown as placeholder; the values are persisted
+         as settings.json and mapped onto the CSB_* env vars the core honors. -->
+    <div class="modal-backdrop" id="settingsModal" hidden>
+      <div class="modal modal-wide">
+        <h2>Settings</h2>
+        <p class="modal-sub">Choose where your files live. Leave a field blank to use the default shown. Changes apply to your next fetch.</p>
+        <div class="settings-grid">
+          <label for="setData">Data <span class="muted">(JSON &amp; database)</span></label>
+          <div class="path-row">
+            <input id="setData" type="text" data-key="data" spellcheck="false" />
+            <button class="btn ghost" data-choose="setData">Choose…</button>
+          </div>
+
+          <label for="setVault">Vault <span class="muted">(Markdown output)</span></label>
+          <div class="path-row">
+            <input id="setVault" type="text" data-key="vault" spellcheck="false" />
+            <button class="btn ghost" data-choose="setVault">Choose…</button>
+          </div>
+
+          <label for="setLogs">Logs <span class="muted">(per-run activity)</span></label>
+          <div class="path-row">
+            <input id="setLogs" type="text" data-key="logs" spellcheck="false" />
+            <button class="btn ghost" data-choose="setLogs">Choose…</button>
+          </div>
+
+          <label for="setProfile">Browser profile <span class="muted">(sign-in)</span></label>
+          <div class="path-row">
+            <input id="setProfile" type="text" data-key="profile" spellcheck="false" />
+            <button class="btn ghost" data-choose="setProfile">Choose…</button>
+          </div>
+
+          <label for="setThemes">PDF themes</label>
+          <div class="path-row">
+            <input id="setThemes" type="text" data-key="themes" spellcheck="false" />
+            <button class="btn ghost" data-choose="setThemes">Choose…</button>
+          </div>
+
+          <label for="setPortal">Default portal</label>
+          <div class="path-row">
+            <select id="setPortal" class="select">
+              <option value="public">Public</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions spread">
+          <button class="btn ghost" id="settingsReset" title="Clear all fields so each uses its default">Reset to defaults</button>
+          <span class="grow"></span>
+          <button class="btn" id="settingsCancel">Cancel</button>
+          <button class="btn primary" id="settingsSave">Save</button>
         </div>
       </div>
     </div>

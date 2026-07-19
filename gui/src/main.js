@@ -925,6 +925,86 @@ $("#sessionResume").addEventListener("click", () => {
   runQueue();
 });
 
+// --- Settings dialog (folders + default portal) ---
+// The GUI persists these choices as settings.json; the Rust side maps them onto
+// the CSB_* env vars the Go core honors (env > config.yaml > default), so they
+// steer where files are read/written without any core change. A blank field
+// falls back to the default, shown as the input's placeholder.
+const SETTINGS_PATH_KEYS = ["data", "vault", "logs", "profile", "themes"];
+let settingsDefaults = { paths: {}, portal: "public" };
+
+const settingsInput = (key) => $(`#settingsModal input[data-key="${key}"]`);
+
+// Populate the dialog from settings.json (values) + settings_defaults
+// (placeholders). Reloads on every open so external edits are reflected.
+async function loadSettings() {
+  if (!invoke) return;
+  try { settingsDefaults = JSON.parse((await invoke("settings_defaults")) || "{}") || {}; }
+  catch (_) { settingsDefaults = { paths: {}, portal: "public" }; }
+  let cfg = {};
+  try { cfg = JSON.parse((await invoke("settings_load")) || "{}") || {}; }
+  catch (_) { cfg = {}; }
+  const paths = cfg.paths || {};
+  const defPaths = settingsDefaults.paths || {};
+  for (const key of SETTINGS_PATH_KEYS) {
+    const input = settingsInput(key);
+    if (!input) continue;
+    input.value = paths[key] || "";
+    input.placeholder = defPaths[key] || "";
+  }
+  const sel = $("#setPortal");
+  if (sel) sel.value = cfg.portal || settingsDefaults.portal || "public";
+}
+
+function openSettings() { loadSettings(); $("#settingsModal").hidden = false; }
+function closeSettings() { $("#settingsModal").hidden = true; }
+
+// Native folder picker (tauri-plugin-dialog). Inert without the Tauri runtime.
+async function chooseFolder(inputId) {
+  const open = window.__TAURI__?.dialog?.open;
+  if (!open) return;
+  const current = $(`#${inputId}`)?.value || undefined;
+  try {
+    const picked = await open({ directory: true, multiple: false, defaultPath: current });
+    if (typeof picked === "string" && picked) $(`#${inputId}`).value = picked;
+  } catch (err) { setStatus("Folder picker failed: " + err); }
+}
+
+async function saveSettings() {
+  const paths = {};
+  for (const key of SETTINGS_PATH_KEYS) {
+    const input = settingsInput(key);
+    paths[key] = input ? input.value.trim() : "";
+  }
+  const portal = $("#setPortal")?.value || "public";
+  const data = JSON.stringify({ paths, portal });
+  if (invoke) {
+    try { await invoke("settings_save", { data }); }
+    catch (err) { setStatus("Could not save settings: " + err); return; }
+  }
+  closeSettings();
+  setStatus("Settings saved. New folders apply to your next fetch.");
+}
+
+// Clear every field so each falls back to its placeholder/default (does not save
+// until Save is pressed).
+function resetSettings() {
+  for (const key of SETTINGS_PATH_KEYS) {
+    const input = settingsInput(key);
+    if (input) input.value = "";
+  }
+  const sel = $("#setPortal");
+  if (sel) sel.value = settingsDefaults.portal || "public";
+}
+
+$("#settingsBtn")?.addEventListener("click", openSettings);
+$("#settingsCancel")?.addEventListener("click", closeSettings);
+$("#settingsSave")?.addEventListener("click", saveSettings);
+$("#settingsReset")?.addEventListener("click", resetSettings);
+$$("#settingsModal [data-choose]").forEach((b) =>
+  b.addEventListener("click", () => chooseFolder(b.dataset.choose))
+);
+
 // Boot: restore the queue first (the session banner counts its waiting items),
 // then open/restore the session.
 setStatus("Ready.");
