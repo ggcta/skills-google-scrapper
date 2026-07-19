@@ -1,7 +1,7 @@
 [package]
 name = "csb-gui"
 version = "2.16.1"
-description = "Desktop GUI for the Google Skills Scraper"
+description = "Desktop GUI for Skill Scraper"
 edition = "2021"
 rust-version = "1.77"
 
