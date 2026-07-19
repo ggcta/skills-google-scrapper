@@ -1,1 +1,65 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="416" height="416" x="48" y="48" stroke="white" fill="white" stroke-linejoin="round" fill-opacity="1" /><polyline fill="#2817f4" stroke="#2817f4" points="256 63 256 457" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" /><polyline fill="none" stroke="#2817f4" points="256 64 160 161 160 321 160 448" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" /><polyline fill="none" stroke="#2817f4" points="256 192 352 256 352 384" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" /><circle r="10" cx="256" cy="352" stroke="white" stroke-width="2" fill="#ffb36b" /><circle r="10" cx="352" cy="256" stroke="white" stroke-width="2" fill="#ffb36b" /><circle r="10" cx="160" cy="161" stroke="white" stroke-width="2" fill="#ffb36b" /><circle r="10" cx="160" cy="321" stroke="white" stroke-width="2" fill="#ffb36b" /><circle r="10" cx="256" cy="192" stroke="white" stroke-width="2" fill="#ffb36b" /><circle r="10" cx="256" cy="64" stroke="white" stroke-width="2" fill="#ffb36b" fill-opacity="1" stroke-opacity="1" /></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <!-- Futurist indigo background, lit from the top-left. -->
+    <linearGradient id="bg" x1="64" y1="64" x2="448" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5647ff"/>
+      <stop offset=".55" stop-color="#3a1fe0"/>
+      <stop offset="1" stop-color="#2410b0"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="168" cy="150" r="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".30"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Luminous branches. -->
+    <linearGradient id="branch" x1="256" y1="96" x2="256" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c7d2ff"/>
+    </linearGradient>
+    <!-- Amber commit nodes, shaded like little spheres. -->
+    <radialGradient id="node" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#ffe2b4"/>
+      <stop offset=".55" stop-color="#ffb36b"/>
+      <stop offset="1" stop-color="#ef8f3e"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <!-- macOS squircle: 410px (~80% of the 512 canvas), centered. -->
+  <rect x="51" y="51" width="410" height="410" rx="96" fill="url(#bg)"/>
+  <rect x="51" y="51" width="410" height="410" rx="96" fill="url(#sheen)"/>
+
+  <!-- A top-down git graph: time flows downward. The main branch is the left
+       lane; a feature branch diverges from the first commit, gains a commit of
+       its own, then merges back into main at the bottom. -->
+  <!-- Neon glow beneath the branches. -->
+  <g filter="url(#soft)" opacity=".5" fill="none" stroke="#8ea2ff"
+     stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M196 120 L196 392"/>
+    <path d="M196 120 C196 168 316 160 316 208 L316 304 C316 352 196 344 196 392"/>
+  </g>
+
+  <!-- Branches. -->
+  <g fill="none" stroke="url(#branch)" stroke-width="27"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M196 120 L196 392"/>
+    <path d="M196 120 C196 168 316 160 316 208 L316 304 C316 352 196 344 196 392"/>
+  </g>
+
+  <!-- Commit nodes: main lane (left) top→bottom, feature lane (right). -->
+  <g>
+    <g fill="#ffb36b" opacity=".38" filter="url(#soft)">
+      <circle cx="196" cy="120" r="26"/><circle cx="196" cy="256" r="26"/>
+      <circle cx="196" cy="392" r="26"/><circle cx="316" cy="208" r="26"/>
+      <circle cx="316" cy="304" r="26"/>
+    </g>
+    <g stroke="#ffffff" stroke-width="6">
+      <circle cx="196" cy="120" r="25" fill="url(#node)"/>
+      <circle cx="196" cy="256" r="25" fill="url(#node)"/>
+      <circle cx="196" cy="392" r="25" fill="url(#node)"/>
+      <circle cx="316" cy="208" r="25" fill="url(#node)"/>
+      <circle cx="316" cy="304" r="25" fill="url(#node)"/>
+    </g>
+  </g>
+</svg>
