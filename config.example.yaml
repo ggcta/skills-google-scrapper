@@ -7,6 +7,10 @@
 # Precedence:  environment variable  >  config.yaml  >  built-in default
 # CLI flags (e.g. -A/-B, --headless, --log-dir) still win over everything.
 #
+# GUI users: the desktop app's ⚙ Settings dialog is the graphical front-end for
+# these same folders (it sets the CSB_* env vars for you, so it overrides this
+# file). Editing config.yaml is only needed for the CLI / Python tools.
+#
 # Relative paths are resolved against the project root; absolute paths are used
 # as-is — handy for pointing the vault straight at your Obsidian folder.
 

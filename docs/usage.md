@@ -229,3 +229,9 @@ is currently advertised and reachable (used by the GUI).
 | `csbmdvault/materials/courses/<id>/…` | Downloaded documents (shared across portals). |
 | `data/<portal>/database.json` | The TinyDB database. |
 | `data/<portal>/{courses,paths,labs}/*.json` | Per-item JSON backups. |
+
+These locations are configurable. For the CLI / Python tools, set them in
+`config.yaml` (see `config.example.yaml`) or via the `CSB_DATA`, `CSB_VAULT`,
+`CSB_LOG_DIR`, `CSB_PROFILE_DIR`, and `CSB_THEME_DIR` env vars. In the desktop
+app, use the **⚙ Settings** dialog (topbar) — it writes the same choices and
+overrides `config.yaml`.

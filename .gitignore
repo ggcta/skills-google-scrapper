@@ -24,3 +24,5 @@ csbmdvault/.obsidian/graph.json
 # Rust / Tauri build artifacts (the GUI app binary + bundles).
 /gui/src-tauri/target/
 /gui/src-tauri/gen/
+# Tauri sidecar: the Go binary cross-built by `just bundle` (target-triple named).
+/gui/src-tauri/binaries/
