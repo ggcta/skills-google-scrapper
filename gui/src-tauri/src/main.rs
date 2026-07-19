@@ -919,10 +919,15 @@ fn default_paths(app: &AppHandle) -> serde_json::Value {
             "portal": "public"
         });
     }
+    // A packaged app defaults its user data to a visible, writable folder the
+    // user can find and open: ~/Documents/skill-scraper/{data,vault,logs,profile}.
+    // (Themes stay in the read-only app bundle — see below.)
     let base = app
         .path()
-        .app_data_dir()
-        .unwrap_or_else(|_| PathBuf::from("."));
+        .document_dir()
+        .or_else(|_| app.path().app_data_dir())
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("skill-scraper");
     let theme = app
         .path()
         .resource_dir()
