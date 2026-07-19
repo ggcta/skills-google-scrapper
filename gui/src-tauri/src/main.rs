@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
@@ -230,6 +230,7 @@ fn run_csb(args: &[String]) -> Result<String, String> {
     let out = Command::new(&bin)
         .args(args)
         .current_dir(repo_root())
+        .envs(csb_env())
         .output()
         .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
     if !out.status.success() {
@@ -246,6 +247,7 @@ fn run_csb_tracked(args: &[String], pid: &Arc<Mutex<Option<u32>>>) -> Result<Str
     let child = Command::new(&bin)
         .args(args)
         .current_dir(repo_root())
+        .envs(csb_env())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -381,6 +383,7 @@ async fn fetch(
     let mut child = match Command::new(&bin)
         .args(&args)
         .current_dir(repo_root())
+        .envs(csb_env())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -492,6 +495,7 @@ fn open_browser(state: State<BrowserSession>, portal: String) -> Result<(), Stri
     let child = Command::new(&bin)
         .args(["browser", portal_flag(&portal)])
         .current_dir(repo_root())
+        .envs(csb_env())
         .stdin(Stdio::piped())
         .spawn()
         .map_err(|e| format!("failed to launch skills-scraper ({}): {e}", bin.display()))?;
@@ -815,12 +819,213 @@ fn mark_session_stopped(app: &AppHandle) {
     mark_stopped_at(&path);
 }
 
+// ---------------------------------------------------------------------------
+// Settings: the GUI Settings dialog persists the user's chosen folders (data,
+// vault, logs, Chrome profile, PDF theme dir) and default portal. These map onto
+// the SAME env keys the Go core (and the Python app) already honor with
+// precedence env > config.yaml > default, so the GUI steers where files go by
+// injecting CSB_* env vars on every spawn — no core change required.
+// ---------------------------------------------------------------------------
+
+/// Live CSB_* env overrides applied to every skills-scraper spawn. Seeded at
+/// startup from settings.json and refreshed by settings_save. Empty in a dev
+/// checkout with no configured settings, so today's repo-relative behavior is
+/// unchanged; a bundle fills in writable defaults (see refresh_settings_env).
+static SETTINGS_ENV: OnceLock<Mutex<Vec<(String, String)>>> = OnceLock::new();
+
+fn settings_env() -> &'static Mutex<Vec<(String, String)>> {
+    SETTINGS_ENV.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+/// The env pairs to apply to a spawned skills-scraper command.
+fn csb_env() -> Vec<(String, String)> {
+    settings_env().lock().unwrap().clone()
+}
+
+fn set_csb_env(pairs: Vec<(String, String)>) {
+    *settings_env().lock().unwrap() = pairs;
+}
+
+/// True when running from a real repo checkout (dev) rather than a packaged
+/// bundle. In dev we leave the path env vars UNSET for any key the user hasn't
+/// configured, so the Go core keeps its repo-relative defaults; a bundle has no
+/// checkout, so it must supply writable absolute defaults instead.
+fn is_dev_checkout() -> bool {
+    candidate_roots()
+        .iter()
+        .any(|r| r.join(".git").exists() && r.join("go").exists())
+}
+
+/// Read a nested string from a settings/defaults JSON value (`section.key`),
+/// trimmed. Returns "" when missing. A section of "" reads a top-level key.
+fn json_path_str(root: &serde_json::Value, section: &str, key: &str) -> String {
+    let node = if section.is_empty() {
+        root.get(key)
+    } else {
+        root.get(section).and_then(|s| s.get(key))
+    };
+    node.and_then(|x| x.as_str()).unwrap_or("").trim().to_string()
+}
+
+/// Build the CSB_* env overrides from the settings JSON. A configured (non-empty)
+/// value maps to its env var; a blank/absent key falls back to `defaults` only
+/// when `use_defaults` is true (a bundle). Pure and tolerant of invalid JSON, so
+/// it is unit-tested and safe to call best-effort.
+fn env_overrides_from(
+    settings_json: &str,
+    defaults: &serde_json::Value,
+    use_defaults: bool,
+) -> Vec<(String, String)> {
+    let v = serde_json::from_str::<serde_json::Value>(settings_json)
+        .unwrap_or_else(|_| serde_json::json!({}));
+    // (env var, section, key) — portal is a top-level key (section "").
+    let mapping = [
+        ("CSB_DATA", "paths", "data"),
+        ("CSB_VAULT", "paths", "vault"),
+        ("CSB_LOG_DIR", "paths", "logs"),
+        ("CSB_PROFILE_DIR", "paths", "profile"),
+        ("CSB_THEME_DIR", "paths", "themes"),
+        ("CSB_PORTAL", "", "portal"),
+    ];
+    let mut out = Vec::new();
+    for (env, section, key) in mapping {
+        let mut val = json_path_str(&v, section, key);
+        if val.is_empty() && use_defaults {
+            val = json_path_str(defaults, section, key);
+        }
+        if !val.is_empty() {
+            out.push((env.to_string(), val));
+        }
+    }
+    out
+}
+
+/// The effective default directory for each configurable path. Used to seed a
+/// bundle's first-run settings and as the placeholder values shown in the dialog.
+/// In dev the defaults mirror the Go core's repo-relative names exactly; in a
+/// bundle they are writable absolutes under the app data dir (theme comes from
+/// the bundled resources).
+fn default_paths(app: &AppHandle) -> serde_json::Value {
+    if is_dev_checkout() {
+        let root = repo_root();
+        return serde_json::json!({
+            "paths": {
+                "data": root.join("data").display().to_string(),
+                "vault": root.join("csbmdvault").display().to_string(),
+                "logs": root.join("logs").display().to_string(),
+                "profile": root.join(".webdriver_profiles").display().to_string(),
+                "themes": root.join("theme").display().to_string(),
+            },
+            "portal": "public"
+        });
+    }
+    let base = app
+        .path()
+        .app_data_dir()
+        .unwrap_or_else(|_| PathBuf::from("."));
+    let theme = app
+        .path()
+        .resource_dir()
+        .map(|r| r.join("theme"))
+        .unwrap_or_else(|_| base.join("theme"));
+    serde_json::json!({
+        "paths": {
+            "data": base.join("data").display().to_string(),
+            "vault": base.join("vault").display().to_string(),
+            "logs": base.join("logs").display().to_string(),
+            "profile": base.join("profile").display().to_string(),
+            "themes": theme.display().to_string(),
+        },
+        "portal": "public"
+    })
+}
+
+/// Recompute and store the live CSB_* env overrides from the given settings JSON.
+fn refresh_settings_env(app: &AppHandle, settings_json: &str) {
+    let defaults = default_paths(app);
+    let use_defaults = !is_dev_checkout();
+    set_csb_env(env_overrides_from(settings_json, &defaults, use_defaults));
+}
+
+/// On startup: seed a bundle's first run with writable defaults (so a fresh
+/// install writes somewhere real), then load whatever is on disk into the live
+/// env overrides applied to every spawn.
+fn init_settings_env(app: &AppHandle) {
+    let json = match settings_file(app) {
+        Ok(path) => match std::fs::read_to_string(&path) {
+            Ok(s) => s,
+            Err(_) => {
+                // No settings yet. In a bundle, seed writable defaults so the file
+                // exists and is inspectable/editable; in dev leave it unwritten so
+                // the core keeps its repo-relative behavior.
+                if is_dev_checkout() {
+                    "{}".to_string()
+                } else {
+                    let seed = default_paths(app).to_string();
+                    let _ = std::fs::write(&path, &seed);
+                    seed
+                }
+            }
+        },
+        Err(_) => "{}".to_string(),
+    };
+    refresh_settings_env(app, &json);
+}
+
+/// Path to the persistent settings file, in the app data dir (next to
+/// session.json / fetch-queue.json). The frontend owns the schema; these commands
+/// only do file I/O plus applying the resulting env overrides.
+fn settings_file(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("could not resolve app data dir: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("settings.json"))
+}
+
+/// Load the persisted settings (raw JSON). Returns "{}" when no file exists.
+#[tauri::command]
+fn settings_load(app: AppHandle) -> Result<String, String> {
+    let path = settings_file(&app)?;
+    match std::fs::read_to_string(&path) {
+        Ok(s) => Ok(s),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok("{}".into()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Persist the settings — the frontend passes the serialized JSON verbatim — then
+/// apply the new paths immediately so the very next spawn uses them.
+#[tauri::command]
+fn settings_save(app: AppHandle, data: String) -> Result<(), String> {
+    let path = settings_file(&app)?;
+    std::fs::write(&path, &data).map_err(|e| e.to_string())?;
+    refresh_settings_env(&app, &data);
+    Ok(())
+}
+
+/// The effective default for each path/portal (what a blank field resolves to),
+/// as JSON, so the dialog can show them as placeholders.
+#[tauri::command]
+fn settings_defaults(app: AppHandle) -> Result<String, String> {
+    Ok(default_paths(&app).to_string())
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(BrowserSession(Mutex::new(None)))
         .manage(BrowserGuard(Arc::new(AtomicBool::new(false))))
         .manage(FetchState(Arc::new(Mutex::new(None))))
         .manage(FetchStdin(Arc::new(Mutex::new(None))))
+        // Seed the live CSB_* env overrides from settings.json (and, in a bundle,
+        // write writable first-run defaults) before any command can spawn the Go
+        // binary, so the user's chosen folders take effect from the first fetch.
+        .setup(|app| {
+            init_settings_env(&app.handle().clone());
+            Ok(())
+        })
         // Closing the window must not orphan a browser. SIGTERM any running
         // fetch and any open login subprocess so the Go binary shuts Chrome down
         // cleanly and releases the profile lock (otherwise the next run launches
@@ -859,7 +1064,10 @@ fn main() {
             queue_load,
             queue_save,
             session_load,
-            session_save
+            session_save,
+            settings_load,
+            settings_save,
+            settings_defaults
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -999,5 +1207,44 @@ mod tests {
                 "--emit-progress"
             ]
         );
+    }
+
+    // A configured (non-empty) path wins over the default; other keys fall back
+    // to the default (bundle mode); portal is a top-level key.
+    #[test]
+    fn env_overrides_configured_value_wins() {
+        let defaults = serde_json::json!({
+            "paths": {"data": "/def/data", "vault": "/def/vault", "themes": "/def/theme"},
+            "portal": "public"
+        });
+        let settings = r#"{"paths":{"data":"/my/data","vault":"  "},"portal":"partner"}"#;
+        let env = env_overrides_from(settings, &defaults, true);
+        assert!(env.contains(&("CSB_DATA".into(), "/my/data".into())));
+        // blank (whitespace-only) vault falls back to the default in bundle mode
+        assert!(env.contains(&("CSB_VAULT".into(), "/def/vault".into())));
+        assert!(env.contains(&("CSB_THEME_DIR".into(), "/def/theme".into())));
+        assert!(env.contains(&("CSB_PORTAL".into(), "partner".into())));
+    }
+
+    // In dev (use_defaults=false) an unset key injects NOTHING, so the Go core
+    // keeps its repo-relative default; in a bundle the default is injected.
+    #[test]
+    fn env_overrides_blank_uses_default_only_in_bundle() {
+        let defaults = serde_json::json!({"paths": {"data": "/def/data"}, "portal": "public"});
+        let dev = env_overrides_from("{}", &defaults, false);
+        assert!(dev.is_empty(), "dev must inject nothing for unset keys: {dev:?}");
+        let bundle = env_overrides_from("{}", &defaults, true);
+        assert!(bundle.contains(&("CSB_DATA".into(), "/def/data".into())));
+        assert!(bundle.contains(&("CSB_PORTAL".into(), "public".into())));
+    }
+
+    // Invalid JSON is tolerated: it resolves as if no keys were configured (so a
+    // bundle still gets its defaults; a default-less key stays unset).
+    #[test]
+    fn env_overrides_tolerates_invalid_json() {
+        let defaults = serde_json::json!({"paths": {"data": "/def/data"}});
+        let env = env_overrides_from("not json", &defaults, true);
+        assert!(env.contains(&("CSB_DATA".into(), "/def/data".into())));
+        assert!(!env.iter().any(|(k, _)| k == "CSB_PORTAL"));
     }
 }
