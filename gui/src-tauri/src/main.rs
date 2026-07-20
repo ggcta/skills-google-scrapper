@@ -1,7 +1,7 @@
 // Prevent an extra console window on Windows in release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-//! Skill Scraper — a thin Tauri desktop shell over the validated
+//! Skills Scraper — a thin Tauri desktop shell over the validated
 //! `skills-scraper` Go binary. Every operation shells out to it; the GUI never
 //! reimplements scraping logic, so it inherits the CLI's verified behaviour.
 
@@ -934,14 +934,14 @@ fn default_paths(app: &AppHandle) -> serde_json::Value {
         });
     }
     // A packaged app defaults its user data to a visible, writable folder the
-    // user can find and open: ~/Documents/skill-scraper/{data,vault,logs,profile}.
+    // user can find and open: ~/Documents/skills-scraper/{data,vault,logs,profile}.
     // (Themes stay in the read-only app bundle — see below.)
     let base = app
         .path()
         .document_dir()
         .or_else(|_| app.path().app_data_dir())
         .unwrap_or_else(|_| PathBuf::from("."))
-        .join("skill-scraper");
+        .join("skills-scraper");
     let theme = app
         .path()
         .resource_dir()
@@ -1262,10 +1262,10 @@ mod tests {
         assert!(is_bundle_internal(
             "/Applications/Google Skills Scraper.app/Contents/Resources/theme"
         ));
-        assert!(!is_bundle_internal("/Users/me/Documents/skill-scraper/themes"));
+        assert!(!is_bundle_internal("/Users/me/Documents/skills-scraper/themes"));
 
         let defaults = serde_json::json!({
-            "paths": {"themes": "/Applications/Skill Scraper.app/Contents/Resources/theme"}
+            "paths": {"themes": "/Applications/Skills Scraper.app/Contents/Resources/theme"}
         });
         let settings =
             r#"{"paths":{"themes":"/Applications/Google Skills Scraper.app/Contents/Resources/theme"}}"#;
@@ -1273,7 +1273,7 @@ mod tests {
         // The stale saved value is dropped; the live (current-bundle) default wins.
         assert!(env.contains(&(
             "CSB_THEME_DIR".into(),
-            "/Applications/Skill Scraper.app/Contents/Resources/theme".into()
+            "/Applications/Skills Scraper.app/Contents/Resources/theme".into()
         )));
     }
 }

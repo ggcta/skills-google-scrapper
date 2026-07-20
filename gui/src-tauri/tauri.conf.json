@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Skill Scraper",
+  "productName": "Skills Scraper",
   "version": "2.16.1",
   "identifier": "me.samdx.skills-scraper",
   "build": {
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Skill Scraper",
+        "title": "Skills Scraper",
         "width": 1040,
         "height": 760,
         "minWidth": 760,
