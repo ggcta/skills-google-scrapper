@@ -1,4 +1,4 @@
-# Google Skills Scraper — task runner (https://just.systems). Run `just` to list recipes.
+# SkillsScraper — task runner (https://just.systems). Run `just` to list recipes.
 #
 # Quick start:
 #   brew install just        # one-time (macOS); see just.systems for others
@@ -14,7 +14,7 @@ default:
 cli:
     cd go && go build -o ../skills-scraper.bin .
 
-# Launch the desktop app (Google Skills Scraper). Rebuilds the CLI first.
+# Launch the desktop app (SkillsScraper). Rebuilds the CLI first.
 dev: cli
     cd gui/src-tauri && cargo tauri dev
 
@@ -47,3 +47,29 @@ setup:
 web:
     @echo "Serving gui/src at http://localhost:5599 (Ctrl-C to stop)"
     cd gui/src && python3 -m http.server 5599
+
+# Reclaim build-cache space cheaply and often. Deletes only the incremental-
+# compilation caches, which grow without bound over days. Compiled dependencies
+# (target/*/deps) are KEPT, so the next build recompiles only this crate, and
+# nothing is re-downloaded — crate sources live in ~/.cargo/registry, not target/.
+# Clear incremental caches only; keeps deps compiled, no re-download. Safe anytime.
+tidy:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    t="gui/src-tauri/target"
+    before=$(du -sh "$t" 2>/dev/null | cut -f1 || echo '?')
+    rm -rf "$t"/debug/incremental "$t"/release/incremental
+    echo "tidy: incremental caches cleared — $t $before -> $(du -sh "$t" 2>/dev/null | cut -f1 || echo '?') (deps kept, no re-download)."
+
+# Reclaim the most debug space on demand. Removes target/debug entirely (the
+# release bundle in target/release is left alone). The next `just dev` recompiles
+# the debug dependencies from the local crate cache — slower that once, but still
+# no download.
+# Remove target/debug entirely; deps recompile next build (never re-downloaded).
+clean-debug:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    t="gui/src-tauri/target"
+    before=$(du -sh "$t" 2>/dev/null | cut -f1 || echo '?')
+    rm -rf "$t"/debug
+    echo "clean-debug: removed $t/debug — $before -> $(du -sh "$t" 2>/dev/null | cut -f1 || echo '?'). Next build recompiles debug deps (no download)."
