@@ -1,7 +1,7 @@
 // Prevent an extra console window on Windows in release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-//! Skills Scraper — a thin Tauri desktop shell over the validated
+//! SkillsScraper — a thin Tauri desktop shell over the validated
 //! `skills-scraper` Go binary. Every operation shells out to it; the GUI never
 //! reimplements scraping logic, so it inherits the CLI's verified behaviour.
 
@@ -913,12 +913,38 @@ fn env_overrides_from(
     out
 }
 
+/// The folder name a bundled app uses for its user data under ~/Documents and
+/// ~/Downloads. Matches the app's display name (no space), which is a little
+/// awkward but keeps the on-disk folder recognizable as this app's.
+const APP_DIR_NAME: &str = "SkillsScraper";
+
+/// Assemble a bundle's default-paths JSON from the resolved base dirs. Pure, so
+/// the Documents/Downloads split — data/vault/logs under Documents, the large
+/// Chrome profile under Downloads (away from iCloud sync) — is unit-tested.
+fn bundle_default_paths(
+    docs: &Path,
+    downloads: &Path,
+    theme: &Path,
+) -> serde_json::Value {
+    serde_json::json!({
+        "paths": {
+            "data": docs.join("data").display().to_string(),
+            "vault": docs.join("vault").display().to_string(),
+            "logs": docs.join("logs").display().to_string(),
+            "profile": downloads.join("profile").display().to_string(),
+            "themes": theme.display().to_string(),
+        },
+        "portal": "public"
+    })
+}
+
 /// The effective default directory for each configurable path — what a blank
 /// field resolves to. Used as the live env fallback and as the placeholder values
 /// shown in the dialog (recomputed each time, so the themes path always tracks the
 /// current app bundle). In dev the defaults mirror the Go core's repo-relative
-/// names exactly; in a bundle they are writable absolutes under ~/Documents
-/// (theme comes from the bundled resources).
+/// names exactly; in a bundle data/vault/logs live under ~/Documents/SkillsScraper
+/// and the (large) Chrome profile under ~/Downloads/SkillsScraper; theme comes
+/// from the bundled resources.
 fn default_paths(app: &AppHandle) -> serde_json::Value {
     if is_dev_checkout() {
         let root = repo_root();
@@ -933,30 +959,24 @@ fn default_paths(app: &AppHandle) -> serde_json::Value {
             "portal": "public"
         });
     }
-    // A packaged app defaults its user data to a visible, writable folder the
-    // user can find and open: ~/Documents/skills-scraper/{data,vault,logs,profile}.
-    // (Themes stay in the read-only app bundle — see below.)
-    let base = app
-        .path()
-        .document_dir()
-        .or_else(|_| app.path().app_data_dir())
-        .unwrap_or_else(|_| PathBuf::from("."))
-        .join("skills-scraper");
+    // A packaged app defaults its user data to a visible folder named after the
+    // app: ~/Documents/SkillsScraper/{data,vault,logs}. The Chrome profile is
+    // large and Documents is often synced to iCloud, so the profile lives under
+    // ~/Downloads/SkillsScraper/profile instead. Themes stay in the read-only app
+    // bundle (see below).
+    let app_dir = |base: Result<PathBuf, tauri::Error>| {
+        base.or_else(|_| app.path().app_data_dir())
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join(APP_DIR_NAME)
+    };
+    let docs = app_dir(app.path().document_dir());
+    let downloads = app_dir(app.path().download_dir());
     let theme = app
         .path()
         .resource_dir()
         .map(|r| r.join("theme"))
-        .unwrap_or_else(|_| base.join("theme"));
-    serde_json::json!({
-        "paths": {
-            "data": base.join("data").display().to_string(),
-            "vault": base.join("vault").display().to_string(),
-            "logs": base.join("logs").display().to_string(),
-            "profile": base.join("profile").display().to_string(),
-            "themes": theme.display().to_string(),
-        },
-        "portal": "public"
-    })
+        .unwrap_or_else(|_| docs.join("theme"));
+    bundle_default_paths(&docs, &downloads, &theme)
 }
 
 /// Recompute and store the live CSB_* env overrides from the given settings JSON.
@@ -1255,6 +1275,24 @@ mod tests {
         assert!(!env.iter().any(|(k, _)| k == "CSB_PORTAL"));
     }
 
+    // A bundle's default paths split by kind: data/vault/logs under Documents,
+    // but the large Chrome profile under Downloads (Documents is iCloud-synced).
+    #[test]
+    fn bundle_defaults_put_profile_in_downloads() {
+        let docs = PathBuf::from("/Users/me/Documents/SkillsScraper");
+        let downloads = PathBuf::from("/Users/me/Downloads/SkillsScraper");
+        let theme = PathBuf::from("/Applications/SkillsScraper.app/Contents/Resources/theme");
+        let v = bundle_default_paths(&docs, &downloads, &theme);
+        assert_eq!(v["paths"]["data"], "/Users/me/Documents/SkillsScraper/data");
+        assert_eq!(v["paths"]["vault"], "/Users/me/Documents/SkillsScraper/vault");
+        assert_eq!(v["paths"]["logs"], "/Users/me/Documents/SkillsScraper/logs");
+        assert_eq!(v["paths"]["profile"], "/Users/me/Downloads/SkillsScraper/profile");
+        assert_eq!(
+            v["paths"]["themes"],
+            "/Applications/SkillsScraper.app/Contents/Resources/theme"
+        );
+    }
+
     // A persisted path baked inside an app bundle (a stale themes seed from an
     // older build) is ignored, so the live default — the current bundle — wins.
     #[test]
@@ -1262,10 +1300,10 @@ mod tests {
         assert!(is_bundle_internal(
             "/Applications/Google Skills Scraper.app/Contents/Resources/theme"
         ));
-        assert!(!is_bundle_internal("/Users/me/Documents/skills-scraper/themes"));
+        assert!(!is_bundle_internal("/Users/me/Documents/SkillsScraper/themes"));
 
         let defaults = serde_json::json!({
-            "paths": {"themes": "/Applications/Skills Scraper.app/Contents/Resources/theme"}
+            "paths": {"themes": "/Applications/SkillsScraper.app/Contents/Resources/theme"}
         });
         let settings =
             r#"{"paths":{"themes":"/Applications/Google Skills Scraper.app/Contents/Resources/theme"}}"#;
@@ -1273,7 +1311,7 @@ mod tests {
         // The stale saved value is dropped; the live (current-bundle) default wins.
         assert!(env.contains(&(
             "CSB_THEME_DIR".into(),
-            "/Applications/Skills Scraper.app/Contents/Resources/theme".into()
+            "/Applications/SkillsScraper.app/Contents/Resources/theme".into()
         )));
     }
 }

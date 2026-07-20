@@ -426,7 +426,7 @@ dependencies = [
 
 [[package]]
 name = "csb-gui"
-version = "2.16.1"
+version = "2.16.2"
 dependencies = [
  "libc",
  "serde",

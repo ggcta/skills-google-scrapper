@@ -1,4 +1,4 @@
-// Skills Scraper frontend. All work is delegated to the `skills-scraper` binary via Tauri
+// SkillsScraper frontend. All work is delegated to the `skills-scraper` binary via Tauri
 // commands (see src-tauri/src/main.rs). Uses the global Tauri API
 // (withGlobalTauri = true), so it runs without a bundler.
 
